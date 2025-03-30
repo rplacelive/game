@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck
 // Service worker for PWA installation
-const CURRENT_CACHES = "tkv4"
+const CURRENT_CACHES = "tkv5"
 self.addEventListener("install", (event) => {
 	event.waitUntil(
 		caches.open(CURRENT_CACHES).then((cache) =>
@@ -28,26 +28,24 @@ self.addEventListener("install", (event) => {
 				"theme-switch.css",
 
 				// Scripts
-				"account.js",
-				"add-vip.js",
-				"august21-event.js",
-				"canvas-snow.min.js",
-				"captcha-canvas.js",
-				"darkplace.js",
-				"event-timer.js",
-				"lit.all.min.js",
-				"live-chat-elements.js",
-				"merge.js",
-				"posts-elements.js",
-				"posts-manager.js",
-				"quests.js",
-				"shared-elements.js",
-				"shared.js",
-				"snowplace.js",
-				"sw.js",
-				"trim-ban-mute-file.js",
-				"tsparticles.confetti.bundle.min.js",
 				"uv.min.js",
+				"live-chat-elements.js",
+				"event-timer.js",
+				"shared-elements.js",
+				"add-vip.js",
+				"shared.js",
+				"posts-elements.js",
+				"snowplace.js",
+				"account.js",
+				"darkplace.js",
+				"august21-event.js",
+				"trim-ban-mute-file.js",
+				"captcha-canvas.js",
+				"quests.js",
+				"posts-manager.js",
+
+				"libs/canvas-snow.min.js",
+				"libs/tsparticles.confetti.bundle.min.js",
 
 				// Images
 				"favicon.ico",

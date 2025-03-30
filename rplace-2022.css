@@ -58,6 +58,9 @@ input, button, textarea {
 	padding: 5px;
 	outline: none;
 }
+:root[data-variant="dark"] input, :root[data-variant="dark"] button, :root[data-variant="dark"] textarea {
+	border: 1px solid var(--ui-panel-hover);
+}
 
 button, input[type="button"] {
 	cursor: pointer;
@@ -285,17 +288,33 @@ dialog {
 #messageInput {
 	color: var(--ui-text);
 	padding-top: 8px;
-	height: max(35px, var(--message-input-height));
+	height: max(36px, var(--message-input-height));
 }
 #messageInput[state="command"] {
 	color: #00FA9A;
 }
+.message-input-actions > button {
+	box-shadow: none;
+	opacity: 0.6;
+	transition: .2s opacity;
+}
+.message-input-actions > button:hover {
+	opacity: 1;
+}
+
 .message-emojis-suggestion {
 	box-shadow: none;
 }
 .message-emojis-suggestion:hover {
 	background: var(--ui-panel-hover);
 	border-radius: 4px;
+}
+
+r-live-chat-message .reaction-details {
+	background-color: var(--ui-panel-bg);
+}
+r-live-chat-message .emoji-reactors-count {
+	background-color: var(--ui-panel-hover);
 }
 
 .chat-ad-ins::before {
@@ -373,10 +392,18 @@ dialog {
 	box-shadow: 0 0 10px rgba(0,0,0,0.4);
 }
 
+#chatMessages > .message > .actions {
+	background-color: var(--ui-panel-bg);
+}
+
+#chatPreviousButton {
+	border: none;
+}
+
 .chat-input-panel {
 	padding: 5px;
 	background: var(--ui-panel-bg);
-	border: 1px solid lightgray;
+	border: 1px solid var(--ui-panel-hover);
 	border-radius: 5px 5px 10px 10px;
 }
 
@@ -457,7 +484,7 @@ dialog {
 	background: var(--ui-panel-bg);
 }
 r-spoiler {
-	transition: .2s opacity;
+	transition: .2s opacity, .2s color;
 	display: inline;
 }
 r-spoiler[hidden] {
@@ -466,7 +493,9 @@ r-spoiler[hidden] {
 	cursor: pointer;
 	background-color: var(--ui-panel-hover);
 	border-radius: 4px;
+	filter: blur(3px);
 }
 r-spoiler[hidden]:hover {
 	opacity: 0.8;
+	color: black;
 }

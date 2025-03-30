@@ -1,7 +1,6 @@
-import { LitElement, html, unsafeHTML } from "./lit.all.min.js"
+import { LitElement, html } from "lit-element"
+import { unsafeHTML } from "lit/directives/unsafe-html.js";
 
-// @ts-expect-error Hack to access window globals from module script
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 var { DEFAULT_AUTH, markdownParse, sanitise, cachedFetch } = window.moduleExports
 const fuzzyNumberFormat = new Intl.NumberFormat(navigator.language, { notation: "compact" })
 
@@ -41,7 +40,7 @@ class Post extends LitElement {
 		// Reactive props
 		this.title = ""
 		this.description = ""
-		this.coverImageUrl = null
+		/**@type {string|null}*/this.coverImageUrl = null
 		this.hidden = false
 		this.authorName = ""
 		this.authorImageUrl = "images/rplace.png"
@@ -51,11 +50,10 @@ class Post extends LitElement {
 		this.showVotes = true
 		this.upvotes = 0
 		this.downvotes = 0
-		this.contentUrls = []
+		/**@type {string[]}*/this.contentUrls = []
 		this.showAuthorTooltip = false
 	}
 
-	// @ts-expect-error Disable shadow DOM to inherit global CSS
 	createRenderRoot() {
 		return this
 	}
@@ -207,10 +205,9 @@ class PostContents extends LitElement {
 
 	constructor() {
 		super()
-		this.contentUrls = []
+		/**@type {string[]}*/this.contentUrls = []
 	}
 
-	// @ts-expect-error Disable shadow DOM to inherit global CSS
 	createRenderRoot() {
 		return this
 	}
@@ -245,6 +242,10 @@ class PostContents extends LitElement {
 		}
 	}
 
+	/**
+	 * @param {string} contentUrl
+	 * @param {number} index
+	 */
 	#renderImage(contentUrl, index) {
 		const gridColumnStyle = this.contentUrls.length === 3 && index === 2 
 			? "grid-column: 1 / span 2;" 
@@ -255,11 +256,16 @@ class PostContents extends LitElement {
 				style="${gridColumnStyle}" @click=${() => this.#openDialog(contentUrl)}>`
 	}
 
+	/**
+	 * @param {string} contentUrl
+	 */
 	#openDialog(contentUrl) {
-		const dialogReference = this.querySelector('#dialog-reference')
-		const dialogImg = this.querySelector('#dialog-img')
-		const dialog = this.querySelector('dialog')
-
+		const dialogReference = /**@type {HTMLAnchorElement}*/(this.querySelector("#dialog-reference"))
+		const dialogImg = /**@type {HTMLImageElement}*/(this.querySelector("#dialog-img"))
+		const dialog = /**@type {HTMLDialogElement}*/(this.querySelector("dialog"))
+		if (!dialogReference || !dialogImg || !dialog) {
+			return;
+		}
 		dialogReference.textContent = "(Download original)"
 		dialogReference.href = contentUrl
 		dialogImg.src = contentUrl
@@ -267,7 +273,7 @@ class PostContents extends LitElement {
 	}
 
 	#closeDialog() {
-		const dialog = this.querySelector("dialog")
+		const dialog = /**@type {HTMLDialogElement}*/(this.querySelector("dialog"))
 		dialog.close()
 	}
 }
@@ -297,7 +303,6 @@ class UserTooltip extends LitElement {
 		this.userIntId = 0
 	}
 
-	// @ts-expect-error Disable shadow DOM to inherit global CSS
 	createRenderRoot() {
 		return this
 	}
@@ -403,6 +408,9 @@ class CreatePostContent extends HTMLElement {
 		this.appendChild(this.#deleteButton)
 	}
 
+	/**
+	 * @param {File} fileObject
+	 */
 	setFile(fileObject) {
 		this.file = fileObject
 		this.#fileThumbnail.src = window.URL.createObjectURL(this.file)
@@ -427,6 +435,9 @@ class CreatePostContentsPreview extends HTMLElement {
 		this.#contentsContainer = document.createElement("div")
 	}
 
+	/**
+	 * @param {File} file
+	 */
 	addContent(file) {
 		if (this.#contents.size >= this.#maxContents) {
 			alert("Error: Can't attach more than 4 files")
@@ -441,7 +452,7 @@ class CreatePostContentsPreview extends HTMLElement {
 			this.insertBefore(this.#uploadLabel, this.#contentsContainer)
 			this.style.height = "72px"
 		}
-		const itemEl = document.createElement("r-create-post-content")
+		const itemEl =/**@type {CreatePostContent}*/(document.createElement("r-create-post-content"))
 		this.#contentsContainer.appendChild(itemEl)
 		itemEl.setFile(file)
 		const _this = this
@@ -451,6 +462,9 @@ class CreatePostContentsPreview extends HTMLElement {
 		this.#elementItems.set(file, itemEl)
 	}
 
+	/**
+	 * @param {File} file
+	 */
 	deleteContent(file) {
 		if (!this.#contents.delete(file)) {
 			return

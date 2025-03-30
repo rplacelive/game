@@ -26,10 +26,6 @@
             "warn",
             "double"
         ],
-        "semi": [
-            "error",
-            "never"
-        ],
         "no-constant-condition": "off",
         "no-undef": "off",
         "no-process-exit": "off",
@@ -37,7 +33,10 @@
         "prefer-const": "warn",
         "no-const-assign": "error",
         "require-jsdoc": "off",
-        "no-explicit-any": "off"
+        "no-explicit-any": "off",
+        "jsdoc/require-param-description": "off",
+        "jsdoc/require-returns-description": "off",
+        "jsdoc/require-property-description": "off"
     },
     "globals": {
         "Bun": true

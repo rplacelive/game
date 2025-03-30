@@ -1,12 +1,9 @@
-.vscode/
-.hintrc
-
 # Project files
 *.pem
 *.key
 node_modules/
-padlock/*
-!padlock/server.d.ts
+server/padlock/*
+!server/padlock/server.d.ts
 
 # Config files
 server_config.json
@@ -28,6 +25,7 @@ server.db-wal
 place
 change
 change2
+placers
 
 # Logs
 *.pxpslog.txt

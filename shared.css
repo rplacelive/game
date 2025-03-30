@@ -50,3 +50,50 @@
 .iframe-modal::before {
 	content: " ";
 }
+
+r-canvas-share-embed .canvas-embed {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px;
+	border: 1px solid #ccc;
+	border-radius: 6px;
+	background-color: white;
+	max-width: 400px;
+	transition: all 0.2s ease;
+}
+
+r-canvas-share-embed .canvas-embed:hover {
+	border-color: #999;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+	transform: translateY(-1px);
+}
+
+r-canvas-share-embed .canvas-link {
+	flex-grow: 1;
+	text-decoration: none;
+	color: inherit;
+}
+
+r-canvas-share-embed .canvas-info {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+r-canvas-share-embed .canvas-name {
+	margin: 0;
+	font-weight: 600;
+	font-size: 16px;
+}
+
+r-canvas-share-embed .canvas-description {
+	margin: 0;
+	font-size: 14px;
+	color: #666;
+}
+
+r-canvas-share-embed r-clipboard-copy {
+	flex-shrink: 0;
+	margin-left: auto;
+}

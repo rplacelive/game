@@ -7,7 +7,8 @@
 	--pixel-border-size: 3px;
 	--pixel-shadow-size: 8px;
 	--pixel-shadow-color: rgba(0, 0, 0, 0.75);
-	--gray-color: #576f76
+	--ui-panel-bg: #ffffff;
+	--gray-color: #576f76;
 }
 :root, button, html, input, select, textarea {
 	font-family: var(--font-pixel);
@@ -248,6 +249,10 @@ r-close-icon {
 }
 
 #onlinePanel {
+	color: black;
+}
+
+#onlineCounter {
 	color: black;
 }
 

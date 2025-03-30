@@ -239,7 +239,11 @@ class PublicPromiseSync {
 }
 
 function sanitise(txt) {
-	return txt.replaceAll(/&/g,"&amp;").replaceAll(/</g,"&lt;").replaceAll(/"/g,"&quot;")
+	return txt
+		.replaceAll(/&/g,"&amp;")
+		.replaceAll(/</g,"&lt;")
+		.replaceAll(/"/g,"&quot;")
+		.replace(/\?|javascript:/gi, "")
 }
 
 function markdownParse(text) {
@@ -474,8 +478,15 @@ window.addEventListener("message", async function(event) {
 	}
 })
 
+window.moduleExports = window.moduleExports || {};
 window.moduleExports = {
 	...window.moduleExports,
+	get DEFAULT_SERVER() {
+		return DEFAULT_SERVER
+	},
+	get DEFAULT_BOARD() {
+		return DEFAULT_BOARD
+	},
 	get DEFAULT_AUTH() {
 		return DEFAULT_AUTH
 	},
@@ -487,5 +498,11 @@ window.moduleExports = {
 	},
 	get cachedFetch() {
 		return cachedFetch
+	},
+	get translate() {
+		return translate
+	},
+	get translateAll() {
+		return translateAll
 	}
 }

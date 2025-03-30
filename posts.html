@@ -4,15 +4,15 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Posts | rplace</title>
-	<link rel="stylesheet" href="rplace-2022.css?v=13">
-	<link rel="stylesheet" href="styles.css?v=359">
-	<link rel="stylesheet" href="shared.css?v=2">
-	<link rel="stylesheet" href="posts.css?v=3">
-	<script type="text/javascript" src="shared.js?v=9"></script>
+	<link rel="stylesheet" href="rplace-2022.css">
+	<link rel="stylesheet" href="styles.css">
+	<link rel="stylesheet" href="shared.css">
+	<link rel="stylesheet" href="posts.css">
+	<script type="text/javascript" src="shared.js"></script>
 	<script type="text/javascript" src="account.js"></script>
-	<script id="postsManager" type="text/javascript" src="posts-manager.js?v=6" defer></script>
-	<script type="module" src="shared-elements.js?v=10" defer></script>
-	<script type="module" src="posts-elements.js?v=8" defer></script>
+	<script id="postsManager" type="text/javascript" src="posts-manager.js" defer></script>
+	<script type="module" src="shared-elements.js" defer></script>
+	<script type="module" src="posts-elements.js" defer></script>
 	<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2508999262953411"
 		crossorigin="anonymous"></script>
 </head>
@@ -321,12 +321,61 @@
 	}
 	transformSidebar()
 
+	async function initMainCanvasPost(embedded = false) {
+		try {
+			// Setup event handlers
+			if (embedded) {
+				mainCanvasPost.onclick = function () {
+					sendParentMessage('switchGameServer')
+				}
+			}
+			else {
+				mainCanvasPost.onclick = function () {
+					window.open(`${window.location.origin}/?server=${DEFAULT_SERVER}&board=${DEFAULT_BOARD}`)
+				}
+			}
+
+			// Retrieve canvas info
+			if (window.location.hostname === "localhost") {
+				return;
+			}
+			const req = await fetch(DEFAULT_SERVER.replace("wss://", "https://").replace("ws://", "http://"), {
+				method: "GET",
+				headers: {
+					"Content-Type": "application/json",
+					"Accept": "application/json",
+				},
+			})
+
+			if (req.status !== 200) {
+				console.error("Failed to fetch main canvas info", req)
+				return
+			}
+
+			const mainCanvasInfo = await req.json()
+			if (mainCanvasInfo.status !== "ok") {
+				console.error("Failed to fetch main canvas info", mainCanvasInfo)
+				return
+			}
+
+			const { instance, canvas } = mainCanvasInfo
+			const { icon } = instance
+			const { width, height, cooldown } = canvas
+
+			// Update post with new canvas info
+			mainCanvasPost.querySelector(".description").textContent = `${width}x${height} (cooldown: ${cooldown}ms)`
+			mainCanvasPost.querySelector(".cover-image").src = icon || "images/rplace.png"
+		}
+		catch (e) {
+			console.error("Failed to fetch main canvas info", e)
+		}
+	}
+
+
 	// Embedded switches
 	if (window.parent !== window) {
 		document.documentElement.setAttribute("embedded", "true")
-		mainCanvasPost.onclick = function() {
-			sendParentMessage('switchGameServer')
-		}
+		initMainCanvasPost(true)
 	}
 	else {
 		document.documentElement.setAttribute("embedded", "false")
@@ -338,9 +387,7 @@
 			}
 			liveChatPost.remove()
 			overlayPost.remove()
-			mainCanvasPost.onclick = function() {
-				window.open(`${window.location.origin}/?server=${DEFAULT_SERVER}&board=${DEFAULT_BOARD}`)
-			}
+			initMainCanvasPost(false)
 
 			// Load more posts on scroll down
 			const body = document.body

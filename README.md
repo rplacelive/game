@@ -30,8 +30,9 @@ not run commercially (That is, they should not generate more than the cost of se
 
 ### Testing:
  - Use `bun install` to install all required TS server dependencies
+ - Enter the server directory
  - The server can be run with `bun run server.js` in the root directory of the project.
- - You can use a simple HTTP server, such as the npm static-server module to test the client with a local server. For example, `bunx static-server --cors='*'`
+ - You can use the bun dev configuration to run a local HTTP server, i.e `bun run dev`
  
 For more information on the game's protocol, look to the [protocol documentation](PROTOCOL.md).
 

@@ -1,7 +1,11 @@
-import { LitElement, html, styleMap, unsafeHTML, until } from "./lit.all.min.js"
-// @ts-expect-error Hack to access window globals from module script
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-var { cMessages, currentChannel, chatMessages, x, y, pos, chatMentionUser, onChatContext, chatReply, chatReport, chatModerate, chatReactionsPanel, CHAT_COLOURS, hash, chatReact, EMOJIS, CUSTOM_EMOJIS, intIdNames } = window.moduleExports
+import { LitElement, html } from "lit-element"
+import { styleMap } from "lit-html/directives/style-map.js"
+import { until } from "lit/directives/until.js"
+import { unsafeHTML } from "lit/directives/unsafe-html.js"
+import { Marked } from "marked"
+import DOMPurify from "dompurify"
+
+var { cMessages, currentChannel, chatMessages, x, y, pos, chatMentionUser, onChatContext, chatReply, chatReport, chatModerate, chatReactionsPanel, CHAT_COLOURS, hash, chatReact, EMOJIS, CUSTOM_EMOJIS, intIdNames, translate, sanitise } = window.moduleExports
 
 class LiveChatMessage extends LitElement {
 	static properties = {
@@ -35,7 +39,6 @@ class LiveChatMessage extends LitElement {
 		this.classList.add("message")
 	}
 
-	// @ts-expect-error Remove shadow DOM by using element itself as the shadowroot
 	createRenderRoot() {
 		return this
 	}
@@ -66,27 +69,194 @@ class LiveChatMessage extends LitElement {
 	}
 
 	/**
-	 * @param {string} txt Raw message text
+	 * @type {import("marked").MarkedExtension}
+	 */
+	get #markedMarkdownConfig() {
+		return {
+			hooks: {
+				preprocess(markdown) {
+					return sanitise(markdown)
+				},
+			},
+			extensions: [
+				{
+					name: "spoiler",
+					level: "inline",
+					start(src) {
+						return src.indexOf("||")
+					},
+					tokenizer(src) {
+						const match = /^\|\|([\s\S]+?)\|\|/.exec(src);
+						if (match) {
+							return {
+								type: "spoiler",
+								raw: match[0],
+								text: match[1]?.trim(),
+								tokens: []
+							}
+						}
+						return undefined
+					},
+					renderer(token) {
+						let tokens = null;
+						if (token.tokens && token.tokens.length > 0) {
+							tokens = token.tokens
+						}
+						else {
+							tokens = /**@type {import("marked").Token[]}*/([{
+								type: "text",
+								raw: token.text,
+								text: token.text
+							}])
+						}
+						const parsedContent = this.parser.parseInline(tokens);
+						return `<r-spoiler hidden="true">${parsedContent}</r-spoiler>`;				
+					},
+				},
+				{
+					name: "gif",
+					level: "inline",
+					start(src) {
+						return src.indexOf("[gif:")
+					},
+					tokenizer(src) {
+						const match = /^\[gif:([a-zA-Z0-9_-]+):([a-zA-Z_-]+)\]/.exec(src)
+						if (match) {
+							return {
+								type: "gif",
+								raw: match[0],
+								gifId: match[1],
+								gifSource: match[2]
+							}
+						}
+						return undefined
+					},
+					renderer(token) {
+						return `<r-gif key="${token.gifId}" source="${token.gifSource}"></r-gif>`
+					}
+				},
+				{
+					name: "underline",
+					level: "inline",
+					start(src) {
+						return src.indexOf("__");
+					},
+					tokenizer(src) {
+						const match = /^__([^_\n]+?)__/.exec(src);
+						if (match) {
+							return {
+								type: "underline",
+								raw: match[0],
+								text: match[1]?.trim(),
+								tokens: []
+							};
+						}
+						return undefined;
+					},
+					renderer(token) {
+						let tokens = null;
+						if (token.tokens && token.tokens.length > 0) {
+							tokens = token.tokens
+						}
+						else {
+							tokens = /**@type {import("marked").Token[]}*/([{
+								type: "text",
+								raw: token.text,
+								text: token.text
+							}])
+						}
+						const parsedContent = this.parser.parseInline(tokens);
+						return `<u>${parsedContent}</u>`;
+					}
+				}	
+			],
+			renderer: {
+				heading({ tokens, depth }) {
+					const text = this.parser.parseInline(tokens);
+					if (depth >= 1 && depth <= 3) {
+						return `<h${depth}>${text}</h${depth}>`
+					}
+					return text
+				},
+				//paragraph({ tokens }) {
+				//	return this.parser.parseInline(tokens);
+				//},
+				link(token) {
+					return this.parser.parseInline(token.tokens) || token.text;
+				},
+				image(token) {
+					return token.text || `[image:${token.href}:]`;
+				},
+				html(token) {
+					return token.text;
+				},
+				table(token) {
+					const header = token.header.map(cell => cell.text).join(' | ');
+					const separator = token.align.map(align => 
+						align === 'left' ? ':---' : 
+						align === 'right' ? '---:' : 
+						align === 'center' ? ':---:' : '---'
+					).join(' | ');
+					const body = token.rows.map(row => 
+						row.map(cell => cell.text).join(' | ')
+					).join('\n');
+					return `| ${header} |\n| ${separator} |\n${body}`;
+				}
+			},
+			async: true
+		}
+	}
+
+	/**
+	 * @param {string} message Raw message text
 	 * @returns {any} Lit HTML output
 	 */
-	#parseMessage(txt) {
-		if (!txt) {
+	async #parseMessage(message) {
+		if (!message) {
 			return null
 		}
 
-		// Sanitize and parse markdown
-		let parsedHTML = markdownParse(sanitise(txt))
-	
+		// Pre-cleanup text for zero-width chars
+		message = message.toString()
+			.replace(/[\u200B-\u200D\uFEFF]/g, "")
+
+		// Parse markdown syntax
+		const markedInstance = new Marked();
+		markedInstance.use(this.#markedMarkdownConfig);
+		let parsedHtml = await markedInstance.parseInline(message); 
+
+		// Sanitise HTML
+		parsedHtml = DOMPurify.sanitize(parsedHtml, {
+			ALLOWED_TAGS: [],
+			ALLOWED_ATTR: [ "hidden" ],
+
+			// Whitelist
+			ADD_TAGS: [ "r-gif", "r-spoiler", "h1", "h2", "h3", "b", "i", "e", "em", "strong", "del", "br", "p", "span", "ul", "ol", "li", "u", "blockquote", "code", "pre" ],
+			ADD_ATTR: [ "key", "source", "hidden" ],
+
+			// Explicit enforcements
+			FORBID_ATTR: [ "style", "on*", "href", "src", "srcset" ],
+			ALLOW_DATA_ATTR: false,
+			ALLOW_ARIA_ATTR: false,
+
+			// Custom r- elements handling
+			CUSTOM_ELEMENT_HANDLING: {
+				tagNameCheck: /^r-/i,
+				attributeNameCheck: /^(key|source|hidden)$/i,
+				allowCustomizedBuiltInElements: false
+			}
+		});
+
 		// Handle emojis
-		parsedHTML = parsedHTML.replaceAll(/:([a-z-_]{0,16}):/g, (full, source) => {
-			const isLargeEmoji = parsedHTML.match(new RegExp(`:${source}:`, "g")).length === 1 &&
-				!parsedHTML.replace(full, "").trim()
+		parsedHtml = parsedHtml.replaceAll(/:([a-z-_]{0,16}):/g, (full, source) => {
+			const matches = parsedHtml.match(new RegExp(`:${source}:`, "g"));
+			const isLargeEmoji = matches && matches.length === 1 && !parsedHtml.replace(full, "").trim();
 			const size = isLargeEmoji ? "48" : "16"
 			return `<img src="custom_emojis/${source}.png" alt=":${source}:" title=":${source}:" width="${size}" height="${size}">`;
-		})
-	
+		})	
+
 		// Handle coordinates and generate final lit HTML
-		const formattedMessage = this.#parseCoordinates(parsedHTML)
+		const formattedMessage = this.#parseCoordinates(parsedHtml);
 		return html`${formattedMessage}`
 	}
 
@@ -169,7 +339,7 @@ class LiveChatMessage extends LitElement {
 		}
 	}
 	
-	#handleContextMenu(e) {
+	#handleContextMenu(/**@type {Event}*/e) {
 		e.preventDefault()
 		if (this.messageId > 0) {
 			onChatContext(e, this.senderId, this.messageId)
@@ -201,13 +371,13 @@ class LiveChatMessage extends LitElement {
 		chatReactionsPanel.style.right = "8px"
 		chatReactionsPanel.style.top = `${Math.max(8, topPosition)}px` // Ensure it doesn't go off the top
 	
-		chatReactionsPanel.onemojiselection = (e) => {
+		chatReactionsPanel.addEventListener("emojiselection", (/**@type {CustomEvent}*/e) => {
 			this.#onReactEmojiSelected(e)
 			chatReactionsPanel.removeAttribute("open")
-		}
+		})
 	}
 
-	#onReactEmojiSelected(e) {
+	#onReactEmojiSelected(/**@type {CustomEvent}*/e) {
 		const { key } = e.detail
 		chatReact(this.messageId, key)
 	}
@@ -240,10 +410,10 @@ class LiveChatMessage extends LitElement {
 			return null
 		}
 
-		const renderActionButton = async (src, titleKey, clickHandler) => {
+		const renderActionButton = async (/**@type {string}*/src, /**@type {string}*/ titleKey, /**@type {unknown}*/ clickHandler) => {
 			const title = await translate(titleKey)
 			return html`
-				<img class="action-button" src="${src}"
+				<img class="action-button icon-image" src="${src}"
 					title="${title}" tabindex="0" @click="${clickHandler}">
 			`
 		}
@@ -277,8 +447,8 @@ class LiveChatMessage extends LitElement {
 					}
 					return html`
 						<li class="reaction ${this.openedReactionDetails == emojiKey ? "expanded" : ""}">
-							<details class="reaction-details" ?open=${this.openedReactionDetails === emojiKey} @toggle=${(e) => {
-								if (e.target.open) {
+							<details class="reaction-details" ?open=${this.openedReactionDetails === emojiKey} @toggle=${(/**@type {Event}*/e) => {
+								if (e.target?.open) {
 									this.openedReactionDetails = emojiKey
 								}
 								else if (this.openedReactionDetails === emojiKey) {
@@ -315,7 +485,7 @@ class LiveChatMessage extends LitElement {
 		return html`
 			${this.#renderReply()}
 			${this.#renderName()}
-			<span>${this.#parseMessage(this.content)}</span>
+			<span>${until(this.#parseMessage(this.content), html`...`)}</span>
 			${this.#renderReactions()}
 			${this.#renderActions()}`
 	}

@@ -12,14 +12,14 @@ import { promises as fs } from "fs"
 import fsExists from "fs.promises.exists"
 import util from "util"
 import path from "path"
-import * as zcaptcha from "./zcaptcha/server.ts"
-import { isUser } from "ipapi-sync"
-import { Worker } from "worker_threads"
+import * as zcaptcha from "./zcaptcha/server.js"
 import cookie from "cookie"
+import { isUser } from "ipapi-sync"
 import repl from "basic-repl"
+import { Worker } from "worker_threads"
 import { $, Server, ServerWebSocket, TLSWebSocketServeOptions } from "bun"
-import { DbInternals, LiveChatMessage } from "./db-worker.ts"
-import { PublicPromise, ReactionInfo } from "./server-types.ts"
+import { DbInternals, LiveChatMessage } from "./db-worker.js"
+import { PublicPromise } from "./server-types.js"
 import type { ChallengeModule } from "./padlock/server.d.ts";
 import { distance } from "fastest-levenshtein"
 import * as sha256 from "sha256"
@@ -59,7 +59,11 @@ type ServerConfig = {
 	"TURNSTILE": boolean,
 	"TURNSTILE_SITE_KEY": string,
 	"TURNSTILE_PRIVATE_KEY": string,
-	"CANVAS_ID": number
+	"CANVAS_ID": number|null,
+	"CANVAS_NAME": string|null,
+	"CANVAS_ICON": string|null,
+	"TENOR_API_KEY": string|null,
+	"TENOR_CLIENT_KEY": string|null
 }
 let configFailed = false
 let configFile = await fs.readFile("./server_config.json").catch(_ => configFailed = true)
@@ -97,7 +101,11 @@ if (configFailed) {
 		"TURNSTILE": false,
 		"TURNSTILE_SITE_KEY": "",
 		"TURNSTILE_PRIVATE_KEY": "",
-		"CANVAS_ID": -1
+		"CANVAS_ID": null,
+		"CANVAS_NAME": null,
+		"CANVAS_ICON": "https://rplace.live/images/rplace.png",
+		"TENOR_API_KEY": "",
+		"TENOR_CLIENT_KEY": ""
 	}, null, 4))
 	console.log("Config file created, please update it before restarting the server")
 	process.exit(0)
@@ -188,7 +196,7 @@ let { SECURE, CERT_PATH, PORT, KEY_PATH, WIDTH, HEIGHT, ORIGINS, PALETTE, PALETT
 	PXPS_SECURITY, USE_CLOUDFLARE, PUSH_LOCATION, PUSH_PLACE_PATH, LOCKED, CHAT_WEBHOOK_URL, MOD_WEBHOOK_URL,
 	CHAT_MAX_LENGTH, CHAT_COOLDOWN_MS, PUSH_INTERVAL_MINS, CAPTCHA_EXPIRY_SECS, PERIODIC_CAPTCHA_INTERVAL_SECS,
 	LINK_EXPIRY_SECS, CAPTCHA_MIN_MS, INCLUDE_PLACER, SECURE_COOKIE, CORS_COOKIE, CHALLENGE, TURNSTILE, TURNSTILE_SITE_KEY,
-	TURNSTILE_PRIVATE_KEY, CANVAS_ID } = JSON.parse(configFile.toString()) as ServerConfig
+	TURNSTILE_PRIVATE_KEY, CANVAS_ID, CANVAS_NAME, CANVAS_ICON, TENOR_API_KEY, TENOR_CLIENT_KEY } = JSON.parse(configFile.toString()) as ServerConfig
 try {
 	BOARD = new Uint8Array(await Bun.file(path.join(PUSH_PLACE_PATH, "place")).arrayBuffer())
 }
@@ -759,6 +767,33 @@ function rejectPixel(ws:ServerWebSocket<ClientData>, i:number, cd:number) {
 	ws.send(data)
 }
 
+interface TenorMediaFormat {
+	url: string;
+	dims: [number, number];
+}
+interface TenorResult {
+	id: string;
+	content_description: string;
+	media_formats: {
+		webm: TenorMediaFormat;
+		webp: TenorMediaFormat;
+		mp4?: TenorMediaFormat;
+	};
+}
+interface GifResult {
+	id:string;
+	source:string;
+	sourceFallback:string|null;
+	preview:string;
+	width:string;
+	height:string;
+	description:string;
+}
+interface GifResponse {
+	results: GifResult[];
+	next: string;
+}
+
 export type ClientData = {
 	ip: string,
 	headers: Headers,
@@ -801,7 +836,7 @@ const serverOptions:TLSWebSocketServeOptions<ClientData> = {
 
 		// User wants to link their canvas account to the global auth server, architecture outlined in
 		// https://github.com/rplacetk/architecture/blob/main/account_linkage.png
-		if (url.pathname.startsWith("/users/")) {
+		if (url.pathname.startsWith("/users/") && req.method === "GET") {
 			const targetId = parseInt(url.pathname.slice(7))
 			if (Number.isNaN(targetId) || typeof targetId !== "number") {
 				return new Response("Invalid user ID format", {
@@ -833,7 +868,7 @@ const serverOptions:TLSWebSocketServeOptions<ClientData> = {
 				headers: { "Content-Type": "application/json", ...corsHeaders }
 			})
 		}
-		else if (url.pathname.startsWith("/link/")) {
+		else if (url.pathname.startsWith("/link/") && req.method === "GET") {
 			const targetLink = url.pathname.slice(6)
 			if (!targetLink) {
 				return new Response("No link key provided", {
@@ -855,6 +890,198 @@ const serverOptions:TLSWebSocketServeOptions<ClientData> = {
 				status: 404,
 				headers: corsHeaders
 			})
+		}
+		// GIFs service API
+		else if (url.pathname.startsWith("/gifs/search") && req.method === "GET") {
+			if (!TENOR_API_KEY || !TENOR_CLIENT_KEY) {
+				return new Response("Failed to fetch GIFs", {
+					status: 500,
+					headers: { "Content-Type": "application/json", ...corsHeaders }
+				})
+			}
+			const q = url.searchParams.get("q") || "reddit"
+			const limit = url.searchParams.get("limit") || "16"
+			const pos = url.searchParams.get("pos") || ""
+			const source = url.searchParams.get("source") || "tenor"
+			if (source !== "tenor") {
+				return new Response(null, {
+					status: 404,
+					headers: { "Content-Type": "application/json", ...corsHeaders }
+				})
+			}
+
+			try {
+				// Build Tenor API URL
+				const params = new URLSearchParams({
+					key: TENOR_API_KEY,
+					client_key: TENOR_CLIENT_KEY,
+					media_filter: "webm,mp4,webp,tinywebm",
+					q,
+					limit
+				})
+				if (pos) {
+					params.set("pos", pos)
+				}
+				const tenorUrl = `https://tenor.googleapis.com/v2/search?${params}`
+		
+				// Fetch data from Tenor
+				const response = await fetch(tenorUrl)
+				if (!response.ok) {
+					throw new Error(`HTTP ${response.status}`)
+				}
+				const { results, next } = await response.json() as GifResponse
+				const processed =  {
+					source: "tenor",
+					next,
+					results: results.map(result => ({
+						id: result.id,
+						source: result.media_formats.webm?.url,
+						sourceFallback: result.media_formats.mp4?.url,
+						preview: result.media_formats.webp?.url,
+						width: result.media_formats.webm?.dims[0],
+						height: result.media_formats.webm?.dims[1],
+						description: result.content_description,
+					}))
+				}
+
+				// Return processed data as JSON
+				return new Response(JSON.stringify(processed), {
+					headers: { "Content-Type": "application/json", ...corsHeaders }
+				})
+			}
+			catch (error) {
+				console.error("Error fetching GIFs:", error)
+				return new Response("Failed to fetch GIFs", {
+					status: 500,
+					headers: { "Content-Type": "application/json", ...corsHeaders }
+				})
+			}		
+		}
+		else if (url.pathname.startsWith("/gifs") && req.method === "GET") {
+			if (!TENOR_API_KEY || !TENOR_CLIENT_KEY) {
+				return new Response("Failed to fetch GIFs", {
+					status: 500,
+					headers: { "Content-Type": "application/json", ...corsHeaders }
+				})
+			}
+
+			let gifId = url.pathname.replace("/gifs", "")
+			if (gifId.startsWith("/")) {
+				gifId = gifId.slice(1)
+			}
+
+			try {
+				// Build Tenor API URL for getting a GIF by ID
+				const params = new URLSearchParams({
+					key: TENOR_API_KEY,
+					client_key: TENOR_CLIENT_KEY,
+					ids: gifId,
+					media_filter: "webm,mp4,webp,tinywebm"
+				})
+				const tenorUrl = `https://tenor.googleapis.com/v2/posts?${params}`
+
+				// Fetch data from Tenor
+				const response = await fetch(tenorUrl)
+				if (!response.ok) {
+					throw new Error(`HTTP ${response.status}`)
+				}
+
+				// Parse and send data back to client
+				const result = await response.json() as { results: TenorResult[] }
+				const gifResult = result.results[0]
+				if (!gifResult) {
+					throw new Error("Invalid gif result")
+				}
+				const gif:GifResult = {
+					id: gifResult.id,
+					source: result.results[0].media_formats.webm?.url,
+					sourceFallback: gifResult.media_formats.mp4?.url,
+					preview: gifResult.media_formats.webp?.url,
+					width: gifResult.media_formats.webm?.dims[0],
+					height: gifResult.media_formats.webm?.dims[1],
+					description: gifResult.content_description,
+				}
+				return new Response(JSON.stringify(gif), {
+					status: 200,
+					headers: { "Content-Type": "application/json", ...corsHeaders }
+				})
+			}
+			catch (e) {
+				console.error("Error fetching GIFs:", e)
+				return new Response("Failed to load GIF", {
+					status: 500,
+					headers: { "Content-Type": "application/json", ...corsHeaders }
+				})	
+			}
+		}
+		// Chat message history API
+		else if (url.pathname.startsWith("/live-chat/messages") && req.method === "GET") {
+			// Parse query parameters
+			const query = url.searchParams;
+			const messageId = parseInt(query.get("messageId") || "");
+			const count = parseInt(query.get("count") || "50");
+			const before = query.get("before") === "1" || query.get("before")?.toLowerCase() === "true";
+			const channel = query.get("channel") || "global";
+
+			// Validate parameters
+			if (isNaN(messageId)) {
+				return new Response("Missing or invalid messageId parameter", {
+					status: 400,
+					headers: corsHeaders
+				});
+			}
+			if (isNaN(count) || count < 1 || count > 127) {
+				return new Response("Count must be between 1-127", {
+					status: 400,
+					headers: corsHeaders
+				});
+			}
+
+			try {
+				// Fetch chat history from database
+				const messageHistory = await makeDbRequest("getLiveChatHistory", { 
+					messageId, 
+					count, 
+					before, 
+					channel 
+				}) as any[];
+
+				// Process messages and collect usernames
+				const users: Record<number, string> = {};
+				const messages = messageHistory.map(row => {
+					users[row.senderIntId] = row.chatName;
+					
+					return {
+						id: row.messageId,
+						senderIntId: row.senderIntId,
+						channel: row.channel,
+						date: Math.floor(row.sendDate / 1000),
+						message: censorText(row.message),
+						repliesTo: row.repliesTo
+					};
+				});
+
+				// Create combined response
+				const response = {
+					messages,
+					users
+				};
+
+				return new Response(JSON.stringify(response), {
+					status: 200,
+					headers: { 
+						"Content-Type": "application/json",
+						...corsHeaders
+					}
+				});
+			}
+			catch (error) {
+				console.error("Error fetching chat history:", error);
+				return new Response("Internal server error", {
+					status: 500,
+					headers: corsHeaders
+				});
+			}
 		}
 		else if (!url.pathname || url.pathname === "/") {
 			const isWebSocketRequest = req.headers.get("upgrade")?.toLowerCase() === "websocket" &&
@@ -892,15 +1119,28 @@ const serverOptions:TLSWebSocketServeOptions<ClientData> = {
 
 			// Handle canvas info query (HTTP)
 			const instanceInfo = {
-				canvasId: CANVAS_ID,
-				width: WIDTH,
-				height: HEIGHT,
-				cooldown: COOLDOWN
+				version: "legacy",
+				instance: {
+					id: CANVAS_ID,
+					name: CANVAS_NAME,
+					icon: CANVAS_ICON
+				},
+				canvas: {
+					width: WIDTH,
+					height: HEIGHT,
+					cooldown: COOLDOWN
+				}
 			}
-			return new Response(JSON.stringify(instanceInfo), { status: 200 })
+			return new Response(JSON.stringify(instanceInfo), {
+				status: 200,
+				headers: corsHeaders
+			})
 		}
 		else {
-			return new Response("Not found", { status: 404 })
+			return new Response("Not found", {
+				status: 404,
+				headers: corsHeaders
+			})
 		}
 	},
 	websocket: {
@@ -1164,13 +1404,13 @@ const serverOptions:TLSWebSocketServeOptions<ClientData> = {
 						const censoredMessage = censorText(row.message)
 						const messageData = createChatPacket(0, censoredMessage, Math.floor(row.sendDate / 1000), row.messageId,
 							row.senderIntId, row.channel, row.repliesTo)
-						// We reuse the first two bytes (would be type and packetcode) for length. Could overflow if txt is 100% of the 2 byte max len
+						// We overwrite the first two bytes (would be packetcode and type) for length. Could overflow if txt is 100% of the 2 byte max len (unlikely)
 						messageData.writeUint16BE(messageData.byteLength, 0)
 						size += messageData.byteLength
 						messages.push(messageData)
 					}
 
-					// Client may race between applying intId:name bindings and inserting the new messages w/ usernames. Oof!
+					// Client may race between applying intId:name bindings and inserting the new messages w/ usernames - Not our problem!
 					const nmInfoBuf = createNamesPacket(usernames)
 					ws.send(nmInfoBuf)
 
@@ -2079,7 +2319,7 @@ function blacklist(identifier: ServerWebSocket<any>|number|string, reason: strin
 	fs.appendFile("./blacklist.txt", entry)
 }
 
-const defaultChannels = ["en", "zh", "hi", "es", "fr", "ar", "bn", "ru", "pt", "ur", "de", "jp", "tr", "vi", "ko", "it", "fa", "sr", "az"]
+const defaultChannels = ["en", "zh", "hi", "es", "fr", "ar", "bn", "ru", "pt", "ur", "de", "jp", "tr", "vi", "ko", "it", "fa", "nl", "az"]
 /**
  * Broadcast a message as the server to all default channels, or a specific provided channel
  */

@@ -1,30 +1,23 @@
 {
-  "type": "module",
-  "main": "server.js",
-  "license": "LGPL-3.0-or-later",
-  "author": "rplace.live",
-  "dependencies": {
-    "@datastructures-js/queue": "^4.2.3",
-    "@inquirer/prompts": "^7.4.0",
-    "@types/cookie": "^1.0.0",
-    "@types/sha256": "^0.2.2",
-    "basic-repl": "^2.2.2",
-    "bun-types": "^1.2.7",
-    "cookie": "^0.6.0",
-    "fastest-levenshtein": "^1.0.16",
-    "fs.promises.exists": "^1.1.4",
-    "ipapi-sync": "^1.4.2",
-    "sha256": "^0.2.0"
-  },
-  "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^6.21.0",
-    "@typescript-eslint/parser": "^6.21.0",
-    "eslint": "^8.57.1",
-    "eslint-plugin-jsdoc": "^46.10.1",
-    "eslint-plugin-node": "^11.1.0",
-    "@types/bun": "latest"
-  },
-  "engines": {
-    "node": ">=12.11.0"
-  }
+	"name": "rslashplace2.github.io",
+	"private": true,
+	"devDependencies": {
+		"@types/bun": "latest",
+		"vite": "^6.2.3"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"scripts": {
+		"dev": "vite",
+		"build": "vite build",
+		"serve": "vite preview"
+	},
+	"dependencies": {
+		"dompurify": "^3.2.4",
+		"lit": "^3.2.1",
+		"lit-element": "^4.1.1",
+		"lit-html": "^3.2.1",
+		"marked": "^15.0.7"
+	}
 }

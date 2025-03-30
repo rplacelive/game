@@ -106,7 +106,7 @@
 			[ "vip", "<kbd>Apply a VIP code</kbd>" ],
 			[ "lookup", "<kbd>Get the IDs of all players with the given name</kbd>" ],
 			[ "getid", "<kbd>View your own User Id, or provide a name to view a list of online player User Ids</kbd>" ],
-			[ "whoplaced", "<kbd>View details of who placed the current pixel being hoveredd</kbd>" ]
+			[ "whoplaced", "<kbd>View details of who placed the current pixel being hovered</kbd>" ],
 		])
 
 		// Flag emojis all sourced from openmoji.org, https://www.langoly.com/most-spoken-languages/
@@ -128,7 +128,7 @@
 			["ko", { name: "한국인", flag: "https://openmoji.org/data/color/svg/1F1F0-1F1F7.svg" }],
 			["it", { name: "Italiana", flag: "https://openmoji.org/data/color/svg/1F1EE-1F1F9.svg" }],
 			["fa", { name: "فارسی", flag: "https://openmoji.org/data/color/svg/1F1EE-1F1F7.svg", rtl: true }],
-			["sr", { name: "Српски", flag: "https://openmoji.org/data/color/svg/1F1E6-1F1F1.svg"}],
+			["nl", { name: "Nederland", flag: "https://openmoji.org/data/color/svg/1F1F3-1F1F1.svg"}],
 			["az", { name: "Azərbaycan", flag: "https://openmoji.org/data/color/svg/1F1E6-1F1FF.svg", rtl: true }],
 		])
 
@@ -798,7 +798,7 @@
 					return
 				}
 				else if (message.startsWith(":vip")) {
-					let key = message.slice(4).trim()
+					const key = message.slice(4).trim()
 					localStorage.vip = key
 					window.location.reload(true)
 					return
@@ -808,24 +808,23 @@
 					return
 				}
 				else if (message.startsWith(":getid")) {
-					let targetName = message.slice(6).trim().toLowerCase()
+					const targetName = message.slice(6).trim().toLowerCase()
 					if (!targetName) {
 						alert("Your User ID is: #" + intId)
 					}
 					else {
 						let foundUsers = `Found Users with name '${targetName}:'\n`
-						for (let pair of intIdNames) {
+						for (const pair of intIdNames) {
 							if (pair[1] === targetName) {
 								foundUsers += `${pair[1]}, #${pair[0]}\n`
 							}
 						}
-
 						alert(foundUsers)
 					}
 					return
 				}
 				else if (message.startsWith(":whoplaced")) {
-					let id = intIdPositions.get(Math.floor(x) + Math.floor(y) * WIDTH)
+					const id = intIdPositions.get(Math.floor(x) + Math.floor(y) * WIDTH)
 					if (id === undefined) {
 						alert("Could not find details of who placed pixel at current location...")
 						return
@@ -838,27 +837,46 @@
 				}
 				else if (message.startsWith(":help")) {
 					const newMessage = createLiveChatMessage(0, `
-# Chat styling:
----
-Text in rplace live chat can be styled using a simplified version of markdown, currently:
-**bold**, *italic*, ||hidden||, __underline__, and ~strikethrough~ text are supported.
+# Chat Styling Guide ✨
+Text in rplace chat can be styled using a simplified version of markdown:
+**bold**, *italic*, ||spoilers||, __underline__, \`code\` & ~strikethrough~.
+
+## Text Formatting:
+- \`**bold me**\` → **"I didn't skip leg day"**
+- \`*italize me*\` → *"whispering sweet nothings"*  
+- \`__underline me__\` → __"the terms no one read"__  
+- \`~strike me out~\` → ~~pineapple pizza is actually ok~~  
+- \`||spoil the plot||\` → ||"Bruce Willis was dead the whole time"||  
+- \`sudo rm -fr /\` → "Remove french translations for a faster PC"  
 
 ### Headers:
 Use # for a large header, ## for medium, and ### for small. Don’t forget to add a space between the leading heading character and your text!
 
 ### Separators:
-To create a separator, create a blank line (Shift + Enter on keyboard) and insert a triple dash ---.
+To create a separator, create a blank line (Shift + Enter on keyboard) and insert a triple dash \`---\`.
 
+### Extras:
+1. You can make a list by placing a dash (\`-\`) or star (\`*\`) before what you want to say.
+2. > "Block quotes (\`>\`) solve arguments"  
+   >> \\- Confucius, probably (\`>>\`)
+
+---
 
 # Chat commands:
----
-:vip, :name, :lookup, :getid, :whoplaced
+\`\`\`
+:vip        :name       :lookup
+:getid      :whoplaced
+\`\`\`
 
 ## Usage:
+\`\`\`
 :command arg1 arg2 arg3
+\`\`\`
 
 ## Example:
+\`\`\`
 :name zekiah
+\`\`\`
 (^ Will set your username to 'zekiah')`, 0, ":HELP@RPLACE.LIVE", Date.now())
 					chatMessages.insertAdjacentElement("beforeEnd", newMessage)
 					return
@@ -917,8 +935,19 @@ To create a separator, create a blank line (Shift + Enter on keyboard) and inser
 				messageInput.value = ""
 			}
 
-			messageInput.onkeydown = e => {
-				if (!e.isTrusted) return
+			call(addEventListener, messageInputGifPanel, "gifselection", function(e) {
+				const gif = e.detail
+				if (!gif) {
+					return
+				}
+				messageInputGifPanel.removeAttribute("open")
+				sendLiveChatMsg(`[gif:${gif.id}:tenor]`)
+			})
+
+			call(addEventListener, messageInput, "keydown", function(e) {
+				if (!e.isTrusted) {
+					return
+				}
 				if (e.key == "Enter" && !e.shiftKey) {
 					// ctrl + enter send as place chat, enter send as normal live chat
 					if (e.ctrlKey) sendPlaceMsg(messageInput.value)
@@ -927,7 +956,7 @@ To create a separator, create a blank line (Shift + Enter on keyboard) and inser
 					messageInput.value = ""
 					updateMessageInputHeight()
 				}
-			}
+			})
 
 			call(addEventListener, document.body, "keydown", function(e) {
 				if (!e.isTrusted) return
@@ -1060,7 +1089,7 @@ To create a separator, create a blank line (Shift + Enter on keyboard) and inser
 			}
 			requestLoadChannelPrevious = _requestLoadChannelPrevious
 			call(addEventListener, chatMessages, "scroll", () => {
-				if (chatMessages.scrollTop < 4) {
+				if (chatMessages.scrollTop < 64) {
 					if (chatPreviousAutoLoad === true && chatPreviousLoadDebounce === false) {
 						_requestLoadChannelPrevious()
 					}
@@ -1139,19 +1168,19 @@ To create a separator, create a blank line (Shift + Enter on keyboard) and inser
 	</script>
 	<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2508999262953411" crossorigin="anonymous"></script>
 	<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"></script>
-	<script type="text/javascript" src="uv.min.js"></script>
-	<script type="text/javascript" src="shared.js?v=9"></script>
+	<script type="text/javascript" src="libs/tsparticles.confetti.bundle.min.js"></script>
+	<script type="text/javascript" src="libs/canvas-snow.min.js"></script>
+	<script type="text/javascript" src="libs/uv.min.js"></script>
+	<script type="text/javascript" src="shared.js"></script>
 	<script type="text/javascript" src="event-timer.js" defer></script>
 	<script type="text/javascript" src="august21-event.js" defer></script>
 	<script type="text/javascript" src="quests.js" defer></script>
 	<script type="text/javascript" src="captcha-canvas.js"></script>
 	<script type="text/javascript" src="darkplace.js"></script>
-	<script type="text/javascript" src="canvas-snow.min.js"></script>
 	<script type="text/javascript" src="snowplace.js"></script>
 	<script type="text/javascript" src="account.js"></script>
-	<script type="text/javascript" src="tsparticles.confetti.bundle.min.js"></script>
-	<script type="module" src="shared-elements.js?v=10" defer></script>
-	<script type="module" src="live-chat-elements.js?v=2" defer></script>
+	<script type="module" src="shared-elements.js" defer></script>
+	<script type="module" src="live-chat-elements.js" defer></script>
 	<link rel="manifest" href="manifest.json">
 	<meta name="apple-mobile-web-app-capable" content="yes">
 	<link rel="apple-touch-icon" href="favicon.png">
@@ -1159,8 +1188,8 @@ To create a separator, create a blank line (Shift + Enter on keyboard) and inser
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="google-adsense-account" content="ca-pub-2508999262953411">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-	<link rel="stylesheet" href="styles.css?v=359"> <!-- Increment the CSS query, such as ?v=1.x every time CSS is changed in order to force clients to refresh their stylesheets. Otherwise broken CSS may occur -->
-	<link rel="stylesheet" href="shared.css?v=2">
+	<link rel="stylesheet" href="styles.css">
+	<link rel="stylesheet" href="shared.css">
 	<title>rplace</title>
 	<link rel="icon" type="image/x-icon" href="favicon.png">
 	<meta property="og:title" content="r/place 2"/>
@@ -1689,8 +1718,20 @@ To create a separator, create a blank line (Shift + Enter on keyboard) and inser
 					</svg>
 				</div>
 			</div>
-			<div style="display: flex; column-gap: 8px; z-index: 1;">
-				<textarea id="messageInput" onclick="openChatPanel()" type="text" placeholder="Enter message..." translate="enterMessage" enterkeyhint="send" maxlength="200"></textarea>
+			<div class="chat-bottom">
+				<div class="message-input-container">
+					<r-emoji-panel id="messageInputEmojiPanel" class="chat-bottom-panel" onclose="this.removeAttribute('open')"></r-emoji-panel>
+					<r-gif-panel id="messageInputGifPanel" class="chat-bottom-panel" onclose="this.removeAttribute('open')"></r-gif-panel>
+					<textarea id="messageInput" onclick="openChatPanel()" type="text" placeholder="Enter message..." translate="enterMessage" enterkeyhint="send" maxlength="200"></textarea>
+					<div class="message-input-actions">
+						<button type="button" title="Add emoji" onclick="messageInputEmojiPanel.toggleAttribute('open'); messageInputGifPanel.removeAttribute('open')">
+							<img alt="Add emoji" width="24" height="24" src="svg/emoji.svg" class="icon-image">
+						</button>
+						<button type="button" title="Add gif" onclick="messageInputGifPanel.toggleAttribute('open'); messageInputEmojiPanel.removeAttribute('open')">
+							<img alt="Add emoji" width="24" height="24" src="svg/gif.svg" class="icon-image">
+						</button>
+					</div>
+				</div>
 				<button class="message-options" onclick="updateMessageInputHeight(); messageTypePanel.toggleAttribute('closed')">...</button>
 			</div>
 		</div>
@@ -2488,8 +2529,13 @@ To create a separator, create a blank line (Shift + Enter on keyboard) and inser
 			return result.length === 1 ? result[0] : result
 		}
 
-		function chatMentionUser(senderId) {
+		function chatInsertText(text) {
 			const [ start, end ] = [ messageInput.selectionStart, messageInput.selectionEnd ]
+			messageInput.setRangeText(text, start, end, "end")
+			messageInput.focus()
+		}
+
+		function chatMentionUser(senderId) {
 			let mentionText = "@"
 			const identifier = intIdNames.get(senderId) || ("#" + senderId)
 			if (typeof identifier === "string") {
@@ -2498,8 +2544,7 @@ To create a separator, create a blank line (Shift + Enter on keyboard) and inser
 			else if (typeof identifier === "number") {
 				mentionText += "#" + identifier
 			}
-			messageInput.setRangeText(mentionText, start, end, "end")
-			messageInput.focus()
+			chatInsertText(mentionText)
 		}
 
 		async function chatReply(messageId, senderId) {
@@ -2589,6 +2634,9 @@ To create a separator, create a blank line (Shift + Enter on keyboard) and inser
 			const diffHeight = messageInputHeight - oldHeight
 			chatMessages.scrollBy(0, diffHeight)
 		}
+		window.addEventListener("DOMContentLoaded", () => {
+			updateMessageInputHeight()
+		})
 
 		messageInput.oninput = e => {
 			if (!e.isTrusted) return
@@ -2613,7 +2661,7 @@ To create a separator, create a blank line (Shift + Enter on keyboard) and inser
 					comp = messageInput.value[i] + comp
 				}
 			}
-			//All : already closed, they are probably not trying to do an emoji so we ignore
+			// All : already closed, they are probably not trying to do an emoji so we ignore
 			if (count % 2 == 0) comp = ""
 
 			if (comp) {
@@ -2703,6 +2751,16 @@ To create a separator, create a blank line (Shift + Enter on keyboard) and inser
 				}
 			}
 		}
+
+		messageInputEmojiPanel.addEventListener("emojiselection", (e) => {
+			messageInputEmojiPanel.removeAttribute("open")
+			if (CUSTOM_EMOJIS.has(e.detail.key)) {
+				chatInsertText(`:${e.detail.key}:`)
+			}
+			else {
+				chatInsertText(e.detail.value)
+			}
+		})
 
 		function switchGameServer(serverAddress) {
 			if (serverAddress) {
@@ -2914,6 +2972,8 @@ To create a separator, create a blank line (Shift + Enter on keyboard) and inser
 
 		function closeChatPanel() {
 			messageInput.blur()
+			messageInputEmojiPanel.removeAttribute("open")
+			messageInputGifPanel.removeAttribute("open")
 			chatPanel.removeAttribute("open")
 			chatPanel.inert = true
 		}
@@ -3052,6 +3112,7 @@ To create a separator, create a blank line (Shift + Enter on keyboard) and inser
 			cycleAd()
 		}
 
+		window.moduleExports = window.moduleExports || {};
 		window.moduleExports = {
 			...window.moduleExports,
 			get x() {
@@ -3113,6 +3174,9 @@ To create a separator, create a blank line (Shift + Enter on keyboard) and inser
 			},
 			get chatReactionsPanel() {
 				return chatReactionsPanel
+			},
+			get intId() {
+				return intId
 			}
 		}
 	</script>

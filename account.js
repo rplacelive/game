@@ -75,6 +75,7 @@ function dispatchAccountEvent(eventName, detail = {}) {
 	window.dispatchEvent(event)
 }
 
+window.moduleExports = window.moduleExports || {};
 window.moduleExports = {
 	...window.moduleExports,
 	get openAccountFrame() {
