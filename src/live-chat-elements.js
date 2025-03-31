@@ -4,10 +4,13 @@ import { until } from "lit/directives/until.js"
 import { unsafeHTML } from "lit/directives/unsafe-html.js"
 import { Marked } from "marked"
 import DOMPurify from "dompurify"
+import { CHAT_COLOURS, EMOJIS, CUSTOM_EMOJIS } from "./defaults.js"
+import { sanitise, translate, hash, $ } from "./shared.js"
+import { intIdNames } from "./game-state.js"
+import { chatReport, chatReact } from "./wscapsule.js"
+import { chatMentionUser, chatModerate, chatReply, cMessages, currentChannel, onChatContext, pos, x ,y } from "./index.js"
 
-var { cMessages, currentChannel, chatMessages, x, y, pos, chatMentionUser, onChatContext, chatReply, chatReport, chatModerate, chatReactionsPanel, CHAT_COLOURS, hash, chatReact, EMOJIS, CUSTOM_EMOJIS, intIdNames, translate, sanitise } = window.moduleExports
-
-class LiveChatMessage extends LitElement {
+export class LiveChatMessage extends LitElement {
 	static properties = {
 		messageId: { type: Number, reflect: true, attribute: "messageid" },
 		senderId: { type: String, reflect: true, attribute: "senderid" },
@@ -26,9 +29,9 @@ class LiveChatMessage extends LitElement {
 		this.senderId = null
 		this.name = null
 		this.sendDate = null
-		/** @type {LiveChatMessage|null} */ this.repliesTo = null
+		/**@type {number|null}*/this.repliesTo = null
 		this.content = null
-		/** @type {Map<string, Set<number>>|null} */ this.reactions = null
+		/**@type {Map<string, Set<number>>|null}*/ this.reactions = null
 		this.replyingMessage = null
 		this.openedReactionDetails = ""
 		this.addEventListener("contextmenu", this.#handleContextMenu)
@@ -280,7 +283,7 @@ class LiveChatMessage extends LitElement {
 			}
 
 			const href = `${window.location.pathname}?x=${x}&y=${y}`
-			parts.push(html`<a href="${href}" @click=${(e) => 
+			parts.push(html`<a href="${href}" @click=${(/**@type {MouseEvent}*/e) => 
 				this.#handleCoordinateClick(e, parseInt(x, 10), parseInt(y, 10))}>${x},${y}</a>`)
 
 			lastIndex = startIndex + fullMatch.length
@@ -294,28 +297,37 @@ class LiveChatMessage extends LitElement {
 		return html`${parts}`
 	}
 
+	/**
+	 * @returns {{ name: string; content: string; fake?: boolean } | null}
+	 */
 	#findReplyingMessage() {
 		if (!cMessages.has(currentChannel)) {
-			return { name: "[ERROR]", content: "Channel not found", fake: true }
+			return { name: "[ERROR]", content: "Channel not found", fake: true };
 		}
-		
-		const message = cMessages.get(currentChannel).find(msg => msg.messageId === this.repliesTo)
-		translate("messageNotFound").then(translated => message.content = translated) // TODO: Sus
-		return message || {
-			name: "[?????]",
-			content: "...",
-			fake: true
+
+		const message = cMessages.get(currentChannel)?.find(msg => msg.messageId === this.repliesTo)
+		if (!message) {
+			const fakeMessage = {
+				name: "[ERROR]",
+				content: "...",
+				fake: true
+			};
+			translate("messageNotFound").then(translated => fakeMessage.content = translated);
+			return fakeMessage;
 		}
+
+		return message;
 	}
 	
 	#scrollToReply() {
-		if (!this.replyingMessage || this.replyingMessage.fake || !chatMessages) {
+		if (!this.replyingMessage || this.replyingMessage.fake) {
 			return
 		}
 
-		this.replyingMessage.setAttribute("highlight", "true")
-		setTimeout(() => this.replyingMessage.removeAttribute("highlight"), 500)
-		this.replyingMessage.scrollIntoView({ behavior: "smooth", block: "nearest" })
+		const reply = /**@type {LiveChatMessage}*/(this.replyingMessage);
+		reply.setAttribute("highlight", "true");
+		setTimeout(() => reply.removeAttribute("highlight"), 500);
+		reply.scrollIntoView({ behavior: "smooth", block: "nearest" });
 	}
 
 	/**
@@ -324,62 +336,68 @@ class LiveChatMessage extends LitElement {
 	 * @param {number} newY 
 	 */
 	#handleCoordinateClick(e, newX, newY) {
-		e.preventDefault()
-		const params = new URLSearchParams(window.location.search)
-		params.set("x", x)
-		params.set("y", y)
-		const newUrl = `${window.location.pathname}?${params.toString()}`
-		window.history.pushState({}, "", newUrl)
-		pos(newX, newY)
+		e.preventDefault();
+		const params = new URLSearchParams(window.location.search);
+		params.set("x", String(x));
+		params.set("y", String(y));
+		const newUrl = `${window.location.pathname}?${params.toString()}`;
+		window.history.pushState({}, "", newUrl);
+		pos(newX, newY);
 	}
 
 	#handleNameClick() {
 		if (this.messageId > 0) {
-			chatMentionUser(this.senderId)
+			chatMentionUser(this.senderId);
 		}
 	}
 	
-	#handleContextMenu(/**@type {Event}*/e) {
-		e.preventDefault()
+	#handleContextMenu(/**@type {MouseEvent}*/e) {
+		e.preventDefault();
 		if (this.messageId > 0) {
-			onChatContext(e, this.senderId, this.messageId)
+			onChatContext(e, this.senderId, this.messageId);
 		}
 	}
 	
 	#handleReply() {
-		chatReply(this.messageId, this.senderId)
+		chatReply(this.messageId, this.senderId);
 	}
 	
 	#handleReport() {
-		chatReport(this.messageId, this.senderId)
+		if (chatReport) {
+			chatReport(this.messageId, this.senderId);
+		}
 	}
 	
 	#handleModerate() {
-		chatModerate("delete", this.senderId, this.messageId, this)
+		chatModerate("delete", this.senderId, this.messageId, this);
 	}
 
 	#handleReact() {
 		// Open react panel singleton element
-		chatReactionsPanel.setAttribute("open", "true")
+		const chatReactionsPanel = /**@type {HTMLElement}*/($("#chatReactionsPanel"));
+		chatReactionsPanel.setAttribute("open", "true");
 		
-		const bounds = this.getBoundingClientRect()
-		const panelHeight = chatReactionsPanel.offsetHeight
-		const viewportHeight = window.innerHeight
-		const topPosition = Math.min(bounds.y, viewportHeight - panelHeight - 8) // Ensure it stays on screen
+		const bounds = this.getBoundingClientRect();
+		const panelHeight = chatReactionsPanel.offsetHeight;
+		const viewportHeight = window.innerHeight;
+		const topPosition = Math.min(bounds.y, viewportHeight - panelHeight - 8); // Ensure it stays on screen
 	
 		// Apply position
-		chatReactionsPanel.style.right = "8px"
-		chatReactionsPanel.style.top = `${Math.max(8, topPosition)}px` // Ensure it doesn't go off the top
+		chatReactionsPanel.style.right = "8px";
+		chatReactionsPanel.style.top = `${Math.max(8, topPosition)}px`; // Ensure it doesn't go off the top
 	
+		// @ts-expect-error
 		chatReactionsPanel.addEventListener("emojiselection", (/**@type {CustomEvent}*/e) => {
-			this.#onReactEmojiSelected(e)
-			chatReactionsPanel.removeAttribute("open")
+			this.#onReactEmojiSelected(e);
+			chatReactionsPanel.removeAttribute("open");
 		})
 	}
 
 	#onReactEmojiSelected(/**@type {CustomEvent}*/e) {
-		const { key } = e.detail
-		chatReact(this.messageId, key)
+		const { key } = e.detail;
+		if (chatReact) {
+			chatReact(this.messageId, key);
+		}
 	}
 	
 	#renderName() {

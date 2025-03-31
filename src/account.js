@@ -1,6 +1,7 @@
-/* eslint-disable jsdoc/require-jsdoc */
+import { DEFAULT_AUTH, makeRequest } from "./shared.js"
+
 // Injects the iframe containing the account.html page into the DOM
-function openAccountFrame(page=null, unauthed=null) {
+export function openAccountFrame(page=null, unauthed=null) {
 	const topWindow = window.top
 	if (!topWindow) {
 		console.error("Couldn't open account frame: Unable to access top-level window")
@@ -29,7 +30,7 @@ function openAccountFrame(page=null, unauthed=null) {
 }
 
 // Removes the iframe containing the account.html page from the DOM
-function closeAccountFrame() {
+export function closeAccountFrame() {
 	const topWindow = window.top
 	if (!topWindow) {
 		console.error("Couldn't close account frame: Unable to access top-level window")
@@ -43,7 +44,7 @@ function closeAccountFrame() {
 }
 
 // Fetches account details of the currently logged in account
-async function getAccount() {
+export async function getAccount() {
 	const result = await makeRequest(`${localStorage.auth || DEFAULT_AUTH}/accounts/me`)
 
 	if (result.status === "success") {
@@ -66,28 +67,11 @@ async function getAccount() {
  * @param {string} eventName Name of account event, i.e account-login, account-logout
  * @param {object} detail Associated event metadata
  */
-function dispatchAccountEvent(eventName, detail = {}) {
+export function dispatchAccountEvent(eventName, detail = {}) {
 	const event = new CustomEvent(eventName, {
 		detail,
 		bubbles: true,
 		composed: true
 	})
 	window.dispatchEvent(event)
-}
-
-window.moduleExports = window.moduleExports || {};
-window.moduleExports = {
-	...window.moduleExports,
-	get openAccountFrame() {
-		return openAccountFrame
-	},
-	get closeAccountFrame() {
-		return closeAccountFrame
-	},
-	get getAccount() {
-		return getAccount
-	},
-	get dispatchAccountEvent() {
-		return dispatchAccountEvent
-	}
 }

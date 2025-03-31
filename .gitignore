@@ -30,3 +30,6 @@ placers
 # Logs
 *.pxpslog.txt
 modlog.txt
+
+# Build
+dist/

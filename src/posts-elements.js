@@ -1,11 +1,10 @@
 import { LitElement, html } from "lit-element"
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
+import { markdownParse, sanitise, DEFAULT_AUTH, cachedFetch } from "./shared.js";
 
-var { DEFAULT_AUTH, markdownParse, sanitise, cachedFetch } = window.moduleExports
 const fuzzyNumberFormat = new Intl.NumberFormat(navigator.language, { notation: "compact" })
 
-
-class Post extends LitElement {
+export class Post extends LitElement {
 	static properties = {
 		title: { type: String, attribute: "title" },
 		description: { type: String, attribute: "description" },
@@ -368,7 +367,7 @@ class UserTooltip extends LitElement {
 }
 customElements.define("r-user-tooltip", UserTooltip)
 
-class CreatePostContent extends HTMLElement {
+export class CreatePostContent extends HTMLElement {
 	#fileThumbnail
 	#deleteButton
 	#deleteEvent
@@ -418,7 +417,7 @@ class CreatePostContent extends HTMLElement {
 }
 customElements.define("r-create-post-content", CreatePostContent)
 
-class CreatePostContentsPreview extends HTMLElement {
+export class CreatePostContentsPreview extends HTMLElement {
 	#contents
 	#maxContents
 	#uploadLabel

@@ -1596,6 +1596,9 @@ r-live-chat-message .reactor {
 	min-height: 120px;
 	padding: 0;
 }
+.context-panel, .context-panel * {
+	touch-action: pan-y;
+}
 .context-panel[open] {
 	display: block;
 }

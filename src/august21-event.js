@@ -1,3 +1,5 @@
+import { startCountDown, toCountdownString } from "./event-timer.js"
+
 // Show game popup
 function isTodayAugust21st() {
 	const now = new Date()
@@ -16,10 +18,15 @@ function getNextAugust21st() {
 	return august21st.getTime()
 }
 
-function enableAugust21() {
+export function enableAugust21() {
 	const eventDate = isTodayAugust21st() ? Date.now() : getNextAugust21st()
-	const popup = document.getElementById("popup")
-	popup.showModal()
+	
+	const popup = /**@type {HTMLDialogElement}*/(document.getElementById("popup"));
+	const august21PopupTimer = /**@type {HTMLElement}*/(document.getElementById("august21PopupTimer"));
+	const august21PopupLabel = /**@type {HTMLElement}*/(document.getElementById("august21PopupLabel"));
+	const august21PopupButton = /**@type {HTMLElement}*/(document.getElementById("august21PopupButton"));
+
+	popup.showModal();
 
 	setInterval(() => {
 		august21PopupTimer.textContent = ` (${toCountdownString(eventDate)})`

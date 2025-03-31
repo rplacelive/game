@@ -1,9 +1,7 @@
 import { LitElement, html } from "lit-element"
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { until } from "lit/directives/until.js"
-
-var { DEFAULT_SERVER, EMOJIS, CUSTOM_EMOJIS } = window.moduleExports
-
+import { EMOJIS, CUSTOM_EMOJIS } from "./defaults.js";
+import { DEFAULT_SERVER, translate } from "./shared.js";
 
 class Spoiler extends HTMLElement {
 	constructor() {
@@ -92,15 +90,17 @@ class Gif extends LitElement {
 	}
 }
 
-customElements.define('r-gif', Gif);
+customElements.define("r-gif", Gif);
   
 class PostCopy extends HTMLElement {
 	constructor() {
 		super()
 	}
+
 	static get observedAttributes() {
 		return ["href"]
 	}
+
 	async connectedCallback() {
 		const clipbardSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg")
 		clipbardSvg.setAttribute("viewBox", "0 0 48 48")
@@ -119,12 +119,16 @@ class PostCopy extends HTMLElement {
 
 		this.addEventListener("click", (event) => {
 			const source = this.getAttribute("href")
-			event.stopPropagation()
-			navigator.clipboard.writeText(source)
+			if (!source) {
+				return;
+			}
+
+			event.stopPropagation();
+			navigator.clipboard.writeText(source);
 			copyStatusSpan.animate([
 				{ opacity: 1 },
 				{ scale: 1.1 }
-			], { duration: 1000, iterations: 1, })
+			], { duration: 1000, iterations: 1, });
 		})
 	}
 }
@@ -171,7 +175,6 @@ class EmojiPanel extends LitElement {
 		}
 	}
 
-	// @ts-expect-error Remove shadow DOM by using element itself as the shadowroot
 	createRenderRoot() {
 		return this
 	}
@@ -295,7 +298,7 @@ class GifPanel extends LitElement {
 		try {
 			const params = new URLSearchParams();
 			params.set("q", encodeURIComponent(searchTerm));
-			params.set("limit", limit);
+			params.set("limit", String(limit));
 			if (next) {
 				params.set("pos", next);
 			}
@@ -441,7 +444,6 @@ class CanvasShareEmbed extends LitElement {
 		this.canvasInfo = null
 	}
 
-	// @ts-expect-error Disable shadow DOM to inherit global CSS
 	createRenderRoot() {
 		return this
 	}

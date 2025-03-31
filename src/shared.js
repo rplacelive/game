@@ -1,15 +1,10 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable jsdoc/require-jsdoc */
-/* eslint-disable @typescript-eslint/no-this-alias */
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-// @ts-nocheck
 // Contains shared resources across pages
-const DEFAULT_SERVER = "wss://server.rplace.live:443"
-const DEFAULT_BOARD = "https://raw.githubusercontent.com/rplacetk/canvas1/main/place"
-const DEFAULT_AUTH = "https://server.rplace.live/auth"
+export const DEFAULT_SERVER = "wss://server.rplace.live:443"
+export const DEFAULT_BOARD = "https://raw.githubusercontent.com/rplacetk/canvas1/main/place"
+export const DEFAULT_AUTH = "https://server.rplace.live/auth"
 
-const BADGE_ICONS = [ "badges/based.svg", "badges/trouble_maker.svg", "badges/veteran.svg", "badges/admin.svg", "badges/moderator.svg", "badges/noob.svg", "badges/script_kiddie.svg", "badges/ethical_botter.svg", "badges/gay.svg", "badges/discord_member.svg", "badges/100_pixels_placed", "badges/1000_pixels_placed", "badges/5000_pixels_placed", "badges/2000_pixels_placed", "badges/100000_pixels_placed", "badges/1000000_pixels_placed" ]
-const ACCOUNT_TIER_NAMES = {
+export const BADGE_ICONS = [ "badges/based.svg", "badges/trouble_maker.svg", "badges/veteran.svg", "badges/admin.svg", "badges/moderator.svg", "badges/noob.svg", "badges/script_kiddie.svg", "badges/ethical_botter.svg", "badges/gay.svg", "badges/discord_member.svg", "badges/100_pixels_placed", "badges/1000_pixels_placed", "badges/5000_pixels_placed", "badges/2000_pixels_placed", "badges/100000_pixels_placed", "badges/1000000_pixels_placed" ]
+export const ACCOUNT_TIER_NAMES = {
 	0: "accountTierFree",
 	1: "accountTierBronze",
 	2: "accountTierSilver",
@@ -18,7 +13,7 @@ const ACCOUNT_TIER_NAMES = {
 	16: "accountTierAdministrator"
 }
 
-const TRANSLATIONS = {
+export const TRANSLATIONS = {
 	en: {
 		// Game
 		connecting: "Connecting...",
@@ -98,8 +93,7 @@ const TRANSLATIONS = {
 		"auth.link.invalidKey": "Invalid or expired link key"
 	}
 }
-
-const lang = navigator.language.split("-")[0]
+export const lang = navigator.language.split("-")[0]
 
 const TRANSLATION_EXPIRY = 3 * 24 * 60 * 60 * 1000 // 3 days
 function openTranslationDB() {
@@ -165,7 +159,7 @@ async function fetchTranslations(lang) {
 	}
 }
 
-async function translate(key) {
+export async function translate(key) {
 	let translations = TRANSLATIONS[lang]
 	if (!translations) {
 		translations = await fetchTranslations(lang)
@@ -173,7 +167,7 @@ async function translate(key) {
 	return translations?.[key] ?? TRANSLATIONS["en"]?.[key] ?? key
 }
 
-async function translateAll() {
+export async function translateAll() {
 	let translations = TRANSLATIONS[lang]
 	if (!translations) {
 		translations = await fetchTranslations(lang)
@@ -199,7 +193,7 @@ async function translateAll() {
 // Preload default language translations
 fetchTranslations(lang)
 
-class PublicPromise {
+export class PublicPromise {
 	constructor() {
 		this.promise = new Promise((resolve, reject) => {
 			this.resolve = resolve
@@ -208,7 +202,7 @@ class PublicPromise {
 	}
 }
 
-class PublicPromiseSync {
+export class PublicPromiseSync {
 	locked
 	resolve
 	reject
@@ -238,7 +232,7 @@ class PublicPromiseSync {
 	}
 }
 
-function sanitise(txt) {
+export function sanitise(txt) {
 	return txt
 		.replaceAll(/&/g,"&amp;")
 		.replaceAll(/</g,"&lt;")
@@ -246,7 +240,7 @@ function sanitise(txt) {
 		.replace(/\?|javascript:/gi, "")
 }
 
-function markdownParse(text) {
+export function markdownParse(text) {
 	// Headers
 	text = text.replace(/^(#{3}\s)(.+)/gm, (match, p1, p2) => {
 		return `<h3>${p2}</h3>`
@@ -328,7 +322,7 @@ function setCachedData(storeName, data) {
 
 // Responsible for setting and retrieving form DB, will attempt to grab the object from the DB, if it can't
 // it will grab the object from the URL and then cache it in the database
-async function cachedFetch(keystore, id, url, expiry) {
+export async function cachedFetch(keystore, id, url, expiry) {
 	const now = Date.now()
 	let cachedObject = await getCachedData(keystore, id)
 	if (!cachedObject || (now - cachedObject.timestamp) > expiry) {
@@ -348,7 +342,7 @@ async function cachedFetch(keystore, id, url, expiry) {
 	return cachedObject
 }
 
-async function makeRequest(url, method = "GET", body = undefined) {
+export async function makeRequest(url, method = "GET", body = undefined) {
 	try {
 		const fetchOptions = {
 			method,
@@ -373,43 +367,62 @@ async function makeRequest(url, method = "GET", body = undefined) {
 	}
 }
 
-function handleFormSubmit(form, endpoint, { bind, checkCustomValidity, preRequest, onSuccess, onError }) {
+/**
+ * Handles form submission and processes the response.
+ * 
+ * @param {HTMLFormElement} form - The form element to attach the submit handler to.
+ * @param {string} endpoint - The API endpoint to send the form data to.
+ * @param {Object} [options] - Optional parameters.
+ * @param {(elements: HTMLFormControlsCollection) => any} [options.bind] - Binds and transforms form data before submission.
+ * @param {(elements: HTMLFormControlsCollection) => boolean | Promise<boolean>} [options.checkCustomValidity] - A custom validity check that can be async.
+ * @param {() => void | Promise<void>} [options.preRequest] - Callback invoked before sending the request.
+ * @param {(data: any) => void | Promise<void>} [options.onSuccess] - Callback invoked if the request is successful.
+ * @param {(data: any) => void | Promise<void>} [options.onError] - Callback invoked if the request returns an error.
+ */
+export function handleFormSubmit(form, endpoint, { bind, checkCustomValidity, preRequest, onSuccess, onError } = {}) {
 	form.addEventListener("submit", async function (e) {
 		e.preventDefault()
 		const elements = form.elements
 
+		// Check form validity
 		if (!form.checkValidity()) {
 			form.reportValidity()
 			return
 		}
-		if (typeof checkCustomValidity === "function" && !await checkCustomValidity(elements)) {
+		// Custom validity check if provided
+		if (typeof checkCustomValidity === "function" && !(await checkCustomValidity(elements))) {
 			return
 		}
 
 		let formData = Object.fromEntries(new FormData(form).entries())
+
+		// Transform data using bind if provided
 		if (typeof bind === "function") {
 			formData = bind(elements)
 		}
-		if (typeof before === "function") {
+		// Invoke preRequest if provided
+		if (typeof preRequest === "function") {
 			await preRequest()
 		}
-		const result = await makeRequest(endpoint, "POST", formData)
-		if (result.status === "success" && typeof onSuccess === "function") {
 
+		// Make request to the endpoint
+		const result = await makeRequest(endpoint, "POST", formData)
+
+		// Handle success or error
+		if (result.status === "success" && typeof onSuccess === "function") {
 			await onSuccess(result.data)
-			return
 		}
 		else if (result.status === "error" && typeof onError === "function") {
 			await onError(result.data)
-			return
 		}
 	})
 }
 
+
 // Cross-frame IPC system
 let frameReqId = 0
 let frameReqs = new Map()
-async function makeCrossFrameRequest(frameEl, messageCall, args = undefined) {
+export async function makeCrossFrameRequest(frameEl, messageCall, args = undefined) {
 	const handle = frameReqId++
 	const promise = new PublicPromise()
 	const postCall = { 
@@ -422,7 +435,7 @@ async function makeCrossFrameRequest(frameEl, messageCall, args = undefined) {
 	frameEl.contentWindow.postMessage(postCall, location.origin)
 	return await promise.promise
 }
-function sendCrossFrameMessage(frameEl, messageCall, args = undefined) {
+export function sendCrossFrameMessage(frameEl, messageCall, args = undefined) {
 	frameEl.contentWindow.postMessage({ 
 		call: messageCall, 
 		data: args,
@@ -478,31 +491,43 @@ window.addEventListener("message", async function(event) {
 	}
 })
 
-window.moduleExports = window.moduleExports || {};
-window.moduleExports = {
-	...window.moduleExports,
-	get DEFAULT_SERVER() {
-		return DEFAULT_SERVER
-	},
-	get DEFAULT_BOARD() {
-		return DEFAULT_BOARD
-	},
-	get DEFAULT_AUTH() {
-		return DEFAULT_AUTH
-	},
-	get markdownParse() {
-		return markdownParse
-	},
-	get sanitise() {
-		return sanitise
-	},
-	get cachedFetch() {
-		return cachedFetch
-	},
-	get translate() {
-		return translate
-	},
-	get translateAll() {
-		return translateAll
+/**
+ * @param {string} text - The input string to be hashed
+ * @returns {number} The resulting hash value
+ */
+export function hash(text) {
+	return text
+		.split("")
+		.reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) >>> 0, 0)
+}
+
+/**
+ * @param {string} selector - The CSS selector to query for
+ * @returns {Element} The selected element
+ */
+export const $ = (selector) => {
+	const element = document.querySelector(selector);
+	if (!element) {
+		throw new Error(`Element not found for selector: ${selector}`);
 	}
+	return element;
+}
+
+/**
+ * @param {string} selector - The CSS selector to query for
+ * @returns {NodeList} A NodeList of the selected elements
+ */
+export const $$ = (selector) => {
+	return document.querySelectorAll(selector);
+}
+
+/**
+ * @param {string} html
+ * @returns {HTMLElement}
+ */
+export function stringToHtml(html, trim = true) {
+	const template = document.createElement("template")
+	template.innerHTML = html
+	const result = template.content.children
+	return /**@type {HTMLElement}*/(result.length === 1 ? result[0] : result)
 }

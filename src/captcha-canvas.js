@@ -1,7 +1,7 @@
 //@ts-nocheck
 let captchaCanvasHandle = null
 
-function updateImgCaptchaCanvas(imageData) {
+export function updateImgCaptchaCanvas(imageData) {
 	const ctx = setTargetCanvas(captchaCanvas)
 	const patternImg = Texture().fromSrc("./images/pattern.png", _, REPEAT | MIPMAPS | UPSCALE_PIXELATED)
 	const img = Texture()
@@ -100,7 +100,7 @@ function updateImgCaptchaCanvas(imageData) {
 	captchaCanvasHandle = requestAnimationFrame(drawCaptcha)
 }
 
-function updateImgCaptchaCanvasFallback(imageData) {
+export function updateImgCaptchaCanvasFallback(imageData) {
 	const ctx = captchaCanvas.getContext("2d")
 	captchaCanvas.width = captchaPopup.offsetWidth
 	captchaCanvas.height = captchaPopup.offsetHeight
@@ -146,7 +146,7 @@ function updateImgCaptchaCanvasFallback(imageData) {
 	}
 }
 
-function clearCaptchaCanvas() {
+export function clearCaptchaCanvas() {
 	window.cancelAnimationFrame(captchaCanvasHandle)
 	captchaCanvasHandle = null
 }

@@ -83,6 +83,6 @@ questsFrame.addEventListener("load", function() {
 	}
 })
 
-function closeQuestsFrame() {
+export function closeQuestsFrame() {
 	questsFrame.style.display = "none"
 }

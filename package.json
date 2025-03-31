@@ -14,10 +14,13 @@
 		"serve": "vite preview"
 	},
 	"dependencies": {
+		"@cycjimmy/canvas-snow": "^3.0.3",
+		"@tsparticles/confetti": "^3.8.1",
 		"dompurify": "^3.2.4",
 		"lit": "^3.2.1",
 		"lit-element": "^4.1.1",
 		"lit-html": "^3.2.1",
-		"marked": "^15.0.7"
+		"marked": "^15.0.7",
+		"vite-plugin-static-copy": "^2.3.0"
 	}
 }
