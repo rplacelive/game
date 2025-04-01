@@ -1253,15 +1253,13 @@ export function setSize(w, h = w) {
 				break;
 		}
 	}
-	onWindowResize();
+	onMainContentResize();
 }
 
-function onWindowResize() {
-	minZoom = Math.min(innerWidth / canvas.width, mainContent.offsetHeight / canvas.height) / 100
-	pos()
+function onMainContentResize() {
+	minZoom = Math.min(innerWidth / canvas.width, mainContent.offsetHeight / canvas.height) / 100;
+	pos();
 }
-
-window.addEventListener("resize", onWindowResize);
 
 // Mouse input handling
 export let lastMouseMove = 0
@@ -3024,11 +3022,17 @@ function closeChatPanel() {
 closeChatPanel()
 
 // Close button / space filler transition to posts view
+const mainContentObserver = new ResizeObserver((entries) => {
+	onMainContentResize();
+});
+mainContentObserver.observe(mainContent);
+
 closeButton.addEventListener("click", function() {
 	modal.close();
 	closeChatPanel();
 	document.body.id = "out";
-	onWindowResize();
+	onMainContentResize();
+	// TODO: CanvParent / CanvParent2 don't respect transition due to requiring window resize
 })
 
 spaceFiller.addEventListener("click", function() {
@@ -3036,7 +3040,7 @@ spaceFiller.addEventListener("click", function() {
 		return;
 	}
 	document.body.id = "";
-	onWindowResize();
+	onMainContentResize();
 })
 
 /**
