@@ -306,19 +306,19 @@ r-close-icon {
 	cursor: pointer;
 }
 
-mute-button {
+#muteButton {
 	bottom: -2px;
 	left: -6px;
 }
 
-place-chat-button {
+#placeChatButton {
 	bottom: -2px;
 	right: -6px;
 	margin-left: -36px; /* HACK: Until how to centre the middle select can be figured out */
 	width: 72px !important
 }
 
-place-chat-button > img {
+#placeChatButton > img {
 	position: absolute;
 	left: 50%;
 	transform: translateX(-50%);
@@ -1261,7 +1261,7 @@ kbd {
 #channelDropParent[open] > #channelDrop {
 	display: block;
 }
-#channelDropParent[open] > svg {
+#channelDropParent[open] > .channel-button > svg {
 	transform: rotate(180deg);
 }
 

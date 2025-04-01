@@ -6,9 +6,7 @@ import { Marked } from "marked"
 import DOMPurify from "dompurify"
 import { CHAT_COLOURS, EMOJIS, CUSTOM_EMOJIS } from "./defaults.js"
 import { sanitise, translate, hash, $ } from "./shared.js"
-import { intIdNames } from "./game-state.js"
-import { chatReport, chatReact } from "./wscapsule.js"
-import { chatMentionUser, chatModerate, chatReply, cMessages, currentChannel, onChatContext, pos, x ,y } from "./index.js"
+import { chatMentionUser, chatModerate, chatReply, cMessages, currentChannel, onChatContext, pos, x, y, intIdNames, chatReport, chatReact } from "./index.js"
 
 export class LiveChatMessage extends LitElement {
 	static properties = {
@@ -363,9 +361,7 @@ export class LiveChatMessage extends LitElement {
 	}
 	
 	#handleReport() {
-		if (chatReport) {
-			chatReport(this.messageId, this.senderId);
-		}
+		chatReport(this.messageId, this.senderId);
 	}
 	
 	#handleModerate() {

@@ -1,8 +1,8 @@
 import { forceTheme } from "./index.js";
 
-/**@type {Set<any>}*/ let fallingMessages;
-/**@type {Timer}*/let fallingMessageInterval;
-/**@type {HTMLCanvasElement}*/let backgroundCanvas;
+/**@type {Set<any>|null}*/ let fallingMessages = null;
+/**@type {Timer|null}*/let fallingMessageInterval = null;
+/**@type {HTMLCanvasElement|null}*/let backgroundCanvas = null;
 
 export async function enableDarkplace() {
 	forceTheme("r/place 2022", "dark")

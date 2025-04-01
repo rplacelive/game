@@ -1,11 +1,909 @@
-import { ADS, AUDIOS, CHAT_COLOURS, COMMANDS, CUSTOM_EMOJIS, DEFAULT_HEIGHT, DEFAULT_PALETTE_KEYS, DEFAULT_THEMES, DEFAULT_WIDTH, EMOJIS, LANG_INFOS, MAX_CHANNEL_MESSAGES, MUTED_SVG, PUNISHMENT_STATE, UNMUTED_SVG } from "./defaults.js"
-import { canvasLocked, cooldownEndDate, chatName, HEIGHT, initialConnect, intId, intIdNames, intIdPositions, PALETTE, PALETTE_USABLE_REGION, WIDTH } from "./game-state.js"
-import { requestLoadChannelPrevious, requestPixelPlacers, wscapsule, tryPutPixel, sendLiveChatMsg, sendPlaceChatMsg } from "./wscapsule.js"
+import { ADS, AUDIOS, CHAT_COLOURS, COMMANDS, CUSTOM_EMOJIS, DEFAULT_HEIGHT, DEFAULT_PALETTE_KEYS, DEFAULT_THEMES, DEFAULT_WIDTH, EMOJIS, LANG_INFOS, MAX_CHANNEL_MESSAGES, PUNISHMENT_STATE, DEFAULT_PALETTE_USABLE_REGION, DEFAULT_PALETTE, DEFAULT_COOLDOWN } from "./defaults.js"
 import { DEFAULT_BOARD, DEFAULT_SERVER, lang, PublicPromise, translate, translateAll, hash, $, $$, stringToHtml } from "./shared.js"
-import { showLoadingScreen } from "./loading-screen.js"
+import { showLoadingScreen, hideLoadingScreen } from "./loading-screen.js"
 import { enableDarkplace, disableDarkplace } from "./darkplace.js"
 import { enableWinter, disableWinter } from "./snowplace.js"
 import { clearCaptchaCanvas, updateImgCaptchaCanvas, updateImgCaptchaCanvasFallback } from "./captcha-canvas.js"
+
+// Ws Capsule
+if(!("subtle" in (window.crypto || {}))) {
+	location.protocol = "https:"
+}
+const automated = navigator.webdriver
+
+// Types
+/**
+ * @typedef {Object} LiveChatMessage
+ * @property {number} messageId
+ * @property {string} txt
+ * @property {number} senderIntId
+ * @property {string} name
+ * @property {number} sendDate
+ * @property {Map<string, Set<number>>} reactions
+ * @property {string} channel
+ * @property {number|null} repliesTo
+ */
+/**
+ * @typedef {Object} PlaceChatMessage
+ * @property {number} msgPos
+ * @property {string} txt
+ * @property {number} senderIntId
+ * @property {string} name
+ */
+/**
+ * @typedef {Object} ChatPacket
+ * @property {"live"|"place"} type
+ * @property {LiveChatMessage|PlaceChatMessage} message
+ * @property {string} [channel] - Only present for live chat
+ */
+/**
+ * @typedef {Object} LiveChatHistoryPacket
+ * @property {number} fromMessageId
+ * @property {number} count
+ * @property {boolean} before
+ * @property {string} channel
+ * @property {LiveChatMessage[]} messages
+ */
+/**
+ * @typedef {Object} ModerationPacket
+ * @property {number} state - The punishment state (mute/ban)
+ * @property {number} startDate - Timestamp in milliseconds
+ * @property {number} endDate - Timestamp in milliseconds
+ * @property {string} reason - Reason for punishment
+ * @property {string} appeal - Appeal status text
+ */
+
+
+// Utilities
+const encoder = new TextEncoder()
+const decoder = new TextDecoder()
+
+// csrfstate not used at the moment, may be later to encode some extra info for client
+let params = new URLSearchParams(location.search);
+let csrfState = params.get("state");
+let redditOauthCode = params.get("code");
+let boardParam = params.get("board");
+let serverParam = params.get("server");
+
+if (boardParam && serverParam) {
+	if (localStorage.server != serverParam || localStorage.board != boardParam) {
+		localStorage.server = serverParam
+		localStorage.board = boardParam
+		history.pushState(null, "", location.origin)
+		window.location.reload()
+	}
+}
+
+// Register PWA Service worker
+if ("serviceWorker" in navigator) {
+	navigator.serviceWorker.register("./sw.js", {
+		type: "module",
+	});
+}
+
+// HTML Elements
+const postsFrame = /**@type {HTMLIFrameElement}*/($("#postsFrame"));
+const more = /**@type {HTMLElement}*/$("#more");
+const spaceFiller = /**@type {HTMLElement}*/($("#spaceFiller"));
+const mainContent = /**@type {HTMLElement}*/($("#maincontent"));
+const canvParent1 = /**@type {HTMLElement}*/($("#canvparent1"));
+const canvParent2 = /**@type {HTMLElement}*/($("#canvparent2"));
+const canvSelect = /**@type {HTMLElement}*/($("#canvselect"));
+const canvas = /**@type {HTMLCanvasElement}*/($("#canvas"));
+const colours = /**@type {HTMLElement}*/($("#colours"));
+const modal = /**@type {HTMLDialogElement}*/($("#modal"));
+const modalInstall = /**@type {HTMLButtonElement}*/($("#modalInstall"));
+const templateImage = /**@type {HTMLImageElement}*/($("#templateImage"));
+const overlayMenu = /**@type {HTMLElement}*/($("#overlayMenu"));
+const posEl = /**@type {HTMLElement}*/($("#posel"));
+const idPosition = /**@type {HTMLElement}*/($("#idPosition"));
+const onlineCounter = /**@type {HTMLElement}*/($("#onlineCounter"));
+const canvasLock = /**@type {HTMLElement}*/($("#canvasLock"));
+const namePanel = /**@type {HTMLElement}*/($("#namePanel"));
+const muteButton = /**@type {HTMLButtonElement}*/($("#muteButton"));
+const muteButtonImage = /**@type {HTMLImageElement}*/($("#muteButtonImage"));
+const placeChatButton = /**@type {HTMLButtonElement}*/($("#placeChatButton"));
+const placeChatButtonImage = /**@type {HTMLImageElement}*/($("#placeChatButtonImage"));
+const placeButton = /**@type {HTMLButtonElement}*/($("#place")); 
+const placeOkButton = /**@type {HTMLButtonElement}*/($("#pok"));
+const placeCancelButton = /**@type {HTMLButtonElement}*/($("#pcancel"));
+const palette = /**@type {HTMLElement}*/($("#palette"));
+const channelDrop = /**@type {HTMLElement}*/($("#channelDrop"));
+const channelDropParent = /**@type {HTMLElement}*/($("#channelDropParent"));
+const channelEn = /**@type {HTMLElement}*/($("#channelEn"));
+const channelMine = /**@type {HTMLElement}*/($("#channelMine"));
+const channelMineButton = /**@type {HTMLButtonElement}*/($("#channelMineButton"));
+const channelEnButton = /**@type {HTMLButtonElement}*/($("#channelEnButton"));
+const channelMineName = /**@type {HTMLElement}*/($("#channelMineName"));
+const channelMineImg = /**@type {HTMLImageElement}*/($("#channelMineImg"));
+const chatMessages = /**@type {HTMLElement}*/($("#chatMessages"));
+const chatPreviousButton = /**@type {HTMLButtonElement}*/($("#chatPreviousButton"));
+const captchaOptions = /**@type {HTMLElement}*/($("#captchaOptions"));
+const turnstileMenu = /**@type {HTMLElement}*/($("#turnstileMenu"));
+const messageInput = /**@type {HTMLInputElement}*/($("#messageInput"));
+const messageTypePanel = /**@type {HTMLElement}*/($("#messageTypePanel"));
+const messageInputGifPanel = /**@type {HTMLElement}*/($("#messageInputGifPanel"));
+const messageReplyPanel = /**@type {HTMLElement}*/($("#messageReplyPanel"));
+const messageReplyLabel = /**@type {HTMLElement}*/($("#messageReplyLabel"));
+const punishmentNote = /** @type {HTMLElement}*/($("#punishmentNote"));
+const punishmentUserId = /** @type {HTMLElement}*/($("#punishmentUserId"));
+const punishmentStartDate = /** @type {HTMLElement}*/($("#punishmentStartDate"));
+const punishmentEndDate = /** @type {HTMLElement}*/($("#punishmentEndDate"));
+const punishmentReason = /** @type {HTMLElement}*/($("#punishmentReason"));
+const punishmentAppeal = /** @type {HTMLElement}*/($("#punishmentAppeal"));
+const punishmentMenu = /** @type {HTMLElement}*/($("#punishmentMenu"));
+const moderationMenu = /**@type {HTMLInputElement}*/($("#moderationMenu"));
+const modMemberId = /**@type {HTMLInputElement}*/($("#modMemberId"));
+const modMessageId = /**@type {HTMLInputElement}*/($("#modMessageId"));
+const modMessagePreview = /**@type {HTMLInputElement}*/($("#modMessagePreview"));
+const modDurationH = /**@type {HTMLInputElement}*/($("#modDurationH"));
+const modDurationM = /**@type {HTMLInputElement}*/($("#modDurationM"));
+const modDurationS = /**@type {HTMLInputElement}*/($("#modDurationS"));
+const modAffectsAll = /**@type {HTMLInputElement}*/($("#modAffectsAll"));
+const modReason = /**@type {HTMLInputElement}*/($("#modReason"));
+const modCloseButton = /**@type {HTMLButtonElement}*/$("#modCloseButton");
+const modCancelButtonn = /**@type {HTMLButtonElement}*/$("#modCancelButton");
+const captchaPopup = /**@type {HTMLElement}*/($("#captchaPopup"));
+const modActionDelete = /**@type {HTMLInputElement}*/($("#modActionDelete"));
+const modActionKick = /**@type {HTMLInputElement}*/($("#modActionKick"));
+const modActionMute = /**@type {HTMLInputElement}*/($("#modActionMute"));
+const modActionBan = /**@type {HTMLInputElement}*/($("#modActionBan"));
+const modActionCaptcha = /**@type {HTMLInputElement}*/($("#modActionCaptcha"));
+const chatPanel = /**@type {HTMLElement}*/($("#chatPanel"));
+const messageEmojisPanel = /**@type {HTMLElement}*/($("#messageEmojisPanel"));
+const messageInputEmojiPanel = /**@type {HTMLElement}*/($("#messageInputEmojiPanel"));
+const tlSelect = /**@type {HTMLElement}*/($("#tlSelect"));
+const tlImage = /**@type {HTMLImageElement}*/($("#tlImage"));
+const timelapsePanel = /**@type {HTMLElement}*/($("#timelapsePanel"));
+const tlConfirm = /**@type {HTMLButtonElement}*/($("#tlConfirm"));
+const tlStartSel = /**@type {HTMLSelectElement}*/($("#tlStartSel"));
+const tlEndSel = /**@type {HTMLSelectElement}*/($("#tlEndSel"));
+const tlTimer = /**@type {HTMLElement}*/($("#tlTimer"));
+const tlFps = /**@type {HTMLInputElement}*/($("#tlFps"));
+const tlPlayDir = /**@type {HTMLInputElement}*/($("#tlPlayDir"));
+const overlayInput = /**@type {HTMLInputElement}*/($("#overlayInput"));
+const chatContext = /**@type {HTMLElement}*/($("#chatContext"));
+const userNote = /**@type {HTMLElement}*/($("#userNote"));
+const mentionUser = /**@type {HTMLElement}*/($("#mentionUser"));
+const replyUser = /**@type {HTMLElement}*/($("#replyUser"));
+const blockUser = /**@type {HTMLElement}*/($("#blockUser"));
+const changeMyName = /**@type {HTMLElement}*/($("#changeMyName"));
+const connProblems = /**@type {HTMLElement}*/($("#connproblems"));
+const chatAd = /**@type {HTMLAnchorElement}*/($("#chatAd"));
+const chatCloseButton = /**@type {HTMLButtonElement}*/($("#chatCloseButton"));
+const closeButton = /**@type {HTMLAnchorElement}*/($("#closebtn"));
+const chatButton = /**@type {HTMLAnchorElement}*/($("#chatbtn"));
+const messageOptionsButton = /**@type {HTMLAnchorElement}*/($("#messageOptionsButton"));
+const themeDrop = /**@type {HTMLElement}*/($("#themeDrop"));
+const themeDropName = /**@type {HTMLElement}*/($("#themeDropName"));
+const themeDropParent = /**@type {HTMLElement}*/($("#themeDropParent"));
+
+// WS & State variables
+/**@type {Map<number, number>}*/ let intIdPositions = new Map(); // position : intId
+/**@type {Map<number, string>}*/ export let intIdNames = new Map(); // intId : name
+/**@type {any|null}*/ let account = null;
+/**@type {number|null}*/ let intId = null;
+/**@type {string|null}*/ let chatName = null;
+/**@type {boolean}*/ let vasLocked = false; // Server will tell us this
+/**@type {boolean}*/ let includesPlacer = false; // Server will tell us this
+/**@type {boolean}*/ let initialConnect = false;
+/**@type {number|null}*/ let cooldownEndDate = null;
+/**@type {number}*/ let online = 1;
+/**@type {boolean}*/ let canvasLocked = false;
+
+// Readonly WS & State variables
+let PALETTE_USABLE_REGION = DEFAULT_PALETTE_USABLE_REGION;
+let PALETTE = DEFAULT_PALETTE;
+let WIDTH = DEFAULT_WIDTH;
+let HEIGHT = DEFAULT_HEIGHT;
+let COOLDOWN = DEFAULT_COOLDOWN;
+
+class WsCapsule {
+	/**
+	 * @param {Function} send 
+	 * @param {Function} addEventListener 
+	 * @param {Function} call 
+	 */
+	constructor(send, addEventListener, call) {
+		// wscapsule logic
+		let svUri = localStorage.server || DEFAULT_SERVER;
+		if (localStorage.vip) {
+			if (!svUri.endsWith("/")) svUri += "/";
+			svUri += localStorage.vip;
+		}
+		const ws = new WebSocket(svUri);
+		Object.defineProperty(window, 'WebSocket', {
+			configurable: false,
+			writable: false,
+			value: class {
+				constructor() {
+					window.location.reload();
+				}
+			}
+		});
+
+		/**
+		 * @param {number} messageId
+		 * @param {any} senderId
+		 */
+		function _chatReport(messageId, senderId) {
+			const reason = prompt("Enter the reason for why you are reporting this message (max 280 chars)\n\n" +
+				`Additional info:\nMessage ID: ${messageId}\nSender ID: ${senderId}\n`);
+			if (!reason || !reason.trim()) {
+				return;
+			}
+			const reportBuffer = encoder.encode("XXXXX" + reason);
+			reportBuffer[0] = 14;
+			reportBuffer[1] = messageId >> 24;
+			reportBuffer[2] = messageId >> 16;
+			reportBuffer[3] = messageId >> 8;
+			reportBuffer[4] = messageId & 255;
+			call(send, ws, reportBuffer);
+			alert("Report sent!\nIn the meantime you can block this user by 'right clicking / press hold on the message' > 'block'");
+		}
+		this.chatReport = _chatReport;
+
+		/**
+		 * @param {number} messageId
+		 * @param {string} reactKey
+		 */
+		function _chatReact(messageId, reactKey) {
+			const reactBuffer = encoder.encode("XXXXX" + reactKey);
+			reactBuffer[0] = 18;
+			reactBuffer[1] = messageId >> 24;
+			reactBuffer[2] = messageId >> 16;
+			reactBuffer[3] = messageId >> 8;
+			reactBuffer[4] = messageId & 255;
+			call(send, ws, reactBuffer);
+		}
+		this.chatReact = _chatReact;
+
+		/**
+		 * @param {string} answer
+		 */
+		function sendCaptchaResult(answer) {
+			call(send, ws, encoder.encode("\x10" + answer));
+		}
+
+		/**
+		 * @param {DataView<ArrayBuffer>} data
+		 * @returns {ChatPacket}
+		 */
+		function parseChatPacket(data) {
+			const decoder = new TextDecoder();
+			let i = 1; // Skip opcode
+
+			const msgType = data.getUint8(i); i++;
+			const messageId = data.getUint32(i); i += 4;
+			const txtLength = data.getUint16(i); i += 2;
+			let txt = decoder.decode(data.buffer.slice(i, (i += txtLength)));
+			const senderIntId = data.getUint32(i); i += 4;
+			const name = intIdNames.get(senderIntId) || 'Unknown';
+
+			if (msgType === 0) { // Live chat
+				const sendDate = data.getUint32(i); i += 4;
+				/**@type {Map<string, Set<number>>}*/ const reactions = new Map();
+				const reactionsL = data.getUint8(i); i++;
+				for (let j = 0; j < reactionsL; j++) {
+					const reactionKeyL = data.getUint8(i); i++;
+					const reactionKey = decoder.decode(data.buffer.slice(i, (i += reactionKeyL)));
+					/** @type {Set<number>} */
+					const reactors = new Set();
+					const reactorsL = data.getUint32(i); i += 4;
+					for (let k = 0; k < reactorsL; k++) {
+						const reactor = data.getUint32(i); i += 4;
+						reactors.add(reactor);
+					}
+					reactions.set(reactionKey, reactors);
+				}
+				const channelL = data.getUint8(i); i++;
+				const channel = decoder.decode(data.buffer.slice(i, (i += channelL)));
+
+				/**@type {number|null}*/ let repliesTo = null;
+				if (data.byteLength - i >= 4) {
+					repliesTo = data.getUint32(i);
+				}
+
+				return {
+					type: "live",
+					message: {
+						messageId,
+						txt,
+						senderIntId,
+						name,
+						sendDate,
+						reactions,
+						channel,
+						repliesTo
+					},
+					channel
+				};
+			}
+			else { // Place chat
+				const msgPos = data.getUint32(i);
+				txt = txt.substring(0, 56);
+				return {
+					type: "place",
+					message: {
+						msgPos,
+						txt,
+						senderIntId,
+						name
+					}
+				};
+			}
+		}
+
+		/**
+		 * @param {DataView<ArrayBuffer>} data
+		 * @returns {LiveChatHistoryPacket}
+		 */
+		function parseLiveChatHistoryPacket(data) {
+			const decoder = new TextDecoder();
+			let i = 1; // Skip opcode
+			const fromMessageId = data.getUint32(i); i += 4;
+			const countByte = data.getUint8(i);
+			const count = countByte & 0x7F;
+			const before = (countByte >> 7) !== 0; i++;
+			const channelLen = data.getUint8(i++);
+			const channel = decoder.decode(data.buffer.slice(i, i += channelLen));
+
+			/**@type {LiveChatMessage[]}*/ const messages = [];
+			while (i < data.byteLength) {
+				const startOffset = i;
+				const messageLength = data.getUint16(i); i += 2;
+				const messageId = data.getUint32(i); i += 4;
+				const txtLen = data.getUint16(i); i += 2;
+				const txt = decoder.decode(data.buffer.slice(i, i += txtLen));
+				const intId = data.getUint32(i); i += 4;
+				const sendDate = data.getUint32(i); i += 4;
+
+				// Parse reactions
+				const reactions = new Map();
+				const reactionsL = data.getUint8(i++);
+				for (let j = 0; j < reactionsL; j++) {
+					const reactionKeyLen = data.getUint8(i++);
+					const reactionKey = decoder.decode(data.buffer.slice(i, i += reactionKeyLen));
+					const reactors = new Set();
+					const reactorsL = data.getUint32(i); i += 4;
+					for (let k = 0; k < reactorsL; k++) {
+						const reactor = data.getUint32(i, false); // Big-endian
+						i += 4;
+						reactors.add(reactor);
+					}
+					reactions.set(reactionKey, reactors);
+				}
+
+				// Parse message's channel
+				const messageChannelLen = data.getUint8(i++);
+				const messageChannel = decoder.decode(data.buffer.slice(i, i += messageChannelLen));
+
+				// Check for repliesTo
+				let repliesTo = null;
+				const bytesConsumed = i - startOffset;
+				if (messageLength - (bytesConsumed - 2) === 4) {
+					repliesTo = data.getUint32(i); i += 4;
+				}
+
+				messages.push(/**@type {LiveChatMessage}*/ {
+					messageId,
+					txt,
+					senderIntId: intId,
+					sendDate,
+					reactions,
+					channel: messageChannel,
+					repliesTo,
+					name: ""
+				});
+			}
+
+			return { fromMessageId, count, before, channel, messages };
+		}
+
+		/**
+		 * @param {DataView<ArrayBuffer>} data
+		 * @returns {ModerationPacket}
+		 */
+		function parseModerationPacket(data) {
+			const decoder = new TextDecoder();
+			let i = 1; // Skip opcode
+
+			const state = data.getUint8(i++);
+			const startDate = data.getUint32(i) * 1000; i += 4;
+			const endDate = data.getUint32(i) * 1000; i += 4;
+
+			const reasonLen = data.getUint8(i++);
+			const reason = decoder.decode(data.buffer.slice(i, i + reasonLen)); i += reasonLen;
+
+			const appealLen = data.getUint8(i++);
+			const appeal = decoder.decode(data.buffer.slice(i, i + appealLen)); i += appealLen;
+
+			return { state, startDate, endDate, reason, appeal };
+		}
+
+		ws.onopen = function (e) {
+			initialConnect = true;
+			if (automated) {
+				console.error("Unsupported environment. Connection can not be guarenteed");
+				function reportUsage() {
+					const activityBuffer = encoder.encode(`\x1eWindow outer width: ${window.outerWidth}\nWindow inner width: ${window.innerWidth}\n` +
+						`Window outer height: ${window.outerHeight}\nWindow inner height: ${window.innerHeight}\nLast mouse move: ${new Date(lastMouseMove).toISOString()}\n` +
+						`Mouse X (mx): ${mx}\nMouse Y (my): ${my}\nLocal storage: ${JSON.stringify(localStorage, null, 4)}`);
+					call(send, ws, activityBuffer);
+				}
+				setInterval(reportUsage, 3e5); // 5 mins
+				reportUsage();
+			}
+		};
+		ws.onmessage = async function ({ data }) {
+			delete sessionStorage.err;
+			data = new DataView(await data.arrayBuffer());
+
+			switch (data.getUint8(0)) {
+				case 0: {
+					let pi = 1;
+					const paletteLength = data.getUint8(pi++);
+					PALETTE = [...new Uint32Array(data.buffer.slice(pi, pi += paletteLength * 4))];
+					PALETTE_USABLE_REGION.start = data.getUint8(pi++);
+					PALETTE_USABLE_REGION.end = data.getUint8(pi++);
+					generatePalette();
+					const binds = (localStorage.paletteKeys || DEFAULT_PALETTE_KEYS);
+					generateIndicators(binds);
+					// Board might have already been drawn with old palette so we need to draw it again
+					if (boardAlreadyRendered === true) {
+						renderAll();
+					}
+					break;
+				}
+				case 1: {
+					cooldownEndDate = data.getUint32(1) * 1000; // Current cooldown
+					COOLDOWN = data.getUint32(5);
+
+					// New server packs canvas width and height in code 1, making it 17
+					if (data.byteLength == 17) {
+						const width = data.getUint32(9);
+						const height = data.getUint32(13);
+						WIDTH = width;
+						HEIGHT = height;
+						setSize(width, height);
+						const board = await preloadedBoard;
+						if (board) {
+							runLengthDecodeBoard(board, width * height);
+							hideLoadingScreen();
+						}
+						// TODO: Handle else condition
+					}
+					break;
+				}
+				case 2: {
+					// Old server "changes" packet - preloadedBoard = http board, data = changes
+					runLengthChanges(data, await preloadedBoard);
+					hideLoadingScreen();
+					break;
+				}
+				case 3: { // Online
+					online = data.getUint16(1);
+					setOnline(online);
+					break;
+				}
+				case 5: { // Pixel with included placer
+					let i = 1;
+					while (i < data.byteLength) {
+						let position = data.getUint32(i); i += 4;
+						seti(position, data.getUint8(i)); i += 1;
+						intIdPositions.set(position, data.getUint32(i)); i += 4;
+					}
+					break;
+				}
+				case 6: { // Pixel without included placer
+					let i = 0;
+					while (i < data.byteLength - 2) {
+						seti(data.getUint32(i += 1), data.getUint8(i += 4));
+					}
+					break;
+				}
+				case 7: { // Rejected pixel
+					cooldownEndDate = data.getUint32(1) * 1000;
+					seti(data.getUint32(5), data.getUint8(9));
+					break;
+				}
+				case 8: { // Canvas restriction
+					canvasLocked = !!data.getUint8(1);
+					const reason = decoder.decode(data.buffer.slice(2));
+					setCanvasLocked(canvasLocked, reason);
+					break;
+				}
+				case 9: { // Placer info region
+					let i = data.getUint32(1);
+					const regionWidth = data.getUint8(5);
+					const regionHeight = data.getUint8(6);
+
+					let dataI = 7;
+					while (dataI < data.byteLength) {
+						for (let xi = i; xi < i + regionWidth; xi++) {
+							const placerIntId = data.getUint32(dataI);
+							if (placerIntId !== 0xFFFFFFFF) {
+								intIdPositions.set(xi, placerIntId);
+							}
+							dataI += 4;
+						}
+						i += WIDTH;
+					}
+					break;
+				}
+				case 11: { // Player int ID
+					// TODO: Integrate into packet 1
+					intId = data.getUint32(1);
+					break;
+				}
+				case 12: { // Name info
+					for (let i = 1; i < data.byteLength;) {
+						let pIntId = data.getUint32(i); i += 4;
+						let pNameLen = data.getUint8(i); i++;
+						let pName = decoder.decode(data.buffer.slice(i, (i += pNameLen)));
+
+						intIdNames.set(pIntId, pName);
+						// Occurs either if server has sent us name it has remembered from a previous session,
+						// or we have just sent server packet 12 name update, and it is sending us back our name
+						if (pIntId == intId) {
+							chatName = pName;
+							setChatName(chatName);
+						}
+					}
+					break;
+				}
+				case 13: { // Live chat history
+					const packetData = parseLiveChatHistoryPacket(data);
+					if (packetData.channel !== currentChannel) {
+						return;
+					}
+					addChatMessages(packetData.messages, packetData.before);
+					break;
+				}
+				case 14: { // Moderation
+					const packetData = parseModerationPacket(data);
+					if (packetData.state === PUNISHMENT_STATE.ban) {
+						canvasLocked = true;
+					}
+					applyPunishment(packetData, intId || 0);
+					break;
+				}
+				case 15: { // Chat
+					const packetData = parseChatPacket(data);
+					if (packetData.type === "live") {
+						addLiveChatMessage(
+						/**@type {LiveChatMessage}*/(packetData.message),
+							/**@type {string}*/(packetData.channel));
+					}
+					else {
+						addPlaceChatMessage(
+						/**@type {PlaceChatMessage}*/(packetData.message));
+					}
+					break;
+				}
+				case 16: { // Captcha success
+					handleCaptchaSuccess();
+					break;
+				}
+				case 17: { // Live chat delete
+					const messageId = data.getUint32(1);
+					for (const channel of cMessages.values()) {
+						for (const messageEl of channel) {
+							if (messageEl.messageId !== messageId) continue;
+							channel.splice(channel.indexOf(messageEl), 1);
+							messageEl.remove();
+						}
+					}
+					break;
+				}
+				case 18: { // Live chat reaction
+					const messageId = data.getUint32(1);
+					const reactorId = data.getUint32(5);
+					const reactionKey = decoder.decode(data.buffer.slice(9));
+					for (const channel of cMessages.values()) {
+						for (const messageEl of channel) {
+							if (messageEl.messageId !== messageId) {
+								continue;
+							}
+
+							const currentReactions = messageEl.reactions;
+							const reactors = currentReactions?.get(reactionKey) || new Set();
+							if (!reactors.has(reactorId)) {
+								const newReactions = currentReactions ? new Map(currentReactions) : new Map();
+								reactors.add(reactorId);
+								newReactions.set(reactionKey, reactors);
+								messageEl.reactions = newReactions;
+							}
+						}
+					}
+					break;
+				}
+				case 20: { // Text capcha
+					const textsSize = data.getUint8(1);
+					const texts = decoder.decode(new Uint8Array(data.buffer).slice(2, textsSize + 2)).split("\n");
+					const imageData = new Uint8Array(data.buffer).slice(2 + textsSize);
+					handleTextCaptcha(texts, imageData, sendCaptchaResult);
+					break;
+				}
+				case 21: { // Math captcha
+					console.error("Math captcha not yet supported. Ignoring.");
+					break;
+				}
+				case 22: { // Emoji captcha
+					const emojisSize = data.getUint8(1);
+					const emojis = decoder.decode(new Uint8Array(data.buffer).slice(2, emojisSize + 2)).split("\n");
+					const imageData = new Uint8Array(data.buffer).slice(2 + emojisSize);
+					handleEmojiCaptcha(emojis, imageData, sendCaptchaResult);
+					break;
+				}
+				case 23: { // Challenge
+					let a = data.getUint32(1), b = 5 + a, c = data.buffer.slice(5, 5 + a), f = new Uint8Array(9), u = new DataView(f.buffer); window.challengeData = new Uint8Array(data.buffer.slice(b)); let d = await Object.getPrototypeOf(async function () { }).constructor(atob(decoder.decode(c)))(); delete window.challengeData; u.setUint8(0, 23); u.setBigInt64(1, d); call(send, ws, u.buffer);
+					break;
+				}
+				case 24: { // Turnstile
+					const siteKey = decoder.decode(data.buffer.slice(1));
+					handleTurnstile(siteKey, (/**@type {string}*/ token) => {
+						call(send, ws, encoder.encode("\x18" + token));
+					});
+					break;
+				}
+				case 25: { // Turnstile success
+					handleTurnstileSuccess();
+					break;
+				}
+				case 110: {
+					const requestsLength = linkKeyRequests.length;
+					if (!requestsLength) {
+						console.error("Could not resolve link key, no existing link key requests could be found");
+						break;
+					}
+					const instanceId = data.getUint32(1);
+					const linkKey = decoder.decode(data.buffer.slice(5));
+					linkKeyRequests[requestsLength - 1].resolve({ linkKey, instanceId });
+					break;
+				}
+			}
+		};
+		ws.onclose = async function (e) {
+			console.error(e);
+			cooldownEndDate = null;
+			if (e.code == 1006 && !sessionStorage.err) {
+				sessionStorage.err = "1";
+				window.location.reload();
+			}
+			showLoadingScreen("disconnected", e.reason);
+		};
+
+		/**
+		 * @type {any[]}
+		 */
+		let linkKeyRequests = [];
+		async function _fetchLinkKey() {
+			const linkKeyRequest = new PublicPromise();
+			linkKeyRequests.push(linkKeyRequest);
+			call(send, ws, new Uint8Array([110]));
+			const linkInfo = await linkKeyRequest.promise;
+			return linkInfo;
+		}
+		this.fetchLinkKey = _fetchLinkKey;
+		window["fetchLinkKey"] = _fetchLinkKey;
+
+		/**
+		 * @param {string | any[]} uname
+		 */
+		function _setName(uname) {
+			if (uname.length > 16) return;
+			uname ||= "anon";
+
+			const nameBuf = encoder.encode("\x0C" + uname);
+			call(send, ws, nameBuf);
+		}
+		this.setName = _setName;
+
+		// Requests all the pixel placers for a given region from the server to be loaded into
+		/**
+		 * @param {number} x
+		 * @param {number} y
+		 * @param {number} width
+		 * @param {number} height
+		 */
+		function _requestPixelPlacers(x, y, width, height) {
+			if (ws.readyState !== ws.OPEN) {
+				return;
+			}
+			const placerInfoBuf = new DataView(new Uint8Array(7).buffer);
+			placerInfoBuf.setUint8(0, 9);
+			placerInfoBuf.setUint32(1, x + y * WIDTH);
+			placerInfoBuf.setUint8(5, width);
+			placerInfoBuf.setUint8(6, height);
+			call(send, ws, placerInfoBuf);
+		}
+		this.requestPixelPlacers = _requestPixelPlacers;
+
+		/**
+		 * @param {Event} e
+		 * @param {number} x
+		 * @param {number} y
+		 * @param {number} colour
+		 */
+		function _tryPutPixel(e, x, y, colour) {
+			if (!e.isTrusted) {
+				return false;
+			}
+
+			const pixelView = new DataView(new Uint8Array(6).buffer);
+			pixelView.setUint8(0, 4);
+			pixelView.setUint32(1, Math.floor(x) + Math.floor(y) * WIDTH);
+			pixelView.setUint8(5, colour);
+			call(send, ws, pixelView);
+			cooldownEndDate = Date.now() + (localStorage.vip ? (localStorage.vip[0] == '!' ? 0 : COOLDOWN / 2) : COOLDOWN);
+			return true;
+		}
+		this.tryPutPixel = _tryPutPixel;
+
+		/**
+		 * @param {string} message
+		 */
+		function _sendLiveChatMsg(message) {
+			// Execute live chat commands
+			for (const [command] of COMMANDS) {
+				if (message.startsWith(":" + command)) {
+					handleLiveChatCommand(command, message);
+					return;
+				}
+			}
+
+			// VIP key leak detection
+			if (localStorage.vip && message.includes(localStorage.vip)) {
+				alert("Can't send VIP key in chat. Use ':vip yourvipkeyhere' to apply a VIP key");
+				return;
+			}
+
+			const encodedChannel = encoder.encode(currentChannel);
+			const encodedMsg = encoder.encode(message);
+
+			let msgArray = new Uint8Array(1 + 1 + 2 + encodedMsg.byteLength + 1
+				+ encodedChannel.byteLength + (currentReply ? 4 : 0));
+			let msgView = new DataView(msgArray.buffer);
+
+			let offset = 0;
+			msgView.setUint8(offset++, 15);
+			msgView.setUint8(offset++, 0); // type
+			msgView.setUint16(offset, encodedMsg.byteLength); // msg length
+			offset += 2;
+			msgArray.set(encodedMsg, offset);
+			offset += encodedMsg.byteLength;
+			msgView.setUint8(offset, encodedChannel.byteLength);
+			offset += 1;
+			msgArray.set(encodedChannel, offset);
+			offset += encodedChannel.byteLength;
+			if (currentReply != null) {
+				msgView.setUint32(offset, currentReply);
+			}
+
+			chatCancelReplies();
+			call(send, ws, msgView);
+		}
+		this.sendLiveChatMsg = _sendLiveChatMsg;
+
+		/**
+		 * @param {string} message
+		 */
+		function _sendPlaceChatMsg(message) {
+			const encodedMsg = encoder.encode(message);
+
+			let msgArray = new Uint8Array(1 + 1 + 2 + encodedMsg.byteLength + 4);
+			let msgView = new DataView(msgArray.buffer);
+			let offset = 0;
+			msgView.setUint8(offset++, 15);
+			msgView.setUint8(offset++, 1); // type
+			msgView.setUint16(offset, encodedMsg.byteLength);
+			offset += 2;
+			msgArray.set(encodedMsg, offset);
+			offset += encodedMsg.byteLength;
+			msgView.setUint32(offset, Math.floor(y) * WIDTH + Math.floor(x));
+
+			call(send, ws, msgView);
+		}
+		this.sendPlaceChatMsg = _sendPlaceChatMsg;
+
+		function _requestLoadChannelPrevious(anchorMsgId = 0, msgCount = 64) {
+			const encChannel = encoder.encode(currentChannel);
+			let view = new DataView(new Uint8Array(6 + encChannel.byteLength).buffer);
+			view.setUint8(0, 13);
+			view.setUint32(1, anchorMsgId);
+			view.setUint8(5, msgCount | 128); // 128 = before (most significant bit)
+			for (let i = 0; i < encChannel.byteLength; i++) {
+				view.setUint8(6 + i, encChannel[i]);
+			}
+			call(send, ws, view.buffer);
+		}
+		this.requestLoadChannelPrevious = _requestLoadChannelPrevious;
+
+		// TODO: Reimplement this
+		const modOptionsButton = document.getElementById("modOptionsButton");
+		call(addEventListener, modOptionsButton, "click", function () {
+			alert("Not implemented!");
+			throw new Error("Moderation options not implemented");
+			/*const reason = modReason.value.slice(0, 300)
+			const encReason = encoder.encode(reason)*/
+			// 0 - kick, 1 - mute, 2 - ban, 3 - captcha, 4 - delete
+			/*/**@type {DataView<ArrayBuffer> | null}*\/let view = null
+			let action = null
+			let offset = 2
+			let statusMsg = ""
+			*/
+			/**
+			 * @param {number} extraLength
+			 */
+			/*function setModView(extraLength) {
+				view = new DataView(new Uint8Array(2 + extraLength + encReason.byteLength).buffer)
+				view.setUint8(0, 98)
+			}*/
+			/**
+			 * @param {number} offset
+			 */
+			/*function setModReason(offset) {
+				for (let ri = 0; ri < encReason.byteLength; ri++) {
+					view.setUint8(offset + ri, encReason[ri])
+				}
+			}
+	
+			if (modActionKick.checked) {
+				setModView(4)
+				view.setUint8(1, 0)
+				view.setUint32(2, modMemberId.value)
+				setModReason(6)
+				statusMsg = `Kicked player ${modMemberId.value} with reason '${reason}'`
+			}
+			else if (modActionMute.checked || modActionBan.checked) {
+				const action = modActionMute.checked ? 1 : 2
+				const seconds = (+modDurationS.value||0)
+				const minutes = (+modDurationM.value||0)
+				const hours = (+modDurationH.value||0)
+				setModView(8)
+				view.setUint8(1, action)
+				view.setUint32(2, modMemberId.value)
+				view.setUint32(6, seconds + minutes * 60 + hours * 3600)
+				setModReason(10)
+				statusMsg = `${["Kicked","Banned"][action-1]} player ${modMemberId.value} for ${hours
+					} hours, ${minutes} minutes, and ${seconds} seconds with reason '${reason}'`
+			}
+			else if (modActionCaptcha.checked) {
+				setModView(4)
+				view.setUint8(1, 3)
+				view.setUint32(2, modAffectsAll.checked ? 0 : modMemberId.value)
+				setModReason(6)
+				statusMsg = `Forced captcha for ${modAffectsAll.checked ? "all users" : "user " + modMemberId.value
+					} with reason '${reason}'`
+			}
+			else if (modActionDelete.checked) {
+				setModView(4)
+				view.setUint8(1, 4)
+				view.setUint32(2, modMessageId.value)
+				setModReason(6)
+				statusMsg = `Deleted message ${modMessageId.value} with reason '${reason}'`
+			}
+			else {
+				return
+			}
+			call(send, ws, view.buffer)
+			alert(statusMsg)*/
+		});
+
+		const injectedCjs = document.createElement("script");
+		injectedCjs.innerHTML = `
+			WebSocket.prototype.send = function() { this.close() };
+			delete WebSocket;
+			Object.defineProperty(window, "eval", {
+				value: function() { throw new Error() },
+				writable: false,
+				configurable: false
+			});
+		`;
+		document.body.appendChild(injectedCjs);
+	}
+}
 
 // Touch & mouse canvas event handling
 let moved = 3
@@ -15,7 +913,6 @@ let touchMoveDistance = 15
 
 // Bidirectional IPC, similar to server.ts - db-worker.ts communication
 // Methods called by posts frame
-const postsFrame = /**@type {HTMLIFrameElement}*/($("#postsFrame"));
 function resizePostsFrame() {
 	if (!postsFrame) {
 		return;
@@ -26,7 +923,6 @@ function resizePostsFrame() {
 }
 postsFrame.addEventListener("load", resizePostsFrame);
 
-const overlayMenu = $("#overlayMenu");
 function openOverlayMenu() {
 	overlayMenu.setAttribute("opened", "true")
 }
@@ -55,8 +951,6 @@ function sendPostsFrameMessage(messageCall, args = undefined) {
 }
 
 // Load more posts on scroll down
-const more = $("#more");
-const spaceFiller = /**@type {HTMLElement}*/($("#spaceFiller"));
 more.addEventListener("scroll", function(/**@type {any}*/ e) {
 	const moreMaxScroll = more.scrollHeight - more.clientHeight
 	if (moreMaxScroll - more.scrollTop < 256) {
@@ -69,7 +963,6 @@ more.addEventListener("scroll", function(/**@type {any}*/ e) {
 }, { passive: true })
 
 // Game input handling && overrides
-const mainContent = /**@type {HTMLElement}*/($("#maincontent"));
 mainContent.addEventListener("touchstart", function(/**@type {TouchEvent}*/ e) {
 	e.preventDefault()
 	for (let i = 0; i < e.changedTouches.length; i++) {
@@ -138,9 +1031,6 @@ mainContent.addEventListener("mousedown", function(/** @type {{ button: number; 
 	mouseDown = e.button + 1
 })
 
-const canvParent1 = /**@type {HTMLElement}*/($("#canvparent1"));
-const canvParent2 = /**@type {HTMLElement}*/($("#canvparent2"));
-const canvSelect = /**@type {HTMLElement}*/($("#canvselect"));
 mainContent.addEventListener("mouseup", function(/** @type {{ target: any; clientX: any; clientY: any; }} */ e) {
 	if (e.target != mainContent && !canvParent2.contains(e.target)) {
 		return (moved = 3, mouseDown = 0)
@@ -157,7 +1047,6 @@ mainContent.addEventListener("mouseup", function(/** @type {{ target: any; clien
 
 let selX = 0
 let selY = 0
-const canvas = /**@type {HTMLCanvasElement}*/($("#canvas"));
 const canvasCtx = canvas.getContext("2d");
 function transform() {
 	const scale = z * 50;
@@ -182,9 +1071,6 @@ export let z = 0;
 let minZoom = 0;
 /**@type {Uint8Array|null}*/let board = null;
 
-const colours = /**@type {HTMLElement}*/($("#colours"));
-const modal = /**@type {HTMLDialogElement}*/($("#modal"));
-const modalInstall = /**@type {HTMLButtonElement}*/($("#modalInstall"));
 
 // Prompt user if they want to install site as PWA if they press the modal button
 /**@type {Event|null}*/
@@ -314,16 +1200,16 @@ document.body.addEventListener("keydown", function(/**@type {KeyboardEvent}*/e) 
  * @param {number} h
  */
 export function setSize(w, h = w) {
-	canvas.width = w;
-	canvas.height = h;
+	canvas.width = WIDTH = w;
+	canvas.height = HEIGHT = h;
 	canvParent1.style.width = w + "px";
 	canvParent1.style.height = h + "px";
 	canvParent2.style.width = w + "px";
 	canvParent2.style.height = h + "px";
 	board = new Uint8Array(w * h).fill(255);
 	let i = board.length;
-	x = +localStorage.x || WIDTH / 2;
-	y = +localStorage.y || HEIGHT / 2;
+	x = +localStorage.x || w / 2;
+	y = +localStorage.y || h / 2;
 	z = +localStorage.z || 0.2;
 
 	for (let [key, value] of new URLSearchParams(location.search)) {
@@ -353,7 +1239,6 @@ export function setSize(w, h = w) {
 					data[i] = decoded.charCodeAt(i);
 				}
 
-				const templateImage = /**@type {HTMLImageElement}*/($("#templateImage"));
 				templateImage.src = URL.createObjectURL(new Blob([data], { type: overlayInfo.type }));
 				overlayInfo.x = overlayInfo.x || 0;
 				overlayInfo.y = overlayInfo.y || 0;
@@ -364,7 +1249,6 @@ export function setSize(w, h = w) {
 				z = Math.min(Math.max(z, minZoom), 1);
 				pos();
 
-				const overlayMenu = /**@type {HTMLElement}*/($("#overlayMenu"));
 				overlayMenu.setAttribute('opened', 'true');;
 				break;
 		}
@@ -422,8 +1306,6 @@ let idPositionDebounce = false
 let lastIntX = Math.floor(x)
 let lastIntY = Math.floor(y)
 
-const posEl = /**@type {HTMLElement}*/($("#posel"));
-const idPosition = /**@type {HTMLElement}*/($("#idPosition"));
 
 export function pos(newX=x, newY=y, newZ=z) {
 	newX = x = Math.max(Math.min(newX, WIDTH - 1), 0)
@@ -467,10 +1349,8 @@ export function pos(newX=x, newY=y, newZ=z) {
 			if (id === undefined || id === null) {
 				// Request 16x16 region of pixel placers from server (fine tune if necessary)
 				const placersRadius = 16
-				if (requestPixelPlacers) {
-					requestPixelPlacers(Math.max(intX - placersRadius / 2, 0), Math.max(intY - placersRadius / 2),
-						Math.min(placersRadius, WIDTH - intX), Math.min(placersRadius, HEIGHT - intY))
-				}
+				instance.requestPixelPlacers(Math.max(intX - placersRadius / 2, 0), Math.max(intY - placersRadius / 2),
+					Math.min(placersRadius, WIDTH - intX), Math.min(placersRadius, HEIGHT - intY))
 				return
 			}
 			idPosition.style.display = "flex"
@@ -493,7 +1373,6 @@ export function renderAll() {
 			data[i] = PALETTE[board[i]]
 		}	
 	}
-
 	if (canvasCtx) {
 		canvasCtx.putImageData(img, 0, 0)
 		// HACK: Workaround for blank-canvas bug on chrome on M1 chips
@@ -502,13 +1381,11 @@ export function renderAll() {
 	}
 }
 
-const onlineCounter = /**@type {HTMLElement}*/($("#onlineCounter"));
 export function setOnline(/**@type {Number}*/count) {
 	onlineCounter.textContent = String(count);
 	sendPostsFrameMessage("onlineCounter", count);
 }
 
-const canvasLock = /**@type {HTMLElement}*/($("#canvasLock"));
 export function setCanvasLocked(/**@type {boolean}*/locked, /**@type {string|null}*/reason=null) {
 	canvasLock.style.display = locked ? "flex" : "none";
 	if (reason) {
@@ -517,7 +1394,6 @@ export function setCanvasLocked(/**@type {boolean}*/locked, /**@type {string|nul
 	}
 }
 
-const namePanel = /**@type {HTMLElement}*/($("#namePanel"));
 export function setChatName(/**@type {string}*/name) {
 	namePanel.style.visibility = "hidden";
 }
@@ -597,9 +1473,6 @@ mainContent.addEventListener("touchmove", function(/**@type {TouchEvent}*/ e) {
 	}
 })
 
-// Blank default render and canvas size init before we have loaded board
-setSize(DEFAULT_WIDTH, DEFAULT_HEIGHT)
-renderAll()
 /**@type {Timer|null}*/let anim = null
 
 /**
@@ -658,7 +1531,7 @@ HTMLAudioElement.prototype.run = Audio.prototype.run = async function() {
 	this.play().catch((/** @type {any} */ e) => e)
 }
 
-// Necessary because of rolling updates
+// Modal settings (mute, place chat)
 if (localStorage.muted !== "true") { // Prefer false
 	localStorage.muted = "false";
 }
@@ -667,11 +1540,24 @@ if (localStorage.placeChat !== "false") { // Prefer true
 }
 let muted = localStorage.muted === "true";
 let placeChat = localStorage.placeChat === "true";
+window.addEventListener("DOMContentLoaded", function() {
+	muteButtonImage.src = muted ? "/svg/muted.svg" : "/svg/unmuted.svg";
+	placeChatButtonImage.style.opacity = placeChat ? "1" : "0.6";
+});
+muteButton.addEventListener("click", function() {
+	muted = !muted;
+	localStorage.muted = +muted;
+	muteButtonImage.src = muted ? "/svg/muted.svg" : "/svg/unmuted.svg";
+});
+placeChatButton.addEventListener("click", function() {
+	placeChat = !placeChat
+	localStorage.placeChat = String(placeChat)
+	placeChatButtonImage.style.opacity = placeChat ? "1" : "0.6"
+});
+
+// Client state
 let onCooldown = false;
 let PEN = -1;
-
-$("#mutesvg").innerHTML = muted ? MUTED_SVG : UNMUTED_SVG
-$("#placeChatButton").children[0].style.opacity = placeChat ? '1' : '0.6'
 
 let focused = true;
 window.addEventListener("blur", () => {
@@ -681,9 +1567,6 @@ window.addEventListener("focus", () => {
 	focused = true
 });
 
-const placeButton = /**@type {HTMLButtonElement}*/($("#place")); 
-const placeOkButton = /**@type {HTMLButtonElement}*/($("#pok"));
-const placeCancelButton = /**@type {HTMLButtonElement}*/($("#pcancel"));
 
 placeOkButton.addEventListener("click", function(e) {
 	// If cooldownEndDate is null but we have already made that initial connection, we have likely ghost disconnected from the WS
@@ -695,7 +1578,7 @@ placeOkButton.addEventListener("click", function(e) {
 	if (!placeOkButton.classList.contains("enabled")) {
 		return
 	}
-	if (!tryPutPixel || !tryPutPixel(e, x, y, PEN)) {
+	if (!instance.tryPutPixel(e, x, y, PEN)) {
 		console.error("Failed to place pixel at", x, y, "with colour", PEN)
 		return
 	}
@@ -760,7 +1643,7 @@ placeCancelButton.addEventListener("click", function(e) {
 })
 
 setInterval(async () => {
-	let left = Math.floor((cooldownEndDate - Date.now()) / 1000)
+	let left = Math.floor(((cooldownEndDate||0) - Date.now()) / 1000)
 	placeButton.innerHTML = initialConnect
 		? cooldownEndDate === null // They have made initial connect
 			? `<span style="color:#f50; white-space: nowrap;">${await translate("connectingFail")}</span>` // They connected but now have disconnected
@@ -770,16 +1653,15 @@ setInterval(async () => {
 				: await translate("placeTile") // They are connected + still connected + after cooldown
 		: await translate("connecting") // They are yet to connect
 
-	if (cooldownEndDate > Date.now() && !onCooldown) {
+	if ((cooldownEndDate||0) > Date.now() && !onCooldown) {
 		onCooldown = true
 	}
-	if (cooldownEndDate < Date.now() && onCooldown) {
+	if ((cooldownEndDate||0) < Date.now() && onCooldown) {
 		onCooldown = false
 		if (!document.hasFocus()) AUDIOS.cooldownEnd.run()
 	}
 }, 200)
 
-const palette = /**@type {HTMLElement}*/($("#palette"));
 function showPalette() {
 	palette.style.transform = "";
 	AUDIOS.highlight.run();
@@ -839,7 +1721,9 @@ export function runLengthChanges(data, buffer) {
 	let i = 9,
 	boardI = 0
 	let w = data.getUint32(1), h = data.getUint32(5)
-	if (w != WIDTH || h != HEIGHT) setSize(w, h)
+	if (w != WIDTH || h != HEIGHT) {
+		setSize(w, h)
+	}
 	board = new Uint8Array(buffer)
 	while (i < data.byteLength) {
 		let cell = data.getUint8(i++)
@@ -992,11 +1876,8 @@ export function generateIndicators(keybinds) {
 }
 generateIndicators(localStorage.paletteKeys || DEFAULT_PALETTE_KEYS)
 
-if (chatName) {
-	namePanel.style.visibility = "hidden"
-}
+// Live chat channels
 
-const channelDrop = /**@type {HTMLElement}*/($("#channelDrop"));
 function initChannelDrop() {
 	let containsMy = false
 
@@ -1005,35 +1886,61 @@ function initChannelDrop() {
 		if (code == lang) containsMy = true
 		let el = document.createElement("li")
 		el.innerHTML = `<span>${info.name}</span> <img src="${info.flag}" style="height: 24px;">`
-		el["lang"] = code
+		el.dataset.lang = code
 		channelDrop.children[0].appendChild(el)
 	}
 
 	if (!containsMy) {
 		let el = document.createElement("li")
 		el.innerHTML = `<span>${lang}</span>`
-		el["lang"] = lang
+		el.dataset.lang = lang
 		channelDrop.children[0].appendChild(el)
 	}
 }
 
-const channelEn = /**@type {HTMLElement}*/($("#channelEn"));
-const channelMine = /**@type {HTMLElement}*/($("#channelMine"));
-const channelMineName = /**@type {HTMLElement}*/($("#channelMineName"));
-const channelMineImg = /**@type {HTMLImageElement}*/($("#channelMineImg"));
+const channelList = channelDrop.firstElementChild
+channelList?.addEventListener("click", function(e) {
+	let target = e.target
+	while (target instanceof HTMLElement && target != channelList) {
+		if (target.nodeName != "LI") {
+			target = target.parentElement;
+			continue;
+		}
+
+		const lang = target.dataset.lang
+		if (!lang) {
+			break;
+		}
+		if (lang != extraLanguage && lang != "en") {
+			extraChannel(lang);
+		}
+		switchLanguageChannel(lang);
+		e.stopPropagation();
+		channelDropParent.removeAttribute("open");
+		break;
+	}
+});
+
+channelMineButton.addEventListener("click", function(e) {	
+	switchLanguageChannel(extraLanguage);
+});
+
+channelEnButton.addEventListener("click", function(e) {
+	switchLanguageChannel("en");
+});
+
 /**
  * @param {string} code
  */
 function extraChannel(code) {
 	let info = LANG_INFOS.get(code)
 	channelMineName.innerText = code.toUpperCase()
-	channelMineImg.src = info?.flag || "svg/flag-unknown.svg";
-	channelMineImg.style.display = ((info?.flag) ? "inline" : "none")
+	channelMineImg.src = info?.flag || "/svg/flag-unknown.svg";
+	//channelMineImg.style.display = ((info?.flag) ? "inline" : "none")
 	extraLanguage = code
 	cMessages.set(code, cMessages.get(code) || [])
 }
 
-const chatMessages = /**@type {HTMLElement}*/($("#chatMessages"));
 
 /**
  * @param {string} selected
@@ -1068,10 +1975,10 @@ function switchLanguageChannel(selected) {
 			chatMessages.scrollTo(0, chatMessages.scrollHeight)
 		})
 	}
-	else if (requestLoadChannelPrevious) {
+	else if (instance) {
 		// If we don't have any cached messages for this channel, try pre-populate with a few
 		const oldestMessage = /**@type {import("./live-chat-elements.js").LiveChatMessage|null}*/(chatMessages.children[0])
-		requestLoadChannelPrevious(oldestMessage?.messageId || 0, 32)
+		instance.requestLoadChannelPrevious(oldestMessage?.messageId || 0, 32)
 	}
 }
 
@@ -1096,8 +2003,6 @@ export function createLiveChatMessage(messageId, txt, senderId, name, sendDate, 
 	message.reactions = reactions;
 	return message;
 }
-
-const chatPreviousButton = /**@type {HTMLButtonElement}*/($("#chatPreviousButton"));
 
 /**
  * @param {string} command 
@@ -1199,7 +2104,7 @@ To create a separator, create a blank line (Shift + Enter on keyboard) and inser
 
 /**
  * Adds chat messages to the UI
- * @param {import("./wscapsule.js").LiveChatMessage[]} messages 
+ * @param {LiveChatMessage[]} messages 
  * @param {boolean} before 
  */
 export function addChatMessages(messages, before) {
@@ -1249,9 +2154,9 @@ export function addChatMessages(messages, before) {
 }
 chatMessages.addEventListener("scroll", () => {
 	if (chatMessages.scrollTop < 64) {
-		if (chatPreviousAutoLoad === true && chatPreviousLoadDebounce === false && requestLoadChannelPrevious) {
+		if (chatPreviousAutoLoad === true && chatPreviousLoadDebounce === false) {
 			const oldestMessage = /**@type {import("./live-chat-elements.js").LiveChatMessage|null}*/(chatMessages.children[0]);
-			requestLoadChannelPrevious(oldestMessage?.messageId || 0);
+			instance.requestLoadChannelPrevious(oldestMessage?.messageId || 0);
 			chatPreviousLoadDebounce = true;
 		}
 		else {
@@ -1263,17 +2168,15 @@ chatMessages.addEventListener("scroll", () => {
 	}
 })
 chatPreviousButton.addEventListener("click", () => {
-	if (requestLoadChannelPrevious) {
-		const oldestMessage = /**@type {import("./live-chat-elements.js").LiveChatMessage|null}*/(chatMessages.children[0]);
-		requestLoadChannelPrevious(oldestMessage?.messageId || 0);
-		chatPreviousLoadDebounce = true;
-		// Keep loading previous for this channel as they scroll up
-		chatPreviousAutoLoad = true	;
-	}
+	const oldestMessage = /**@type {import("./live-chat-elements.js").LiveChatMessage|null}*/(chatMessages.children[0]);
+	instance.requestLoadChannelPrevious(oldestMessage?.messageId || 0);
+	chatPreviousLoadDebounce = true;
+	// Keep loading previous for this channel as they scroll up
+	chatPreviousAutoLoad = true	;
 })
 
 /**
- * @param {import("./wscapsule.js").LiveChatMessage} message 
+ * @param {LiveChatMessage} message 
  * @param {string} channel 
  */
 export function addLiveChatMessage(message, channel) {
@@ -1333,16 +2236,18 @@ export function addLiveChatMessage(message, channel) {
 }
 
 /**
- * @param {import("./wscapsule.js").PlaceChatMessage} message
+ * @param {PlaceChatMessage} message
  */
 export function addPlaceChatMessage(message) {
 	if (!placeChat) {
 		return
 	}
 
+	console.log(message)
+
 	// Create message
 	const placeMessage = document.createElement("placechat")
-	placeMessage.innerHTML = `<span title="${(new Date()).toLocaleString()}" style="color: ${CHAT_COLOURS[hash("" + message.senderIntId) & 7]};">[${name}]</span><span>${message.txt}</span>`
+	placeMessage.innerHTML = `<span title="${(new Date()).toLocaleString()}" style="color: ${CHAT_COLOURS[hash("" + message.senderIntId) & 7]};">[${message.name}]</span><span>${message.txt}</span>`
 	placeMessage.style.left = (message.msgPos % WIDTH) + "px"
 	placeMessage.style.top = (Math.floor(message.msgPos / WIDTH) + 0.5) + "px"
 	canvParent2.appendChild(placeMessage)
@@ -1353,7 +2258,6 @@ export function addPlaceChatMessage(message) {
 	}, localStorage.placeChatTime || 7e3)
 }
 
-const captchaOptions = /**@type {HTMLElement}*/($("#captchaOptions"));
 
 /**
  * 
@@ -1441,7 +2345,6 @@ export function handleEmojiCaptcha(options, imageData, answerCallback) {
 	}
 }
 
-const turnstileMenu = /**@type {HTMLElement}*/($("#turnstileMenu"));
 
 /**
  * @param {string} siteKey
@@ -1472,25 +2375,26 @@ export function handleTurnstileSuccess() {
 	turnstileMenu.removeAttribute("opened")
 }
 
-const messageInput = /**@type {HTMLInputElement}*/($("#messageInput"));
 messageInput.addEventListener("keydown", function(/**@type {KeyboardEvent}*/ e) {
 	if (!e.isTrusted) {
 		return
 	}
 
+	openChatPanel();
 	if (e.key == "Enter" && !e.shiftKey) {
 		// ctrl + enter send as place chat, enter send as normal live chat
-		if (e.ctrlKey && sendPlaceChatMsg) {
-			sendPlaceChatMsg(messageInput.value)
+		if (e.ctrlKey) {
+			instance.sendPlaceChatMsg(messageInput.value)
 		}
-		else if (sendLiveChatMsg) {
-			sendLiveChatMsg(messageInput.value)
+		else {
+			instance.sendLiveChatMsg(messageInput.value)
 		}
 		e.preventDefault()
 		messageInput.value = ""
 		updateMessageInputHeight()
 	}
 });
+messageInput.addEventListener("focus", openChatPanel);
 
 /**
  * @param {string} text
@@ -1516,29 +2420,23 @@ export function chatMentionUser(senderId) {
 	chatInsertText(mentionText)
 }
 
-const messageTypePanel = /**@type {HTMLElement}*/($("#messageTypePanel"));
 messageTypePanel.children[0].addEventListener("click", function (/**@type {Event}*/e) {
 	if (!e.isTrusted) {
 		return;
 	}
 
-	if (sendPlaceChatMsg) {
-		sendPlaceChatMsg(messageInput.value);
-		messageInput.value = "";
-	}
+	instance.sendPlaceChatMsg(messageInput.value);
+	messageInput.value = "";
 });
 messageTypePanel.children[1].addEventListener("click", function(/**@type {Event}*/e) {
 	if (!e.isTrusted) {
 		return;
 	}
 
-	if (sendLiveChatMsg) {
-		sendLiveChatMsg(messageInput.value);
-		messageInput.value = "";	
-	}
+	instance.sendLiveChatMsg(messageInput.value);
+	messageInput.value = "";	
 });
 
-const messageInputGifPanel = /**@type {HTMLElement}*/($("#messageInputGifPanel"));
 // @ts-expect-error
 messageInputGifPanel.addEventListener("gifselection", function(/**@type {CustomEvent}*/ e) {
 	const gif = e.detail;
@@ -1546,13 +2444,9 @@ messageInputGifPanel.addEventListener("gifselection", function(/**@type {CustomE
 		return;
 	}
 	messageInputGifPanel.removeAttribute("open")
-	if (sendLiveChatMsg) {
-		sendLiveChatMsg(`[gif:${gif.id}:tenor]`);
-	}
+	instance.sendLiveChatMsg(`[gif:${gif.id}:tenor]`);
 });
 
-const messageReplyPanel = /**@type {HTMLElement}*/($("#messageReplyPanel"));
-const messageReplyLabel = /**@type {HTMLElement}*/($("#messageReplyLabel"));
 
 /**
  * @param {any} messageId
@@ -1582,21 +2476,15 @@ export function chatCancelReplies() {
 		messageEl.removeAttribute("reply")
 	}
 	currentReply = null
+	// TODO: Use CSS classes / find a better solution
 	// HACK: Ensure no overlap between reply and send features
 	messageTypePanel.style.height = "calc(var(--message-input-height) + 62px)"
 	messageReplyPanel.setAttribute('closed', 'true')
 }
 
-const punishmentNote = /** @type {HTMLElement}*/($("#punishmentNote"));
-const punishmentUserId = /** @type {HTMLElement}*/($("#punishmentUserId"));
-const punishmentStartDate = /** @type {HTMLElement}*/($("#punishmentStartDate"));
-const punishmentEndDate = /** @type {HTMLElement}*/($("#punishmentEndDate"));
-const punishmentReason = /** @type {HTMLElement}*/($("#punishmentReason"));
-const punishmentAppeal = /** @type {HTMLElement}*/($("#punishmentAppeal"));
-const punishmentMenu = /** @type {HTMLElement}*/($("#punishmentMenu"));
 
 /**
- * @param {import("./wscapsule.js").ModerationPacket} packet 
+ * @param {ModerationPacket} packet 
  * @param {number} intId
  */
 export function applyPunishment(packet, intId) {
@@ -1617,15 +2505,7 @@ export function applyPunishment(packet, intId) {
 	punishmentMenu.setAttribute("opened", "true");
 }
 
-const moderationMenu = /**@type {HTMLInputElement}*/($("#moderationMenu"));
-const modMemberId = /**@type {HTMLInputElement}*/($("#modMemberId"));
-const modMessageId = /**@type {HTMLInputElement}*/($("#modMessageId"));
-const modMessagePreview = /**@type {HTMLInputElement}*/($("#modMessagePreview"));
-const modDurationH = /**@type {HTMLInputElement}*/($("#modDurationH"));
-const modDurationM = /**@type {HTMLInputElement}*/($("#modDurationM"));
-const modDurationS = /**@type {HTMLInputElement}*/($("#modDurationS"));
-const modAffectsAll = /**@type {HTMLInputElement}*/($("#modAffectsAll"));
-const modReason = /**@type {HTMLInputElement}*/($("#modReason"));
+// Moderation UI
 
 function clearChatModerate() {
 	modMessageId.value = ""
@@ -1641,19 +2521,13 @@ function closeChatModerate() {
 	moderationMenu.removeAttribute('opened')
 	clearChatModerate()
 }
-$("#modCloseButton").addEventListener("click", closeChatModerate);
-$("#modCancelButton").addEventListener("click", closeChatModerate);
+modCloseButton.addEventListener("click", closeChatModerate);
+modCancelButtonn.addEventListener("click", closeChatModerate);
 
-const captchaPopup = /**@type {HTMLElement}*/($("#captchaPopup"));
 export function handleCaptchaSuccess() {
 	captchaPopup.style.display = "none";
 }
 
-const modActionDelete = /**@type {HTMLInputElement}*/($("#modActionDelete"));
-const modActionKick = /**@type {HTMLInputElement}*/($("#modActionKick"));
-const modActionMute = /**@type {HTMLInputElement}*/($("#modActionMute"));
-const modActionBan = /**@type {HTMLInputElement}*/($("#modActionBan"));
-const modActionCaptcha = /**@type {HTMLInputElement}*/($("#modActionCaptcha"));
 
 /**
  * @param {"delete"|"kick"|"mute"|"ban"|"captcha"} mode
@@ -1687,8 +2561,6 @@ export function chatModerate(mode, senderId, messageId = null, messageElement = 
 	}
 }
 
-const chatPanel = /**@type {HTMLElement}*/($("#chatPanel"));
-const messageEmojisPanel = /**@type {HTMLElement}*/($("#messageEmojisPanel"));
 
 function closeMessageEmojisPanel() {
 	messageEmojisPanel.setAttribute("closed", "true")
@@ -1705,8 +2577,8 @@ function updateMessageInputHeight() {
 	const diffHeight = messageInputHeight - oldHeight
 	chatMessages.scrollBy(0, diffHeight)
 }
-window.addEventListener("DOMContentLoaded", () => {
-	updateMessageInputHeight()
+window.addEventListener("DOMContentLoaded", function (e) {
+	updateMessageInputHeight();
 })
 
 messageInput.oninput = (/** @type {{ isTrusted: any; }} */ e) => {
@@ -1826,7 +2698,6 @@ messageInput.oninput = (/** @type {{ isTrusted: any; }} */ e) => {
 	}
 }
 
-const messageInputEmojiPanel = /**@type {HTMLElement}*/($("#messageInputEmojiPanel"));
 // @ts-expect-error
 messageInputEmojiPanel.addEventListener("emojiselection", (/**@type {CustomEvent}*/ e) => {
 	messageInputEmojiPanel.removeAttribute("open")
@@ -1891,7 +2762,7 @@ export async function forceTheme(forceTheme, forceVariant = null , forceEffects 
 	const currentVariant = document.documentElement.dataset.variant
 	if (currentThemeSet != forceTheme || currentVariant != forceVariant) {
 		console.warn("Forcing site theme to", forceTheme, forceVariant)
-		await theme(DEFAULT_THEMES.get(forceTheme), forceVariant, forceEffects)
+		await theme(/**@type {import("./defaults.js").ThemeInfo}*/(DEFAULT_THEMES.get(forceTheme)), forceVariant, forceEffects)
 	}
 }
 
@@ -1923,7 +2794,7 @@ async function theme(themeSet, variant = null, effects = null) {
 		const intermediate = document.createElement("link");
 		intermediate.rel = "stylesheet";
 		intermediate.type = "text/css";
-		intermediate.href = "theme-switch.css";
+		intermediate.href = "/css/theme-switch.css";
 		intermediate.setAttribute("intermediate-temp", "true");
 		await (new Promise(resolve => {
 			intermediate.onload = resolve;
@@ -1939,8 +2810,7 @@ async function theme(themeSet, variant = null, effects = null) {
 			link.onload = resolve;
 			document.head.appendChild(link);
 		}));
-		setTimeout(() => document.head.removeChild(intermediate), 200)
-;
+		setTimeout(() => document.head.removeChild(intermediate), 200);
 		// Swap out intermediate and old stylesheet
 		if (styleElement) {
 			document.head.removeChild(styleElement);
@@ -1965,9 +2835,49 @@ async function theme(themeSet, variant = null, effects = null) {
 	}
 	document.documentElement.dataset.variant = variant
 }
-const startupThemeSet = /**@type {import("./defaults.js").ThemeInfo}*/(DEFAULT_THEMES.get(localStorage.theme || "r/place 2022"));
-theme(startupThemeSet, localStorage.variant, localStorage.effects);
-themeDropName.textContent = "🖌️ " + (localStorage.theme || "r/place 2022");
+window.addEventListener("DOMContentLoaded", function(e) {
+	let startupThemeSet = DEFAULT_THEMES.get(localStorage.theme || "r/place 2022");
+	if (!startupThemeSet) {
+		startupThemeSet = DEFAULT_THEMES.get("r/place 2022");
+	}
+	if (startupThemeSet) {
+		theme(startupThemeSet, localStorage.variant, localStorage.effects);
+		themeDropName.textContent = "🖌️ " + (localStorage.theme || "r/place 2022");		
+	}
+	else {
+        const errorMessage = "Error: Can't find startup theme set, site may appear broken!";
+        console.error(errorMessage, { availableThemes: DEFAULT_THEMES, savedTheme: localStorage.theme });
+		alert(errorMessage);
+	}
+});
+
+const themeDropList = themeDrop.firstElementChild;
+themeDropList?.addEventListener("click", function(e) {
+	let target = e.target;
+	while (target instanceof HTMLElement && target != themeDropList) {
+		if (target.nodeName != "LI") {
+			target = target.parentElement;
+			continue;
+		}
+		let targetEffects = target.getAttribute("effects");
+		let targetVariant = target.getAttribute("variant");
+		let targetTheme = target.getAttribute("theme");
+		themeDropParent.removeAttribute("open");
+		e.stopPropagation();
+
+		if (targetTheme) {
+			themeDropName.textContent = '🖌️ ' + targetTheme;
+			const newTheme = DEFAULT_THEMES.get(targetTheme);
+			if (newTheme) {
+				theme(newTheme, targetVariant, targetEffects);
+				localStorage.theme = targetTheme;
+				localStorage.variant = targetVariant;
+				localStorage.effects = targetEffects;
+			}
+		}
+		break;
+	}
+});
 
 /**
  * @param {number} num
@@ -1978,15 +2888,6 @@ function clamp(num, min, max) {
 	return Math.min(Math.max(num, min), max);
 }
 
-const tlSelect = /**@type {HTMLElement}*/($("#tlSelect"));
-const tlImage = /**@type {HTMLImageElement}*/($("#tlImage"));
-const timelapsePanel = /**@type {HTMLElement}*/($("#timelapsePanel"));
-const tlConfirm = /**@type {HTMLButtonElement}*/($("#tlConfirm"));
-const tlStartSel = /**@type {HTMLSelectElement}*/($("#tlStartSel"));
-const tlEndSel = /**@type {HTMLSelectElement}*/($("#tlEndSel"));
-const tlTimer = /**@type {HTMLElement}*/($("#tlTimer"));
-const tlFps = /**@type {HTMLInputElement}*/($("#tlFps"));
-const tlPlayDir = /**@type {HTMLInputElement}*/($("#tlPlayDir"));
 
 /**
  * @param {MouseEvent} e
@@ -2064,8 +2965,6 @@ function updateTlTimer() {
 	tlTimer.innerText = ((elapsedTime / 1000).toFixed(3)) + "s"
 }
 
-const overlayInput = /**@type {HTMLInputElement}*/($("#overlayInput"));
-const templateImage = /**@type {HTMLImageElement}*/($("#templateImage"));
 /**
  * @typedef {Object} OverlayInfo
  * @property {number} x - The x-coordinate of the overlay.
@@ -2105,6 +3004,15 @@ function openChatPanel() {
 	}
 	chatPanel.inert = false
 }
+chatButton.addEventListener("click", openChatPanel);
+
+messageOptionsButton.addEventListener("click", function(e) {
+	updateMessageInputHeight();
+	messageTypePanel.toggleAttribute('closed')
+})
+
+// Chat panel
+chatCloseButton.addEventListener("click", closeChatPanel);
 
 function closeChatPanel() {
 	messageInput.blur()
@@ -2115,12 +3023,21 @@ function closeChatPanel() {
 }
 closeChatPanel()
 
-const chatContext = /**@type {HTMLElement}*/($("#chatContext"));
-const userNote = /**@type {HTMLElement}*/($("#userNote"));
-const mentionUser = /**@type {HTMLElement}*/($("#mentionUser"));
-const replyUser = /**@type {HTMLElement}*/($("#replyUser"));
-const blockUser = /**@type {HTMLElement}*/($("#blockUser"));
-const changeMyName = /**@type {HTMLElement}*/($("#changeMyName"));
+// Close button / space filler transition to posts view
+closeButton.addEventListener("click", function() {
+	modal.close();
+	closeChatPanel();
+	document.body.id = "out";
+	onWindowResize();
+})
+
+spaceFiller.addEventListener("click", function() {
+	if (document.body.id != "out") {
+		return;
+	}
+	document.body.id = "";
+	onWindowResize();
+})
 
 /**
  * @param {MouseEvent} e
@@ -2245,14 +3162,12 @@ if (!mobile) {
 
 // Server connection timeout message
 setTimeout(() => {
-	const connProblems = /**@type {HTMLElement}*/($("#connproblems"));
 	if (connProblems) {
 		connProblems.style.opacity = "1";
 	}
 }, 5000)
 
 // Ads
-const chatAd = /**@type {HTMLAnchorElement}*/($("#chatAd"));
 if (localStorage.noad && Date.now() - localStorage.noad < 1.21e9) { // 14 days
 	chatAd.style.display = "none"
 }
@@ -2272,4 +3187,18 @@ else {
 // Final initialisation
 translateAll();
 showLoadingScreen();
-wscapsule();
+// WsCapsule logic
+/**@type {WsCapsule}*/var instance = new WsCapsule(
+	WebSocket.prototype.send,
+	addEventListener,
+	Function.prototype.call.bind(Function.prototype.call)	
+);
+/**@type {(messageId:number, senderId:number)=>void}*/export let chatReport = (/**@type {number}*/messageId, /**@type {number}*/senderId) => instance.chatReport(messageId, senderId);
+/**@type {(messageId:number, reaction:string)=>void}*/export let chatReact = (/**@type {number}*/ messageId, /**@type {string}*/reaction) => instance.chatReact(messageId, reaction);
+
+// Blank default render and canvas size init before we have loaded board
+setSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+renderAll();
+if (chatName) {
+	namePanel.style.visibility = "hidden"
+}

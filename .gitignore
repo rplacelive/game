@@ -33,3 +33,4 @@ modlog.txt
 
 # Build
 dist/
+.depends

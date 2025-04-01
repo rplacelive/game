@@ -11,18 +11,6 @@ export const CHAT_COLOURS = ["lightblue", "navy", "green", "purple", "grey", "br
 export const VERIFIED_APP_HASH = "90e58b1f2c5fb98f74962806b85c2d7d3f7b18be8abe7a04f21e939868625357"
 
 /**
- * @constant {string} UNMUTED_SVG
- * SVG path for the unmuted icon.
- */
-export const UNMUTED_SVG = '<path d="M10.543.5a1.12 1.12 0 00-1.182.117L3.789 4.875h-1.8A1.127 1.127 0 00.868 6v8a1.127 1.127 0 001.125 1.125h1.8l5.572 4.258a1.117 1.117 0 00.681.232 1.128 1.128 0 001.127-1.126V1.511A1.119 1.119 0 0010.543.5zm-.624 17.736l-5.708-4.361H2.118v-7.75h2.093l5.708-4.361zM13 3.375v1.25a5.375 5.375 0 010 10.75v1.25a6.625 6.625 0 000-13.25z"></path><path d="M16.125 10A3.129 3.129 0 0013 6.875v1.25a1.875 1.875 0 010 3.75v1.25A3.129 3.129 0 0016.125 10z"></path>'
-
-/**
- * @constant {string} MUTED_SVG
- * SVG path for the muted icon.
- */
-export const MUTED_SVG = '<path d="M19.442 7.442l-.884-.884L16.5 8.616l-2.058-2.058-.884.884L15.616 9.5l-2.058 2.058.884.884 2.058-2.058 2.058 2.058.884-.884L17.384 9.5l2.058-2.058zM10.543.5a1.12 1.12 0 00-1.182.117L3.789 4.875h-1.8A1.127 1.127 0 00.868 6v8a1.127 1.127 0 001.125 1.125h1.8l5.572 4.258a1.117 1.117 0 00.681.232 1.128 1.128 0 001.127-1.126V1.511A1.119 1.119 0 0010.543.5zm-.624 17.736l-5.708-4.361H2.118v-7.75h2.093l5.708-4.361z"></path>'
-
-/**
  * @constant {string} DEFAULT_PALETTE_KEYS
  * String containing the default palette keys used in the app.
  */
@@ -45,14 +33,14 @@ export const DEFAULT_PALETTE_KEYS = "123456789abcdefghijklmnopqrstuvwxyz"
  * Map of audio elements used in the application.
  */
 export const AUDIOS = {
-	invalid: new Audio("./sounds/invalid.mp3"),
-	highlight: new Audio("./sounds/highlight.mp3"),
-	selectColour: new Audio("./sounds/select-colour.mp3"),
-	closePalette: new Audio("./sounds/close-palette.mp3"),
-	cooldownStart: new Audio("./sounds/cooldown-start.mp3"),
-	cooldownEnd: new Audio("./sounds/cooldown-end.mp3"),
-	bell: new Audio("./sounds/bell.mp3"),
-	celebration: new Audio("./sounds/celebration.mp3")
+	invalid: new Audio("/sounds/invalid.mp3"),
+	highlight: new Audio("/sounds/highlight.mp3"),
+	selectColour: new Audio("/sounds/select-colour.mp3"),
+	closePalette: new Audio("/sounds/close-palette.mp3"),
+	cooldownStart: new Audio("/sounds/cooldown-start.mp3"),
+	cooldownEnd: new Audio("/sounds/cooldown-end.mp3"),
+	bell: new Audio("/sounds/bell.mp3"),
+	celebration: new Audio("/sounds/celebration.mp3")
 }
 
 /**
@@ -175,6 +163,7 @@ export const COMMANDS = new Map([
  */
 
 /**
+ * Flag emojis all sourced from openmoji.org, https://www.langoly.com/most-spoken-languages/
  * @constant {Map<string, LangInfo>} LANG_INFOS
  */
 export const LANG_INFOS = new Map([
@@ -184,8 +173,21 @@ export const LANG_INFOS = new Map([
 	["es", { name: "Español", flag: "https://openmoji.org/data/color/svg/1F1EA-1F1F8.svg" }],
 	["fr", { name: "Français", flag: "https://openmoji.org/data/color/svg/1F1EB-1F1F7.svg" }],
 	["ar", { name: "عربي", flag: "https://openmoji.org/data/color/svg/1F1F8-1F1E6.svg", rtl: true }],
-	["ru", { name: "pусский", flag: "https://openmoji.org/data/color/svg/1F1F7-1F1FA.svg" }]
+	["bn", { name: "বাংলা", flag: "https://openmoji.org/data/color/svg/1F1EE-1F1F3.svg" }],
+	["ru", { name: "pусский", flag: "https://openmoji.org/data/color/svg/1F1F7-1F1FA.svg" }],
+	["pt", { name: "Português", flag: "https://openmoji.org/data/color/svg/1F1E7-1F1F7.svg" }],
+	["ur", { name: "اردو", flag: "https://openmoji.org/data/color/svg/1F1F5-1F1F0.svg", rtl: true }],
+	["de", { name: "Deutsch", flag: "https://openmoji.org/data/color/svg/1F1E9-1F1EA.svg" }],
+	["jp", { name: "日本語", flag: "https://openmoji.org/data/color/svg/1F1EF-1F1F5.svg" }],
+	["tr", { name: "Türkçe", flag: "https://openmoji.org/data/color/svg/1F1F9-1F1F7.svg" }],
+	["vi", { name: "Tiếng Việt", flag: "https://openmoji.org/data/color/svg/1F1FB-1F1F3.svg" }],
+	["ko", { name: "한국인", flag: "https://openmoji.org/data/color/svg/1F1F0-1F1F7.svg" }],
+	["it", { name: "Italiana", flag: "https://openmoji.org/data/color/svg/1F1EE-1F1F9.svg" }],
+	["fa", { name: "فارسی", flag: "https://openmoji.org/data/color/svg/1F1EE-1F1F7.svg", rtl: true }],
+	["nl", { name: "Nederland", flag: "https://openmoji.org/data/color/svg/1F1F3-1F1F1.svg"}],
+	["az", { name: "Azərbaycan", flag: "https://openmoji.org/data/color/svg/1F1E6-1F1FF.svg", rtl: true }],
 ])
+
 
 /**
  * @typedef {Record<string, string>} ThemeInfo
@@ -199,8 +201,8 @@ export const LANG_INFOS = new Map([
  * @constant {Map<string, ThemeInfo>} DEFAULT_THEMES
  */
 export const DEFAULT_THEMES = new Map([
-	["r/place 2022", { id: "r/place 2022", css: "rplace-2022.css", cssVersion: "14", pixelselect: "svg/pixel-select-2022.svg" }],
-	["r/place 2023", { id: "r/place 2023", css: "rplace-2023.css", cssVersion: "14", pixelselect: "svg/pixel-select-2023.svg" }]
+	["r/place 2022", { id: "r/place 2022", css: "/css/rplace-2022.css", cssVersion: "14", pixelselect: "/svg/pixel-select-2022.svg" }],
+	["r/place 2023", { id: "r/place 2023", css: "/css/rplace-2023.css", cssVersion: "14", pixelselect: "/svg/pixel-select-2023.svg" }]
 ])
 
 /**
@@ -213,10 +215,10 @@ export const DEFAULT_THEMES = new Map([
  * @constant {AdInfo[]} ADS
  */
 export const ADS = [
-	{ url: "https://youtu.be/R3UBtMloTdI", banners: { en: "images/august21-ad.png" } },
-	{ url: "https://t.me/rplacelive", banners: { en: "images/telegram-ad.png" } },
-	{ url: "https://discord.gg/4XnZ9WGux2", banners: { en: "images/discord-ad.png" } },
-	{ url: "https://arbitrum.life", banners: { en: "https://avatars.githubusercontent.com/u/131141781" } }
+	{ url: "https://youtu.be/R3UBtMloTdI", banners: { en: "/images/august21-ad.png" } },
+	{ url: "https://t.me/rplacelive", banners: { en: "/images/telegram-ad.png" } },
+	{ url: "https://discord.gg/4XnZ9WGux2", banners: { en: "/images/discord-ad.png" } },
+	{ url: "https://arbitrum.life", banners: { en: "/images/arbitrum.png" } }
 ]
 
 /**

@@ -1,5 +1,9 @@
 {
-    "bun.runtime": "${env:HOME}/.bun/bin/bun",
-    "bun.debugTerminal.enabled": true,
-    "bun.debugTerminal.stopOnEntry": false,
-  }
+	"bun.runtime": "${env:HOME}/.bun/bin/bun",
+	"bun.debugTerminal.enabled": true,
+	"bun.debugTerminal.stopOnEntry": false,
+	"search.exclude": {
+		"**/node_modules": true,
+		"**/dist": true
+	}
+}

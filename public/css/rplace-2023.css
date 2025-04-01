@@ -285,9 +285,18 @@ r-close-icon {
 	color: var(--ui-text);
 	padding: 4px;
 	height: max(38px, var(--message-input-height));
+	display: flex;
+	padding-top: 8px;
+}
+#messageTypePanel {
+	height: calc(var(--message-input-height) + 72px);
 }
 #messageInput[state="command"] {
 	color: #00FA9A;
+}
+.message-input-actions {
+	top: 1px;
+    right: 1px;
 }
 .message-emojis-suggestion:hover {
 	background: lightgrey;
@@ -381,4 +390,16 @@ r-spoiler[hidden] {
 }
 r-spoiler[hidden]:hover {
 	background-color: lightgray;
+}
+
+placechat {
+	border: var(--pixel-border);
+}
+
+#placeChatButton {
+	margin-left: 0;
+}
+
+#placeChatButtonImage {
+	width: 48px;
 }

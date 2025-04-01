@@ -1,14 +1,16 @@
 import { defineConfig } from "vite"
+import circleDependency from "vite-plugin-circular-dependency"
+import { serviceWorkerPlugin } from "@gautemo/vite-plugin-service-worker"
 
 export default defineConfig({
-	root: ".",
-	base: "./",
+	base: "/",
 	server: {
 		open: true,
+		strictPort: true
 	},
 	build: {
 		outDir: "dist",
-		emptyOutDir: true,
+		target: "esnext",
 		rollupOptions: {
 			input: {
 				main: "index.html",
@@ -32,5 +34,13 @@ export default defineConfig({
 	},
 	esbuild: {
 		exclude: [ "server/**/*" ]
-	}
+	},
+	plugins: [
+		circleDependency({
+			outputFilePath: "./.depends",
+		}),
+		serviceWorkerPlugin({
+			filename: "src/sw.js",
+		}),
+	],
 })
