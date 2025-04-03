@@ -1,5 +1,6 @@
 import { LitElement, html } from "lit-element"
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
+import { until } from "lit-html/directives/until.js";
 import { markdownParse, sanitise, DEFAULT_AUTH, cachedFetch } from "./shared.js";
 
 const fuzzyNumberFormat = new Intl.NumberFormat(navigator.language, { notation: "compact" })
@@ -66,7 +67,7 @@ export class Post extends LitElement {
 				</div>
 				<div id="main" class="main ${this.showAuthor ? "authored" : ""}">
 					<div id="title" class="title">${this.title}</div>
-					<p id="description" class="description">${unsafeHTML(markdownParse(sanitise(this.description)))}</p>
+					<p id="description" class="description">${until(this.#renderDescription, html`...`)}</p>
 					${this.showContents ? this.#renderContents() : ""}
 				</div>
 				${this.hidden ? this.#renderHiddenButton() : ""}
@@ -130,6 +131,12 @@ export class Post extends LitElement {
 		return html `<r-user-tooltip .type=${this.authorType} .chatName=${chatName} .creationDate=${creationDate}
 			.pixelsPlaced=${pixelsPlaced} .badges=${badges} .lastJoined=${lastJoined} .playTimeSeconds=${playTimeSeconds}
 			.userIntId=${userIntId}></r-user-tooltip>`
+	}
+
+	async #renderDescription() {
+		const sanitised = sanitise(this.description)
+		const parsedHTML = await markdownParse(this.description);
+		return unsafeHTML(parsedHTML)
 	}
 
 	async fromPost(fromPost) {

@@ -48,15 +48,15 @@ body {
 
 @font-face {
 	font-family: mono;
-	src: url(fonts/RedditMono-Bold.woff2);
+	src: url(/fonts/RedditMono-Bold.woff2);
 }
 @font-face {
 	font-family: bold;
-	src: url(fonts/RedditSans-Bold.woff2);
+	src: url(/fonts/RedditSans-Bold.woff2);
 }
 @font-face {
 	font-family: reddit;
-	src: url(fonts/RedditSans-Regular.woff2);
+	src: url(/fonts/RedditSans-Regular.woff2);
 }
 
 #maincontent {
@@ -564,7 +564,7 @@ body[eventphase="3"] #eventCountdown {
 
 body[eventphase="3"] #eventCountdown::before {
 	content: " ";
-	background: url(svg/pattern.svg);
+	background: url(/svg/pattern.svg);
 	background-size: auto;
 	left: 0px;
 	top: 0px;
@@ -713,7 +713,7 @@ body[eventphase="3"] .coverer-title {
 
 #chatAd {
 	/* Default: 'Advertise here', will be overriden in element style */
-	--adurl: url(./images/default-ad.png);
+	--adurl: url(/images/default-ad.png);
 	flex-shrink: 0;
 	background-image: var(--adurl);
 	background-position: center;
@@ -854,20 +854,6 @@ body[eventphase="3"] .coverer-title {
 	cursor: pointer;
 }
 
-#chatMessages blockquote {
-	border-left: 4px solid gray;
-	padding: 2px 4px 2px 8px;
-	margin-left: 1px;
-}
-
-#chatMessages h1, #chatMessages h2, #chatMessages h3 {
-	margin: 8px 0px;
-}
-
-#chatMessages ul, #chatMessages ol {
-	padding-inline-start: 32px;
-}
-
 .channels-options {
 	position: relative;
 	height: 25px;
@@ -933,7 +919,7 @@ body[eventphase="3"] .coverer-title {
 	height: 100%;
 }
 
-#captchaImagePositon {
+#captchaImagePosition {
 	display: block;
 	position: relative;
 	width: 196px;
@@ -1486,6 +1472,20 @@ postcopy span {
 r-live-chat-message r-emoji-panel {
 	right: 5px;
 	top: 24px;
+}
+r-live-chat-message > .content blockquote {
+	border-left: 4px solid gray;
+	padding: 2px 4px 2px 8px;
+	margin-left: 1px;
+}
+r-live-chat-message > .content h1, r-live-chat-message > .content h2, r-live-chat-message > .content h3 {
+	margin: 8px 0px;
+}
+r-live-chat-message > .content ul, r-live-chat-message > .content ol {
+	padding-inline-start: 32px;
+}
+r-live-chat-message > .content > *:first-child {
+	display: inline-block;
 }
 r-live-chat-message .reactions {
 	display: flex;

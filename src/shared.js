@@ -1,3 +1,6 @@
+import { Marked } from "marked"
+import DOMPurify from "dompurify"
+
 // Contains shared resources across pages
 export const DEFAULT_SERVER = "wss://server.rplace.live:443"
 export const DEFAULT_BOARD = "https://raw.githubusercontent.com/rplacetk/canvas1/main/place"
@@ -108,17 +111,24 @@ function openTranslationDB() {
 	})
 }
 
+/**
+ * @param {any} lang
+ */
 function getCachedTranslation(lang) {
 	return new Promise(async (resolve, reject) => {
 		const db = await openTranslationDB()
 		const transaction = db.transaction("translations", "readonly")
 		const store = transaction.objectStore("translations")
 		const request = store.get(lang)
-		request.onsuccess = event => resolve(event.target.result)
-		request.onerror = event => reject(event.target.error)
+		request.onsuccess = (/** @type {{ target: { result: any; }; }} */ event) => resolve(event.target.result)
+		request.onerror = (/** @type {{ target: { error: any; }; }} */ event) => reject(event.target.error)
 	})
 }
 
+/**
+ * @param {any} lang
+ * @param {any} data
+ */
 function setCachedTranslation(lang, data) {
 	return new Promise(async (resolve, reject) => {
 		const db = await openTranslationDB()
@@ -126,10 +136,13 @@ function setCachedTranslation(lang, data) {
 		const store = transaction.objectStore("translations")
 		const request = store.put({ lang, data, timestamp: Date.now() })
 		request.onsuccess = () => resolve()
-		request.onerror = event => reject(event.target.error)
+		request.onerror = (/** @type {{ target: { error: any; }; }} */ event) => reject(event.target.error)
 	})
 }
 
+/**
+ * @param {string} lang
+ */
 async function fetchTranslations(lang) {
 	// Fast: Pull from local object
 	if (TRANSLATIONS[lang]) {
@@ -159,6 +172,9 @@ async function fetchTranslations(lang) {
 	}
 }
 
+/**
+ * @param {string} key
+ */
 export async function translate(key) {
 	let translations = TRANSLATIONS[lang]
 	if (!translations) {
@@ -202,11 +218,9 @@ export class PublicPromise {
 	}
 }
 
-export class PublicPromiseSync {
-	locked
-	resolve
-	reject
+export class PublicPromiseSync {	
 	#promise
+
 	constructor() {
 		this.#promise = new Promise((resolve, reject) => {
 			this.resolve = resolve
@@ -232,53 +246,186 @@ export class PublicPromiseSync {
 	}
 }
 
-export function sanitise(txt) {
-	return txt
+
+/**@type {import("marked").MarkedExtension}*/ const markedMarkdownConfig = {
+	hooks: {
+		preprocess(markdown) {
+			return sanitise(markdown)
+		},
+	},
+	extensions: [
+		{
+			name: "spoiler",
+			level: "inline",
+			start(src) {
+				return src.indexOf("||")
+			},
+			tokenizer(src) {
+				const match = /^\|\|([\s\S]+?)\|\|/.exec(src);
+				if (match) {
+					return {
+						type: "spoiler",
+						raw: match[0],
+						text: match[1]?.trim(),
+						tokens: []
+					}
+				}
+				return undefined
+			},
+			renderer(token) {
+				let tokens = null;
+				if (token.tokens && token.tokens.length > 0) {
+					tokens = token.tokens
+				}
+				else {
+					tokens = /**@type {import("marked").Token[]}*/([{
+						type: "text",
+						raw: token.text,
+						text: token.text
+					}])
+				}
+				const parsedContent = this.parser.parseInline(tokens);
+				return `<r-spoiler hidden="true">${parsedContent}</r-spoiler>`;				
+			},
+		},
+		{
+			name: "gif",
+			level: "inline",
+			start(src) {
+				return src.indexOf("[gif:")
+			},
+			tokenizer(src) {
+				const match = /^\[gif:([a-zA-Z0-9_-]+):([a-zA-Z_-]+)\]/.exec(src)
+				if (match) {
+					return {
+						type: "gif",
+						raw: match[0],
+						gifId: match[1],
+						gifSource: match[2]
+					}
+				}
+				return undefined
+			},
+			renderer(token) {
+				return `<r-gif key="${token.gifId}" source="${token.gifSource}"></r-gif>`
+			}
+		},
+		{
+			name: "underline",
+			level: "inline",
+			start(src) {
+				return src.indexOf("__");
+			},
+			tokenizer(src) {
+				const match = /^__([^_\n]+?)__/.exec(src);
+				if (match) {
+					return {
+						type: "underline",
+						raw: match[0],
+						text: match[1]?.trim(),
+						tokens: []
+					};
+				}
+				return undefined;
+			},
+			renderer(token) {
+				let tokens = null;
+				if (token.tokens && token.tokens.length > 0) {
+					tokens = token.tokens
+				}
+				else {
+					tokens = /**@type {import("marked").Token[]}*/([{
+						type: "text",
+						raw: token.text,
+						text: token.text
+					}])
+				}
+				const parsedContent = this.parser.parseInline(tokens);
+				return `<u>${parsedContent}</u>`;
+			}
+		}	
+	],
+	renderer: {
+		heading({ tokens, depth }) {
+			const text = this.parser.parseInline(tokens);
+			if (depth >= 1 && depth <= 3) {
+				return `<h${depth}>${text}</h${depth}>`;
+			}
+			return text;
+		},
+		link(token) {
+			return this.parser.parseInline(token.tokens) || token.text;
+		},
+		image(token) {
+			return token.text || `[image:${token.href}:]`;
+		},
+		html(token) {
+			return token.text;
+		},
+		table(token) {
+			const header = token.header.map(cell => cell.text).join(' | ');
+			const separator = token.align.map(align => 
+				align === 'left' ? ':---' : 
+				align === 'right' ? '---:' : 
+				align === 'center' ? ':---:' : '---'
+			).join(' | ');
+			const body = token.rows.map(row => 
+				row.map(cell => cell.text).join(' | ')
+			).join('\n');
+			return `| ${header} |\n| ${separator} |\n${body}`;
+		}
+	},
+	async: true
+}
+
+/**
+ * @param {string} text
+ */
+export function sanitise(text) {
+	return text
+		// HTML
 		.replaceAll(/&/g,"&amp;")
 		.replaceAll(/</g,"&lt;")
 		.replaceAll(/"/g,"&quot;")
-		.replace(/\?|javascript:/gi, "")
+		// Javascript URLs
+		.replaceAll(/\?|javascript:/gi, "")
+		// Null characters
+		.replaceAll(/[\u200B-\u200D\uFEFF]/g, "");
 }
 
-export function markdownParse(text) {
-	// Headers
-	text = text.replace(/^(#{3}\s)(.+)/gm, (match, p1, p2) => {
-		return `<h3>${p2}</h3>`
-	})
-	text = text.replace(/^(#{2}\s)(.+)/gm, (match, p1, p2) => {
-		return `<h2>${p2}</h2>`
-	})
-	text = text.replace(/^(#{1}\s)(.+)/gm, (match, p1, p2) => {
-		return `<h1>${p2}</h1>`
-	})
-	// Bold
-	text = text.replace(/\*\*(.+?)\*\*/g, (match) => {
-		return `<b>${match.slice(2, -2)}</b>`
-	})
-	// Underline
-	text = text.replace(/__(.+?)__/g, (match) => {
-		return `<u>${match.slice(2, -2)}</u>`
-	})
-	// Italic
-	text = text.replace(/\*([^*]+?)\*/g, (match) => {
-		return `<i>${match.slice(1, -1)}</i>`
-	})
-	text = text.replace(/_(.+?)_/g, (match) => {
-		return `<i>${match.slice(1, -1)}</i>`
-	})
-	// Spoiler
-	text = text.replace(/\|\|([\s\S]+?)\|\|/g, (match) => {
-		return `<r-spoiler hidden="true">${match.slice(2, -2)}</r-spoiler>`
-	})
-	// Strikethrough
-	text = text.replace(/~(.+?)~/g, (match) => {
-		return `<s>${match.slice(1, -1)}</s>`
-	})
-	// Separator
-	text = text.replace(/^\s*---\s*$/gm, () => {
-		return "<hr>"
-	})
-	return text
+/**
+ * @param {string} text
+ * @returns {Promise<string>} Sanitised parsed HTML message
+ */
+export async function markdownParse(text, config = markedMarkdownConfig) {
+	// Parse markdown syntax
+	const markedInstance = new Marked();
+	markedInstance.use(config);
+	let parsedHTML = await markedInstance.parse(text); 
+
+	// Sanitise HTML
+	parsedHTML = DOMPurify.sanitize(parsedHTML, {
+		ALLOWED_TAGS: [],
+		ALLOWED_ATTR: [ "hidden" ],
+
+		// Whitelist
+		ADD_TAGS: [ "r-gif", "r-spoiler", "h1", "h2", "h3", "b", "i", "e", "em", "strong", "del", "br", "p", "span", "ul", "ol", "li", "u", "blockquote", "code", "pre" ],
+		ADD_ATTR: [ "key", "source", "hidden" ],
+
+		// Explicit enforcements
+		FORBID_ATTR: [ "style", "on*", "href", "src", "srcset" ],
+		ALLOW_DATA_ATTR: false,
+		ALLOW_ARIA_ATTR: false,
+
+		// Custom r- elements handling
+		CUSTOM_ELEMENT_HANDLING: {
+			tagNameCheck: /^r-/i,
+			attributeNameCheck: /^(key|source|hidden)$/i,
+			allowCustomizedBuiltInElements: false
+		}
+	});
+
+	return parsedHTML;
 }
 
 // Utility functions for Auth DB IndexedDB caches
@@ -298,17 +445,25 @@ function openCurrentAuthDB() {
 	})
 }
 
+/**
+ * @param {any} storeName
+ * @param {any} key
+ */
 function getCachedData(storeName, key) {
 	return new Promise(async (resolve, reject) => {
 		const db = await openCurrentAuthDB()
 		const transaction = db.transaction(storeName, "readonly")
 		const store = transaction.objectStore(storeName)
 		const request = store.get(key)
-		request.onsuccess = event => resolve(event.target.result)
-		request.onerror = event => reject(event.target.error)
+		request.onsuccess = (/** @type {{ target: { result: any; }; }} */ event) => resolve(event.target.result)
+		request.onerror = (/** @type {{ target: { error: any; }; }} */ event) => reject(event.target.error)
 	})
 }
 
+/**
+ * @param {any} storeName
+ * @param {{ id: any; data: any; timestamp: number; }} data
+ */
 function setCachedData(storeName, data) {
 	return new Promise(async (resolve, reject) => {
 		const db = await openCurrentAuthDB()
@@ -316,12 +471,18 @@ function setCachedData(storeName, data) {
 		const store = transaction.objectStore(storeName)
 		const request = store.put(data)
 		request.onsuccess = () => resolve()
-		request.onerror = event => reject(event.target.error)
+		request.onerror = (/** @type {{ target: { error: any; }; }} */ event) => reject(event.target.error)
 	})
 }
 
 // Responsible for setting and retrieving form DB, will attempt to grab the object from the DB, if it can't
 // it will grab the object from the URL and then cache it in the database
+/**
+ * @param {string} keystore
+ * @param {any} id
+ * @param {string | URL | Request} url
+ * @param {number} expiry
+ */
 export async function cachedFetch(keystore, id, url, expiry) {
 	const now = Date.now()
 	let cachedObject = await getCachedData(keystore, id)
@@ -342,9 +503,14 @@ export async function cachedFetch(keystore, id, url, expiry) {
 	return cachedObject
 }
 
+/**
+ * @param {URL} url
+ * @param {string} method
+ * @param {any} body
+ */
 export async function makeRequest(url, method = "GET", body = undefined) {
 	try {
-		const fetchOptions = {
+		/**@type {RequestInit}*/const fetchOptions = {
 			method,
 			credentials: "include",
 		}
@@ -422,6 +588,10 @@ export function handleFormSubmit(form, endpoint, { bind, checkCustomValidity, pr
 // Cross-frame IPC system
 let frameReqId = 0
 let frameReqs = new Map()
+/**
+ * @param {{ contentWindow: { postMessage: (arg0: { call: any; data: undefined; handle: number; source: string; }, arg1: string) => void; }; }} frameEl
+ * @param {any} messageCall
+ */
 export async function makeCrossFrameRequest(frameEl, messageCall, args = undefined) {
 	const handle = frameReqId++
 	const promise = new PublicPromise()
@@ -435,6 +605,10 @@ export async function makeCrossFrameRequest(frameEl, messageCall, args = undefin
 	frameEl.contentWindow.postMessage(postCall, location.origin)
 	return await promise.promise
 }
+/**
+ * @param {HTMLIFrameElement} frameEl
+ * @param {any} messageCall
+ */
 export function sendCrossFrameMessage(frameEl, messageCall, args = undefined) {
 	frameEl.contentWindow.postMessage({ 
 		call: messageCall, 
@@ -530,4 +704,28 @@ export function stringToHtml(html, trim = true) {
 	template.innerHTML = html
 	const result = template.content.children
 	return /**@type {HTMLElement}*/(result.length === 1 ? result[0] : result)
+}
+
+/**
+ * @template {Record<string|symbol, any>} T - Target object type (indexable)
+ * @param {string} storageKey - The localStorage key for the object
+ * @param {T} target - The object to be synchronised with localStorage
+ * @returns {T} - A proxy-wrapped version of the target object
+ */
+export function syncLocalStorage(storageKey, target) {
+	/** @type {ProxyHandler<T>} */const handler = {
+		get(/**@type {T}*/ obj, prop) {
+			if (typeof prop === "string" && typeof obj[prop] === "object" && obj[prop] !== null) {
+				/**@type {T}*/const nested = obj[prop]
+				return new Proxy(nested, handler)
+			}
+			return obj[prop]
+		},
+		set(/**@type {Record<string|symbol, any>}*/obj, key, value) {
+			obj[key] = value
+			localStorage.setItem(storageKey, JSON.stringify(target))
+			return true
+		}
+	}
+	return new Proxy(target, handler)
 }

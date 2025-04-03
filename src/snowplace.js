@@ -1,4 +1,4 @@
-// @ts-ignore
+// @ts-expect-error
 import CanvasSnow from "@cycjimmy/canvas-snow";
 
 /**@type {CanvasSnow}*/let winterCanvasSnow = null;

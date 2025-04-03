@@ -693,7 +693,7 @@ dialog {
   	top: 0;
 	color: black;
 	padding: 16px;
-	background: url(images/reddit-login-banner.png);
+	background: url(/images/reddit-login-banner.png);
 	background-size: cover;
 	min-width: 144px;
 	width: 144px;

@@ -2,10 +2,8 @@ import { LitElement, html } from "lit-element"
 import { styleMap } from "lit-html/directives/style-map.js"
 import { until } from "lit/directives/until.js"
 import { unsafeHTML } from "lit/directives/unsafe-html.js"
-import { Marked } from "marked"
-import DOMPurify from "dompurify"
 import { CHAT_COLOURS, EMOJIS, CUSTOM_EMOJIS } from "./defaults.js"
-import { sanitise, translate, hash, $ } from "./shared.js"
+import { sanitise, translate, hash, $, markdownParse } from "./shared.js"
 import { chatMentionUser, chatModerate, chatReply, cMessages, currentChannel, onChatContext, pos, x, y, intIdNames, chatReport, chatReact } from "./index.js"
 
 export class LiveChatMessage extends LitElement {
@@ -69,144 +67,6 @@ export class LiveChatMessage extends LitElement {
 		}
 	}
 
-	/**
-	 * @type {import("marked").MarkedExtension}
-	 */
-	get #markedMarkdownConfig() {
-		return {
-			hooks: {
-				preprocess(markdown) {
-					return sanitise(markdown)
-				},
-			},
-			extensions: [
-				{
-					name: "spoiler",
-					level: "inline",
-					start(src) {
-						return src.indexOf("||")
-					},
-					tokenizer(src) {
-						const match = /^\|\|([\s\S]+?)\|\|/.exec(src);
-						if (match) {
-							return {
-								type: "spoiler",
-								raw: match[0],
-								text: match[1]?.trim(),
-								tokens: []
-							}
-						}
-						return undefined
-					},
-					renderer(token) {
-						let tokens = null;
-						if (token.tokens && token.tokens.length > 0) {
-							tokens = token.tokens
-						}
-						else {
-							tokens = /**@type {import("marked").Token[]}*/([{
-								type: "text",
-								raw: token.text,
-								text: token.text
-							}])
-						}
-						const parsedContent = this.parser.parseInline(tokens);
-						return `<r-spoiler hidden="true">${parsedContent}</r-spoiler>`;				
-					},
-				},
-				{
-					name: "gif",
-					level: "inline",
-					start(src) {
-						return src.indexOf("[gif:")
-					},
-					tokenizer(src) {
-						const match = /^\[gif:([a-zA-Z0-9_-]+):([a-zA-Z_-]+)\]/.exec(src)
-						if (match) {
-							return {
-								type: "gif",
-								raw: match[0],
-								gifId: match[1],
-								gifSource: match[2]
-							}
-						}
-						return undefined
-					},
-					renderer(token) {
-						return `<r-gif key="${token.gifId}" source="${token.gifSource}"></r-gif>`
-					}
-				},
-				{
-					name: "underline",
-					level: "inline",
-					start(src) {
-						return src.indexOf("__");
-					},
-					tokenizer(src) {
-						const match = /^__([^_\n]+?)__/.exec(src);
-						if (match) {
-							return {
-								type: "underline",
-								raw: match[0],
-								text: match[1]?.trim(),
-								tokens: []
-							};
-						}
-						return undefined;
-					},
-					renderer(token) {
-						let tokens = null;
-						if (token.tokens && token.tokens.length > 0) {
-							tokens = token.tokens
-						}
-						else {
-							tokens = /**@type {import("marked").Token[]}*/([{
-								type: "text",
-								raw: token.text,
-								text: token.text
-							}])
-						}
-						const parsedContent = this.parser.parseInline(tokens);
-						return `<u>${parsedContent}</u>`;
-					}
-				}	
-			],
-			renderer: {
-				heading({ tokens, depth }) {
-					const text = this.parser.parseInline(tokens);
-					if (depth >= 1 && depth <= 3) {
-						return `<h${depth}>${text}</h${depth}>`
-					}
-					return text
-				},
-				//paragraph({ tokens }) {
-				//	return this.parser.parseInline(tokens);
-				//},
-				link(token) {
-					return this.parser.parseInline(token.tokens) || token.text;
-				},
-				image(token) {
-					return token.text || `[image:${token.href}:]`;
-				},
-				html(token) {
-					return token.text;
-				},
-				table(token) {
-					const header = token.header.map(cell => cell.text).join(' | ');
-					const separator = token.align.map(align => 
-						align === 'left' ? ':---' : 
-						align === 'right' ? '---:' : 
-						align === 'center' ? ':---:' : '---'
-					).join(' | ');
-					const body = token.rows.map(row => 
-						row.map(cell => cell.text).join(' | ')
-					).join('\n');
-					return `| ${header} |\n| ${separator} |\n${body}`;
-				}
-			},
-			async: true
-		}
-	}
 
 	/**
 	 * @param {string} message Raw message text
@@ -217,47 +77,19 @@ export class LiveChatMessage extends LitElement {
 			return null
 		}
 
-		// Pre-cleanup text for zero-width chars
-		message = message.toString()
-			.replace(/[\u200B-\u200D\uFEFF]/g, "")
-
-		// Parse markdown syntax
-		const markedInstance = new Marked();
-		markedInstance.use(this.#markedMarkdownConfig);
-		let parsedHtml = await markedInstance.parseInline(message); 
-
-		// Sanitise HTML
-		parsedHtml = DOMPurify.sanitize(parsedHtml, {
-			ALLOWED_TAGS: [],
-			ALLOWED_ATTR: [ "hidden" ],
-
-			// Whitelist
-			ADD_TAGS: [ "r-gif", "r-spoiler", "h1", "h2", "h3", "b", "i", "e", "em", "strong", "del", "br", "p", "span", "ul", "ol", "li", "u", "blockquote", "code", "pre" ],
-			ADD_ATTR: [ "key", "source", "hidden" ],
-
-			// Explicit enforcements
-			FORBID_ATTR: [ "style", "on*", "href", "src", "srcset" ],
-			ALLOW_DATA_ATTR: false,
-			ALLOW_ARIA_ATTR: false,
-
-			// Custom r- elements handling
-			CUSTOM_ELEMENT_HANDLING: {
-				tagNameCheck: /^r-/i,
-				attributeNameCheck: /^(key|source|hidden)$/i,
-				allowCustomizedBuiltInElements: false
-			}
-		});
+		message = sanitise(message);
+		let parsedHTML = await markdownParse(message);
 
 		// Handle emojis
-		parsedHtml = parsedHtml.replaceAll(/:([a-z-_]{0,16}):/g, (full, source) => {
-			const matches = parsedHtml.match(new RegExp(`:${source}:`, "g"));
-			const isLargeEmoji = matches && matches.length === 1 && !parsedHtml.replace(full, "").trim();
+		parsedHTML = parsedHTML.replaceAll(/:([a-z-_]{0,16}):/g, (full, source) => {
+			const matches = parsedHTML.match(new RegExp(`:${source}:`, "g"));
+			const isLargeEmoji = matches && matches.length === 1 && !parsedHTML.replace(full, "").trim();
 			const size = isLargeEmoji ? "48" : "16"
 			return `<img src="custom_emojis/${source}.png" alt=":${source}:" title=":${source}:" width="${size}" height="${size}">`;
 		})	
 
 		// Handle coordinates and generate final lit HTML
-		const formattedMessage = this.#parseCoordinates(parsedHtml);
+		const formattedMessage = this.#parseCoordinates(parsedHTML);
 		return html`${formattedMessage}`
 	}
 
@@ -494,12 +326,16 @@ export class LiveChatMessage extends LitElement {
 			</ul>
 		`
 	}
+
+	#renderMessage() {
+		return html `<span class="content">${until(this.#parseMessage(this.content), html`...`)}</span>`
+	}
 		
 	render() {
 		return html`
 			${this.#renderReply()}
 			${this.#renderName()}
-			<span>${until(this.#parseMessage(this.content), html`...`)}</span>
+			${this.#renderMessage()}
 			${this.#renderReactions()}
 			${this.#renderActions()}`
 	}

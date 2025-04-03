@@ -262,7 +262,6 @@ class GifPanel extends LitElement {
 
 	connectedCallback() {
 		super.connectedCallback();
-		this.#fetchGifs();
 
 		const resizeObserver = new ResizeObserver(() => {
 			const columnCount = this.#columnCount;
@@ -281,7 +280,7 @@ class GifPanel extends LitElement {
 		const bottomThreshold = this.scrollHeight - 64;
 
 		if (scrollPosition >= bottomThreshold && !this.isLoading) {
-			this.#fetchGifs();
+			this.fetchGifs();
 		}
 	}
 
@@ -291,7 +290,7 @@ class GifPanel extends LitElement {
 		}
 	}
 
-	async #fetchGifs({ search: searchTerm = this.searchTerm, next = this.next, limit = this.limit } = {}) {
+	async fetchGifs({ search: searchTerm = this.searchTerm, next = this.next, limit = this.limit } = {}) {
 		this.isLoading = true;
 		this.error = null;
 
@@ -337,7 +336,7 @@ class GifPanel extends LitElement {
 		this.#clearGifs()
 		const input = e.target;
 		const searchValue = input ? input.value : GifPanel.DEFAULT_SEARCH_TERM;
-		this.#fetchGifs({ search: searchValue, limit: 8 });
+		this.fetchGifs({ search: searchValue, limit: 8 });
 	}
 
 	// @ts-expect-error Remove shadow DOM by using element itself as the shadow root

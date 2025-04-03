@@ -209,7 +209,7 @@
 				<p noselect translate="captchaPrompt"><em>Solve this small captcha to help keep rplace.live fun for all...</em></p>
 				<hr>
 				<h2 id="captchaLabel">Please click the button containing the emoji you see below</h2>
-				<div id="captchaImagePositon"><!--captcha canvas image space--></div>
+				<div id="captchaImagePosition"><!--captcha canvas image space--></div>
 				<a style="text-align: center;" href=".">(generate new captcha)</a>
 				<div id="captchaOptions"><!--clickable captcha answers--></div>
 			</div>
@@ -474,7 +474,16 @@
 						<button type="button" title="Add emoji" onclick="messageInputEmojiPanel.toggleAttribute('open'); messageInputGifPanel.removeAttribute('open')">
 							<img alt="Add emoji" width="24" height="24" src="svg/emoji.svg" class="icon-image">
 						</button>
-						<button type="button" title="Add gif" onclick="messageInputGifPanel.toggleAttribute('open'); messageInputEmojiPanel.removeAttribute('open')">
+						<button type="button" title="Add gif" onclick="{
+								if (!messageInputGifPanel.getAttribute('open')) {
+									messageInputGifPanel.setAttribute('open', 'true');
+									messageInputEmojiPanel.removeAttribute('open')
+									messageInputGifPanel.fetchGifs();
+								}
+								else {
+									messageInputGifPanel.removeAttribute('open');
+								}
+							}">
 							<img alt="Add emoji" width="24" height="24" src="svg/gif.svg" class="icon-image">
 						</button>
 					</div>

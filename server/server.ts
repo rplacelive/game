@@ -3,9 +3,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-// @ts-check
 /* eslint-disable jsdoc/require-returns */
 /* eslint-disable jsdoc/require-jsdoc */
+// @ts-check
 // Legacy rplace server software, (c) BlobKat, Zekiah
 // For the current server software, go to https://github.com/Zekiah-A/RplaceServer
 import { promises as fs } from "fs"
@@ -20,7 +20,7 @@ import { Worker } from "worker_threads"
 import { $, Server, ServerWebSocket, TLSWebSocketServeOptions } from "bun"
 import { DbInternals, LiveChatMessage } from "./db-worker.js"
 import { PublicPromise } from "./server-types.js"
-import type { ChallengeModule } from "./padlock/server.d.ts";
+import type { ChallengeModule } from "./padlock/server.d.ts"
 import { distance } from "fastest-levenshtein"
 import * as sha256 from "sha256"
 

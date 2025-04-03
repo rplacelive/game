@@ -477,8 +477,11 @@ class WsCapsule {
 				}
 				case 2: {
 					// Old server "changes" packet - preloadedBoard = http board, data = changes
-					runLengthChanges(data, await preloadedBoard);
-					hideLoadingScreen();
+					const board = await preloadedBoard
+					if (board) {
+						runLengthChanges(data, board);
+						hideLoadingScreen();
+					}
 					break;
 				}
 				case 3: { // Online
@@ -1712,7 +1715,7 @@ colours.onclick = (/**@type {MouseEvent}*/e) => {
 }
 
 /**
- * @param {{ getUint32: (arg0: number) => number; byteLength: number; getUint8: (arg0: number) => number; getUint16: (arg0: number) => number; }} data
+ * @param {DataView<ArrayBuffer>} data
  * @param {any} buffer
  */
 export function runLengthChanges(data, buffer) {
@@ -3032,7 +3035,6 @@ closeButton.addEventListener("click", function() {
 	closeChatPanel();
 	document.body.id = "out";
 	onMainContentResize();
-	// TODO: CanvParent / CanvParent2 don't respect transition due to requiring window resize
 })
 
 spaceFiller.addEventListener("click", function() {

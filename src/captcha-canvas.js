@@ -1,8 +1,17 @@
-//@ts-nocheck
-let captchaCanvasHandle = null
+const captchaPopup = /**@type {HTMLElement}*/(document.getElementById("captchaPopup"));
+const captchaImagePosition = /**@type {HTMLElement}*/(document.getElementById("captchaImagePosition"));
+const captchaCanvas = /**@type {HTMLCanvasElement}*/(document.getElementById("captchaCanvas"));
 
+/**@type {number|null}*/let captchaCanvasHandle = null
+
+/**
+ * @param {Blob} imageData
+ */
 export function updateImgCaptchaCanvas(imageData) {
-	const ctx = setTargetCanvas(captchaCanvas)
+	updateImgCaptchaCanvasFallback(imageData);
+
+	// TODO: Reimplement / deal with this!
+	/*const ctx = setTargetCanvas(captchaCanvas)
 	const patternImg = Texture().fromSrc("./images/pattern.png", _, REPEAT | MIPMAPS | UPSCALE_PIXELATED)
 	const img = Texture()
 	img.from(imageData, _, MIPMAPS)
@@ -75,7 +84,7 @@ export function updateImgCaptchaCanvas(imageData) {
 		const imgWidth = imgSize / captchaCanvas.width
 		const imgHeight = imgWidth * hRatio
 		const imageX = 0.5 - imgWidth * 0.5
-		const imgBotttom = captchaImagePositon.offsetTop + captchaImagePositon.offsetHeight
+		const imgBotttom = captchaImagePosition.offsetTop + captchaImagePosition.offsetHeight
 		const imageY = (captchaCanvas.height - imgBotttom) / captchaCanvas.height
 
 		let prevShader = ctx.useShader(cornerShader)
@@ -97,11 +106,13 @@ export function updateImgCaptchaCanvas(imageData) {
 
 		captchaCanvasHandle = requestAnimationFrame(drawCaptcha)
 	}
-	captchaCanvasHandle = requestAnimationFrame(drawCaptcha)
+	captchaCanvasHandle = requestAnimationFrame(drawCaptcha)*/
 }
 
+/**
+ * @param {Blob} imageData
+ */
 export function updateImgCaptchaCanvasFallback(imageData) {
-	const ctx = captchaCanvas.getContext("2d")
 	captchaCanvas.width = captchaPopup.offsetWidth
 	captchaCanvas.height = captchaPopup.offsetHeight
 	const captchaImg = new Image()
@@ -114,11 +125,16 @@ export function updateImgCaptchaCanvasFallback(imageData) {
 			if (captchaCanvasHandle === null) {
 				return
 			}
+			const ctx = captchaCanvas.getContext("2d")
+			if (ctx === null) {
+				console.error("Could not acquire captcha canvas rendering context (ctx was null)")
+				return
+			}
 			captchaCanvas.width = captchaPopup.offsetWidth
 			captchaCanvas.height = captchaPopup.offsetHeight
 			const canvasImageSize = 196
-			const x = captchaImagePositon.offsetLeft
-			const y = captchaImagePositon.offsetTop
+			const x = captchaImagePosition.offsetLeft
+			const y = captchaImagePosition.offsetTop
 			ctx.clearRect(0, 0, captchaCanvas.width, captchaCanvas.height)
 			ctx.save()
 			ctx.beginPath()
@@ -131,7 +147,7 @@ export function updateImgCaptchaCanvasFallback(imageData) {
 			ctx.clip()
 			ctx.drawImage(captchaImg, x, y, canvasImageSize, canvasImageSize)
 			ctx.restore()
-			const captchaImageBottom = captchaImagePositon.offsetTop + canvasImageSize
+			const captchaImageBottom = captchaImagePosition.offsetTop + canvasImageSize
 			const captchaImageCentreX = captchaCanvas.width / 2
 			ctx.fillStyle = "#ff0000a3"
 			ctx.font = "16px reddit"
@@ -147,6 +163,8 @@ export function updateImgCaptchaCanvasFallback(imageData) {
 }
 
 export function clearCaptchaCanvas() {
-	window.cancelAnimationFrame(captchaCanvasHandle)
-	captchaCanvasHandle = null
+	if (captchaCanvasHandle) {
+		window.cancelAnimationFrame(captchaCanvasHandle)
+		captchaCanvasHandle = null	
+	}
 }

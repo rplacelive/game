@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-// @ts-nocheck
 // Service worker for PWA installation
 const CURRENT_CACHES = "tkv5"
 self.addEventListener("install", (event) => {
@@ -21,11 +19,11 @@ self.addEventListener("install", (event) => {
 				"goldplace.css",
 				"misc-page.css",
 				"posts.css",
-				"rplace-2022.css",
-				"rplace-2023.css",
 				"shared.css",
 				"styles.css",
-				"theme-switch.css",
+				"css/theme-switch.css",
+				"css/rplace-2022.css",
+				"css/rplace-2023.css",
 
 				// Modules
 				//"live-chat-elements.js",
