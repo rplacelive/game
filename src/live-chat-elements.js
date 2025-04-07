@@ -266,9 +266,9 @@ export class LiveChatMessage extends LitElement {
 
 		return html`
 			<div class="actions">
-				${until(renderActionButton("svg/reply-action.svg", "replyTo", this.#handleReply), html`<span>...</span>`)}
-				${until(renderActionButton("svg/react-action.svg", "addReaction", this.#handleReact), html`<span>...</span>`)}
-				${until(renderActionButton("svg/report-action.svg", "report", this.#handleReport), html`<span>...</span>`)}
+				${until(renderActionButton("/svg/reply-action.svg", "replyTo", this.#handleReply), html`<span>...</span>`)}
+				${until(renderActionButton("/svg/react-action.svg", "addReaction", this.#handleReact), html`<span>...</span>`)}
+				${until(renderActionButton("/svg/report-action.svg", "report", this.#handleReport), html`<span>...</span>`)}
 				${localStorage.vip?.startsWith("!") ? until(renderActionButton("svg/moderate-action.svg", "Moderation options", this.#handleModerate), html`<span>Loading...</span>`) : null}
 			</div>`
 	}

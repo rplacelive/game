@@ -97,7 +97,7 @@
 						}
 					})(this);
 				" title="copy canvas link">
-					<img class="icon-image" src="svg/clipboard.svg">
+					<img class="icon-image" src="/svg/clipboard.svg">
 					<span style="align-self: center; margin-right: 8px;cursor: pointer;">Copy overlay URL</span>
 					<span style="opacity: 0; align-self: center;">Copied to clipboard!</span>
 				</div>
@@ -188,7 +188,7 @@
 			</div>
 			<div id="canvparent2" noselect>
 				<div id="canvselect">
-					<img theme="pixelselect" src="svg/pixel-select-2022.svg" style="position: absolute; top: -10%; left: -10%; width: 120%; height: 120%" ondragstart="return false">
+					<img theme="pixelselect" src="/svg/pixel-select-2022.svg" style="position: absolute; top: -10%; left: -10%; width: 120%; height: 120%" ondragstart="return false">
 				</div>
 				<img id="templateImage" width="auto" height="auto" ondrag="return">
 				<placechat id="idPosition" style="display: none;">
@@ -208,7 +208,7 @@
 			</div>
 			<button noselect id="place" translate="connecting">Connecting...</button>
 			<button id="chatbtn" class="layout" noselect>
-				<img alt="Chat" class="icon-image" src="svg/chat.svg" style="width:16px; height:21px">
+				<img alt="Chat" class="icon-image" src="/svg/chat.svg" style="width:16px; height:21px">
 			</button>
 			<dialog id="popup">
 				<div>
@@ -237,7 +237,7 @@
 						<div style="position: relative;">
 							<img src="images/august21-cover.png" style="width: 100%;height: 100%;flex-grow: 1;border-radius: 4px;">
 							<span id="august21PopupLabel" style="border-radius: 100px; height: 24px; background: var(--ui-panel-bg); display: flex; column-gap: 4px;position: absolute;left: 50%;top: 50%;transform: translate(-50%);padding: 5px;line-height: 15px;background: white;">
-								<img src="svg/lock.svg" height="16" width="16">
+								<img src="/svg/lock.svg" height="16" width="16">
 								Coming soon!
 								<span id="august21PopupTimer"></span>
 							</span>
@@ -267,7 +267,7 @@
 					modal.showModal()
 				}
 			">
-				<img class="icon-image" src="svg/help.svg">
+				<img class="icon-image" src="/svg/help.svg">
 			</button>
 			<dialog id="modal">
 				<div class="modal-header">
@@ -309,14 +309,15 @@
 						</div>
 					</div>
 					<button id="placeChatButton" class="modal-footer-button" title="Enable canvas chat">
-						<img id="placeChatButtonImage" src="svg/place-chat.svg" width="60">
+						<img id="placeChatButtonImage" src="/svg/place-chat.svg" width="60">
 					</button>
 				</div>
 			</dialog>
 			<div id="palette" style="transform: translateY(100%)" noselect>
 				<div style="position: relative;">
 					<div id="canvasLock" style="display: none;">
-						<img src="svg/lock.svg" style="width: 36px;"> <span translate="lockMessage">This canvas is locked... You can't place pixels here anymore</span>
+						<img src="/svg/lock.svg" class="icon-image" style="width: 36px;">
+						<span translate="lockMessage">This canvas is locked... You can't place pixels here anymore</span>
 					</div>
 					<div id="colours"></div>
 				</div>
@@ -348,7 +349,7 @@
 				<div class="name-input-container">
 					<input id="nameInput" type="text" placeholder="Enter nickname..." translate="enterNickname" maxlength="16">
 					<button id="nameButton" type="button" title="Confirm name">
-						<img alt="✔️" src="svg/green-checkmark.svg">
+						<img alt="✔️" src="/svg/green-checkmark.svg">
 					</button>
 				</div>
 			</div>
@@ -373,7 +374,7 @@
 					</button>
 					<button id="channelEnButton" class="channel-button">
 						<span id="channelEn" style="opacity: 0.5;">
-							<img src="svg/flag-gb.svg" style="height: 20px; vertical-align:sub">EN
+							<img src="/svg/flag-gb.svg" style="height: 20px; vertical-align:sub">EN
 						</span>	
 					</button>
 				</div>
@@ -464,7 +465,7 @@
 					<textarea id="messageInput" type="text" placeholder="Enter message..." translate="enterMessage" enterkeyhint="send" maxlength="200"></textarea>
 					<div class="message-input-actions">
 						<button type="button" title="Add emoji" onclick="messageInputEmojiPanel.toggleAttribute('open'); messageInputGifPanel.removeAttribute('open')">
-							<img alt="Add emoji" width="24" height="24" src="svg/emoji.svg" class="icon-image">
+							<img alt="Add emoji" width="24" height="24" src="/svg/emoji.svg" class="icon-image">
 						</button>
 						<button type="button" title="Add gif" onclick="{
 								if (!messageInputGifPanel.getAttribute('open')) {
@@ -476,7 +477,7 @@
 									messageInputGifPanel.removeAttribute('open');
 								}
 							}">
-							<img alt="Add emoji" width="24" height="24" src="svg/gif.svg" class="icon-image">
+							<img alt="Add emoji" width="24" height="24" src="/svg/gif.svg" class="icon-image">
 						</button>
 					</div>
 				</div>
