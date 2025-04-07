@@ -1148,7 +1148,7 @@ const serverOptions:TLSWebSocketServeOptions<ClientData> = {
 				if (!userToken) {
 					newToken = randomString(32)
 				}
-				const urlPath = url.pathname === "/" ? url.pathname.slice(1).trim() : url.pathname.trim()
+				const urlPath = url.pathname.startsWith("/") ? url.pathname.slice(1).trim() : url.pathname.trim()
 				const upgradeSuccess = server.upgrade(req, {
 					data: {
 						url: urlPath,
