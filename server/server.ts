@@ -1140,17 +1140,18 @@ const serverOptions:TLSWebSocketServeOptions<ClientData> = {
 				});
 			}
 		}
-		else if (!url.pathname || url.pathname === "/") {
+		else if (!url.pathname || url.pathname === "/" || url.pathname.split("/").length === 2) {
 			const isWebSocketRequest = req.headers.get("upgrade")?.toLowerCase() === "websocket" &&
 				req.headers.get("connection")?.toLowerCase()?.includes("upgrade")
 			if (isWebSocketRequest) {
-				let newToken: string | null = null
+				let newToken: string|null = null
 				if (!userToken) {
 					newToken = randomString(32)
 				}
+				const urlPath = url.pathname === "/" ? url.pathname.slice(1).trim() : url.pathname.trim()
 				const upgradeSuccess = server.upgrade(req, {
 					data: {
-						url: url.pathname.slice(1).trim(),
+						url: urlPath,
 						headers: req.headers,
 						token: userToken || newToken
 					},
