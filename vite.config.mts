@@ -1,10 +1,8 @@
 import { defineConfig } from "vite"
-import circleDependency from "vite-plugin-circular-dependency"
 import { serviceWorkerPlugin } from "@gautemo/vite-plugin-service-worker"
-import { glob } from 'glob'
+import { Glob } from "bun";
 
-// Get all HTML files for Rollup input
-const htmlFiles = await glob(['*.html', '!404.html']) // exclude 404.html if it's static
+const htmlFiles = new Glob("*.html").scanSync();
 
 export default defineConfig({
 	base: "/",
@@ -17,8 +15,8 @@ export default defineConfig({
 		target: "esnext",
 		rollupOptions: {
 			input: Object.fromEntries(
-				htmlFiles.map(file => [
-					file.replace(/\.html$/, ''),
+				Array.from(htmlFiles).map(file => [
+					file.replace(/\.html$/, ""),
 					file
 				])
 			),
@@ -46,9 +44,6 @@ export default defineConfig({
 		exclude: ["server/**/*"]
 	},
 	plugins: [
-		circleDependency({
-			outputFilePath: "./.depends",
-		}),
 		serviceWorkerPlugin({
 			filename: "src/sw.js",
 		}),

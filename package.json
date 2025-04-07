@@ -3,10 +3,11 @@
 	"private": true,
 	"devDependencies": {
 		"@types/bun": "latest",
-		"vite": "^6.2.3"
+		"vite": "^6.2.5",
+		"vite-plugin-static-copy": "^2.3.0"
 	},
 	"peerDependencies": {
-		"typescript": "^5"
+		"typescript": "^5.8.2"
 	},
 	"scripts": {
 		"dev": "vite",
@@ -17,12 +18,10 @@
 		"@cycjimmy/canvas-snow": "^3.0.3",
 		"@gautemo/vite-plugin-service-worker": "^0.1.0",
 		"@tsparticles/confetti": "^3.8.1",
-		"dompurify": "^3.2.4",
+		"dompurify": "^3.2.5",
 		"lit": "^3.2.1",
 		"lit-element": "^4.1.1",
 		"lit-html": "^3.2.1",
-		"marked": "^15.0.7",
-		"vite-plugin-circular-dependency": "^0.5.0",
-		"vite-plugin-static-copy": "^2.3.0"
+		"marked": "^15.0.8"
 	}
 }
