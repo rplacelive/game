@@ -1,8 +1,8 @@
 import { defineConfig } from "vite"
 import { serviceWorkerPlugin } from "@gautemo/vite-plugin-service-worker"
-import { Glob } from "bun";
+import { glob } from "glob"
 
-const htmlFiles = new Glob("*.html").scanSync();
+const htmlFiles = await glob("*.html");
 
 export default defineConfig({
 	base: "/",
@@ -15,7 +15,7 @@ export default defineConfig({
 		target: "esnext",
 		rollupOptions: {
 			input: Object.fromEntries(
-				Array.from(htmlFiles).map(file => [
+				htmlFiles.map(file => [
 					file.replace(/\.html$/, ""),
 					file
 				])
@@ -38,7 +38,7 @@ export default defineConfig({
 					return "assets/[name]-[hash][extname]";
 				}
 			}
-		}
+		},
 	},
 	esbuild: {
 		exclude: ["server/**/*"]

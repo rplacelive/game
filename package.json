@@ -3,6 +3,7 @@
 	"private": true,
 	"devDependencies": {
 		"@types/bun": "latest",
+		"glob": "^11.0.1",
 		"vite": "^6.2.5",
 		"vite-plugin-static-copy": "^2.3.0"
 	},
