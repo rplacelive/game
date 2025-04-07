@@ -2,7 +2,7 @@
   "lockfileVersion": 1,
   "workspaces": {
     "": {
-      "name": "rslashplace2.github.io",
+      "name": "game",
       "dependencies": {
         "@cycjimmy/canvas-snow": "^3.0.3",
         "@tsparticles/confetti": "^3.8.1",

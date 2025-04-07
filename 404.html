@@ -14,7 +14,7 @@
 			"/twitter": "https://x.com/rplacetk",
 			"/x": "https://x.com/rplacetk",
 			"/reddit": "https://www.reddit.com/r/placetk",
-			"/github": "https://github.com/rplacetk",
+			"/github": "https://github.com/rplacelive",
 			"/telegram": "https://t.me/rplacelive",
 			"/admin": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
 		};
@@ -47,7 +47,10 @@
 				window.location.replace(newLocation)
 			}
 			else {
-				overlay.remove()
+				window.addEventListener("DOMContentLoaded", async function(e) {
+					const overlay = document.getElementById("overlay")
+					overlay?.remove()
+				})
 			}
 			vanityRequestFinished = true
 		})()

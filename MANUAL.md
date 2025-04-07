@@ -32,9 +32,9 @@ Setting up a custom server that users can connect to via the posts menu is very 
 
 ![image](https://user-images.githubusercontent.com/73035340/184679276-f5d48324-beb7-421e-a58f-1749705ee75f.png)
 
-5. Clone the project with git. This can be done with `git clone https://rslashplace2/rslashplace2.github.io`
+5. Clone the project with git. This can be done with `git clone https://github.com/rplacelive/game`
 
-6. Enter the cloned project directory with `cd rslashplace2.github.io`. Run `bun i` to install all required packages respectively.
+6. Enter the cloned project directory with `cd game`. Run `bun i` to install all required packages respectively.
 
 7. Run the server with `bun run server.js`
 

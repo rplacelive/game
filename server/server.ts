@@ -892,7 +892,7 @@ const serverOptions:TLSWebSocketServeOptions<ClientData> = {
 		}
 
 		// User wants to link their canvas account to the global auth server, architecture outlined in
-		// https://github.com/rplacetk/architecture/blob/main/account_linkage.png
+		// https://github.com/rplacelive/architecture/blob/main/account_linkage.png
 		if (url.pathname.startsWith("/users/") && req.method === "GET") {
 			const targetId = parseInt(url.pathname.slice(7))
 			if (Number.isNaN(targetId) || typeof targetId !== "number") {

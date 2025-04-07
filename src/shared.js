@@ -3,7 +3,7 @@ import DOMPurify from "dompurify"
 
 // Contains shared resources across pages
 export const DEFAULT_SERVER = "wss://server.rplace.live:443"
-export const DEFAULT_BOARD = "https://raw.githubusercontent.com/rplacetk/canvas1/main/place"
+export const DEFAULT_BOARD = "https://raw.githubusercontent.com/rplacelive/canvas1/main/place"
 export const DEFAULT_AUTH = "https://server.rplace.live/auth"
 
 export const BADGE_ICONS = [ "badges/based.svg", "badges/trouble_maker.svg", "badges/veteran.svg", "badges/admin.svg", "badges/moderator.svg", "badges/noob.svg", "badges/script_kiddie.svg", "badges/ethical_botter.svg", "badges/gay.svg", "badges/discord_member.svg", "badges/100_pixels_placed", "badges/1000_pixels_placed", "badges/5000_pixels_placed", "badges/2000_pixels_placed", "badges/100000_pixels_placed", "badges/1000000_pixels_placed" ]

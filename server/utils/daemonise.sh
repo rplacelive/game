@@ -3,7 +3,7 @@
 
 if [ -z "$1" ]
 then
-	echo -e "\x1b[31mPlease input the absolute path to the rplace server directory as an argument, e.g. /home/pi/rslashplace2.github.io"
+	echo -e "\x1b[31mPlease input the absolute path to the rplace server directory as an argument, e.g. /home/pi/game"
 	exit 1
 fi
 
