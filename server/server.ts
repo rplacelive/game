@@ -1073,71 +1073,129 @@ const serverOptions:TLSWebSocketServeOptions<ClientData> = {
 		}
 		// Chat message history API
 		else if (url.pathname.startsWith("/live-chat/messages") && req.method === "GET") {
-			// Parse query parameters
-			const query = url.searchParams;
-			const messageId = parseInt(query.get("messageId") || "");
-			const count = parseInt(query.get("count") || "50");
-			const before = query.get("before") === "1" || query.get("before")?.toLowerCase() === "true";
-			const channel = query.get("channel") || "global";
+			// Check if path matches /live-chat/messages/{id} pattern
+			const singleMessageMatch = url.pathname.match(/^\/live-chat\/messages\/(\d+)$/);
 
-			// Validate parameters
-			if (isNaN(messageId)) {
-				return new Response("Missing or invalid messageId parameter", {
-					status: 400,
-					headers: corsHeaders
-				});
-			}
-			if (isNaN(count) || count < 1 || count > 127) {
-				return new Response("Count must be between 1-127", {
-					status: 400,
-					headers: corsHeaders
-				});
-			}
+			if (singleMessageMatch) {
+				// Handle single message request
+				const messageId = parseInt(singleMessageMatch[1]);
 
-			try {
-				// Fetch chat history from database
-				const messageHistory = await makeDbRequest("getLiveChatHistory", { 
-					messageId, 
-					count, 
-					before, 
-					channel 
-				}) as any[];
+				if (isNaN(messageId)) {
+					return new Response("Invalid message ID in URL", {
+						status: 400,
+						headers: corsHeaders
+					});
+				}
 
-				// Process messages and collect usernames
-				const users: Record<number, string> = {};
-				const messages = messageHistory.map(row => {
-					users[row.senderIntId] = row.chatName;
-					
-					return {
-						id: row.messageId,
-						senderIntId: row.senderIntId,
-						channel: row.channel,
-						date: Math.floor(row.sendDate / 1000),
-						message: censorText(row.message),
-						repliesTo: row.repliesTo
-					};
-				});
-
-				// Create combined response
-				const response = {
-					messages,
-					users
-				};
-
-				return new Response(JSON.stringify(response), {
-					status: 200,
-					headers: { 
-						"Content-Type": "application/json",
-						...corsHeaders
+				try {
+					// Fetch single message from database
+					const message = await makeDbRequest("getLiveChatMessage", messageId) as LiveChatMessage|null;
+					if (!message) {
+						return new Response("Message not found", {
+							status: 404,
+							headers: corsHeaders
+						});
 					}
-				});
-			}
-			catch (error) {
-				console.error("Error fetching chat history:", error);
-				return new Response("Internal server error", {
-					status: 500,
-					headers: corsHeaders
-				});
+					let chatName = await makeDbRequest("getUserChatName", message.senderIntId) as string|null;
+					if (typeof chatName !== "string") {
+						chatName = null;
+					}
+
+					// Create response with same structure as batch endpoint
+					const response = {
+						messages: [{
+							id: message.messageId,
+							senderIntId: message.senderIntId,
+							channel: message.channel,
+							date: Math.floor(message.sendDate / 1000),
+							message: censorText(message.message),
+							repliesTo: message.repliesTo
+						}],
+						users: {
+							[message.senderIntId]: { chatName }
+						}
+					};
+
+					return new Response(JSON.stringify(response), {
+						status: 200,
+						headers: { 
+							"Content-Type": "application/json",
+							...corsHeaders
+						}
+					});
+				}
+				catch (error) {
+					return new Response("Error fetching message", {
+						status: 500,
+						headers: corsHeaders
+					});
+				}
+			} else {
+				// Original batch message handling
+				// Parse query parameters
+				const query = url.searchParams;
+				const messageId = parseInt(query.get("messageId") || "");
+				const count = parseInt(query.get("count") || "50");
+				const before = query.get("before") === "1" || query.get("before")?.toLowerCase() === "true";
+				const channel = query.get("channel") || "global";
+
+				// Validate parameters
+				if (isNaN(messageId)) {
+					return new Response("Missing or invalid messageId parameter", {
+						status: 400,
+						headers: corsHeaders
+					});
+				}
+				if (isNaN(count) || count < 1 || count > 127) {
+					return new Response("Count must be between 1-127", {
+						status: 400,
+						headers: corsHeaders
+					});
+				}
+
+				try {
+					// Fetch chat history from database
+					const messageHistory = await makeDbRequest("getLiveChatHistory", { 
+						messageId, 
+						count, 
+						before, 
+						channel
+					}) as any[];
+
+					// Process messages and collect usernames
+					const users: Record<number, { chatName: string }> = {};
+					const messages = messageHistory.map(row => {
+						users[row.senderIntId] = { chatName: row.chatName };
+						
+						return {
+							id: row.messageId,
+							senderIntId: row.senderIntId,
+							channel: row.channel,
+							date: Math.floor(row.sendDate / 1000),
+							message: censorText(row.message),
+							repliesTo: row.repliesTo
+						};
+					});
+
+					// Create combined response
+					const response = {
+						messages,
+						users
+					};
+
+					return new Response(JSON.stringify(response), {
+						status: 200,
+						headers: { 
+							"Content-Type": "application/json",
+							...corsHeaders
+						}
+					});
+				} catch (error) {
+					return new Response("Error fetching messages", {
+						status: 500,
+						headers: corsHeaders
+					});
+				}
 			}
 		}
 		else if (!url.pathname || url.pathname === "/" || url.pathname.split("/").length === 2) {

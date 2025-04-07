@@ -2557,6 +2557,56 @@ modOptionsButton.addEventListener("click", function (e) {
 	instance.sendModAction(options);
 	clearChatModerate();
 })
+modMessageId.addEventListener("input", async function (e) {
+	// Show loading state immediately
+	modMessagePreview.textContent = "Loading message...";
+
+	// Check local cache first
+	let found = null;
+	for (const message of (cMessages.get(currentChannel) || [])) {
+		if (message.messageId == modMessageId.value) {
+			found = message;
+			break;
+		}
+	}
+
+	if (found) {
+		// Display local cached message immediately
+		modMessagePreview.innerHTML = found.innerHTML;
+	}
+	else {
+		// Try to fetch the message from the server using live chat history API
+		try {
+			const httpServerUrl = (localStorage.server || DEFAULT_SERVER)
+				.replace("wss://", "https://").replace("ws://", "http://");
+			const url = `${httpServerUrl}/live-chat/messages/${modMessageId.value}`;
+
+			const response = await fetch(url);
+			if (!response.ok) {
+				throw new Error("Message not found");
+			}
+
+			const data = await response.json();
+			if (data.messages && data.messages.length > 0) {
+				const message = data.messages[0];
+				const chatName = data.users[message.senderIntId].chatName || "Unknown";
+				
+				// Use createLiveChatMessage to build the HTML element
+				const messageElement = createLiveChatMessage(message.id, message.message, message.senderIntId,
+					chatName, message.date * 1000, message.repliesTo, null);
+				
+				modMessagePreview.innerHTML = "";
+				modMessagePreview.appendChild(messageElement);
+			}
+			else {
+				modMessagePreview.innerHTML = "Message not found";
+			}
+		}
+		catch (error) {
+			modMessagePreview.innerHTML = "Message not found";
+		}
+	}
+});
 /**
  * @returns {ModOptions | null}
  */

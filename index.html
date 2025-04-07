@@ -134,14 +134,7 @@
 				</div>
 				<h4>Manage:</h4>
 				<div id="modMessageIdForm" class="mod-form">
-					<input type="number" id="modMessageId" title="Message ID" placeholder="Message ID" oninput="
-						let found = null
-						for (let message of cMessages.get(currentChannel)) {
-							if (message.messageId == this.value) {
-								found = message
-							}
-						}
-						modMessagePreview.innerHTML = found?.innerHTML ?? 'Message not found'">
+					<input type="number" id="modMessageId" title="Message ID" placeholder="Message ID">
 					<div id="modMessagePreview">Message not found</div>
 				</div>
 				<input type="number" id="modMemberId"  title="Member ID" placeholder="Member ID">
