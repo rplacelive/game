@@ -1162,7 +1162,8 @@ document.body.addEventListener("keydown", function(/**@type {KeyboardEvent}*/e) 
 
 	//"Enter" key to place selected block without using mouse
 	if (e.key == "Enter" && (!document.activeElement || !("value" in document.activeElement))) {
-		placeOkButton.click();
+		handlePixelPlace(e);
+		return;
 	}
 
 	//Keyboard shortcuts for selecting palette colours
@@ -1571,10 +1572,18 @@ window.addEventListener("focus", () => {
 	focused = true
 });
 
+/**
+ * 
+ * @param {Event} e 
+ * @returns 
+ */
+function handlePixelPlace(e) {
+	if (!(e instanceof Event) || !e.isTrusted) {
+		return
+	}
 
-placeOkButton.addEventListener("click", function(e) {
 	// If cooldownEndDate is null but we have already made that initial connection, we have likely ghost disconnected from the WS
-	if (!e.isTrusted || !focused || !initialConnect
+	if (!focused || !initialConnect
 		|| (cooldownEndDate === null && initialConnect)
 		|| (cooldownEndDate && cooldownEndDate > Date.now())) {
 		return
@@ -1601,6 +1610,11 @@ placeOkButton.addEventListener("click", function(e) {
 	if (!mobile) {
 		colours.children[PEN].classList.remove("sel")
 		PEN = -1
+	}
+}
+placeOkButton.addEventListener("click", (e) => {
+	if (e.isTrusted) {
+		handlePixelPlace(e);
 	}
 });
 
