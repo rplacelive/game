@@ -208,7 +208,7 @@ async function initMainCanvasPost(embedded = false) {
 		// Setup event handlers
 		if (embedded) {
 			mainCanvasPost.onclick = function () {
-				sendParentMessage("switchGameServer");
+				sendParentMessage("defaultServer");
 			}
 		}
 		else {

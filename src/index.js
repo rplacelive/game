@@ -2715,24 +2715,15 @@ messageInputEmojiPanel.addEventListener("emojiselection", (/**@type {CustomEvent
 	}
 })
 
-/**
- * @param {string} serverAddress
- */
-function switchGameServer(serverAddress) {
-	if (serverAddress) {
-		let [a, b] = serverAddress.split(" ").reverse()
-		if (!b)[b, a] = [a + '/place', 'server.' + a]
-		a = "wss://" + a
-		b = "https://" + b
-		server(a, b)
-	}
-	else {
-		delete localStorage.board
-		delete localStorage.server
-	}
-	let queries = location.toString().split('?')
-	if (queries.length > 1) {
-		location.replace(location.toString().split('?')[0]);
+function defaultServer() {
+	delete localStorage.board;
+	delete localStorage.server;
+	delete localStorage.vip;
+
+	// Handle URL cleanup and page refresh
+	const baseUrl = location.toString().split("?")[0];
+	if (location.toString().includes("?")) {
+		location.replace(baseUrl);
 	}
 	else {
 		location.reload();
@@ -2740,8 +2731,10 @@ function switchGameServer(serverAddress) {
 }
 
 /**
- * @param {any} serverAddress
- * @param {any} boardAddress
+ * @param {string} serverAddress
+ * @param {string} boardAddress
+ * @param {string} vip
+ * @param {Storage} storage
  */
 function server(serverAddress, boardAddress, vip = "", storage = localStorage) {
 	if (!serverAddress) {
@@ -2851,8 +2844,8 @@ window.addEventListener("DOMContentLoaded", function(e) {
 		themeDropName.textContent = "🖌️ " + (localStorage.theme || "r/place 2022");		
 	}
 	else {
-        const errorMessage = "Error: Can't find startup theme set, site may appear broken!";
-        console.error(errorMessage, { availableThemes: DEFAULT_THEMES, savedTheme: localStorage.theme });
+		const errorMessage = "Error: Can't find startup theme set, site may appear broken!";
+		console.error(errorMessage, { availableThemes: DEFAULT_THEMES, savedTheme: localStorage.theme });
 		alert(errorMessage);
 	}
 });
@@ -3210,7 +3203,7 @@ showLoadingScreen();
 addMessageHandler("fetchLinkKey", instance.fetchLinkKey);
 addMessageHandler("openChatPanel", openChatPanel);
 addMessageHandler("scrollToPosts", scrollToPosts);
-addMessageHandler("switchGameServer", switchGameServer);
+addMessageHandler("defaultServer", defaultServer);
 addMessageHandler("openOverlayMenu", openOverlayMenu);
 addMessageHandler("resizePostsFrame", resizePostsFrame);
 
