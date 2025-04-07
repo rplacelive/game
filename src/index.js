@@ -199,6 +199,7 @@ let WIDTH = DEFAULT_WIDTH;
 let HEIGHT = DEFAULT_HEIGHT;
 let COOLDOWN = DEFAULT_COOLDOWN;
 
+// TODO: Consider moving this to a completely separate worker / similar system for FULL logic separation
 class WsCapsule {
 	/**
 	 * @param {Function} send 
@@ -823,76 +824,65 @@ class WsCapsule {
 		}
 		this.requestLoadChannelPrevious = _requestLoadChannelPrevious;
 
-		// TODO: Reimplement this
-		const modOptionsButton = document.getElementById("modOptionsButton");
-		call(addEventListener, modOptionsButton, "click", function () {
-			alert("Not implemented!");
-			throw new Error("Moderation options not implemented");
-			/*const reason = modReason.value.slice(0, 300)
-			const encReason = encoder.encode(reason)*/
-			// 0 - kick, 1 - mute, 2 - ban, 3 - captcha, 4 - delete
-			/*/**@type {DataView<ArrayBuffer> | null}*\/let view = null
-			let action = null
-			let offset = 2
+		/**
+		 * Sends a mod action over WebSocket
+		 * @param {ModOptions} options
+		 */
+		function _sendModAction(options) {
+			const encReason = encoder.encode(options.reason)
+			/**@type {DataView|null}*/let view = null
 			let statusMsg = ""
-			*/
-			/**
-			 * @param {number} extraLength
-			 */
-			/*function setModView(extraLength) {
-				view = new DataView(new Uint8Array(2 + extraLength + encReason.byteLength).buffer)
-				view.setUint8(0, 98)
-			}*/
-			/**
-			 * @param {number} offset
-			 */
-			/*function setModReason(offset) {
-				for (let ri = 0; ri < encReason.byteLength; ri++) {
-					view.setUint8(offset + ri, encReason[ri])
+			let offset = 2
+
+			switch (options.action) {
+				case "kick":
+					view = new DataView(new Uint8Array(2 + 4 + encReason.byteLength).buffer)
+					view.setUint8(0, 98)
+					view.setUint8(1, 0)
+					view.setUint32(2, options.memberId)
+					offset = 6
+					statusMsg = `Kicked player ${options.memberId} with reason '${options.reason}'`
+					break
+				case "mute":
+				case "ban": {
+					const type = options.action === "mute" ? 1 : 2
+					view = new DataView(new Uint8Array(2 + 8 + encReason.byteLength).buffer)
+					view.setUint8(0, 98)
+					view.setUint8(1, type)
+					view.setUint32(2, options.memberId)
+					view.setUint32(6, options.duration)
+					offset = 10
+					statusMsg = `${["Muted", "Banned"][type - 1]} player ${options.memberId} for ${Math.floor(options.duration / 3600)} hours, ${Math.floor(options.duration % 3600 / 60)} minutes, and ${options.duration % 60} seconds with reason '${options.reason}'`
+					break
 				}
+				case "captcha":
+					view = new DataView(new Uint8Array(2 + 4 + encReason.byteLength).buffer)
+					view.setUint8(0, 98)
+					view.setUint8(1, 3)
+					view.setUint32(2, options.affectsAll ? 0 : options.memberId)
+					offset = 6
+					statusMsg = `Forced captcha for ${options.affectsAll ? "all users" : "user " + options.memberId} with reason '${options.reason}'`
+					break
+				case "delete":
+					view = new DataView(new Uint8Array(2 + 4 + encReason.byteLength).buffer)
+					view.setUint8(0, 98)
+					view.setUint8(1, 4)
+					view.setUint32(2, options.messageId)
+					offset = 6
+					statusMsg = `Deleted message ${options.messageId} with reason '${options.reason}'`
+					break
 			}
-	
-			if (modActionKick.checked) {
-				setModView(4)
-				view.setUint8(1, 0)
-				view.setUint32(2, modMemberId.value)
-				setModReason(6)
-				statusMsg = `Kicked player ${modMemberId.value} with reason '${reason}'`
+			if (!view) {
+				return;
 			}
-			else if (modActionMute.checked || modActionBan.checked) {
-				const action = modActionMute.checked ? 1 : 2
-				const seconds = (+modDurationS.value||0)
-				const minutes = (+modDurationM.value||0)
-				const hours = (+modDurationH.value||0)
-				setModView(8)
-				view.setUint8(1, action)
-				view.setUint32(2, modMemberId.value)
-				view.setUint32(6, seconds + minutes * 60 + hours * 3600)
-				setModReason(10)
-				statusMsg = `${["Kicked","Banned"][action-1]} player ${modMemberId.value} for ${hours
-					} hours, ${minutes} minutes, and ${seconds} seconds with reason '${reason}'`
-			}
-			else if (modActionCaptcha.checked) {
-				setModView(4)
-				view.setUint8(1, 3)
-				view.setUint32(2, modAffectsAll.checked ? 0 : modMemberId.value)
-				setModReason(6)
-				statusMsg = `Forced captcha for ${modAffectsAll.checked ? "all users" : "user " + modMemberId.value
-					} with reason '${reason}'`
-			}
-			else if (modActionDelete.checked) {
-				setModView(4)
-				view.setUint8(1, 4)
-				view.setUint32(2, modMessageId.value)
-				setModReason(6)
-				statusMsg = `Deleted message ${modMessageId.value} with reason '${reason}'`
-			}
-			else {
-				return
+
+			for (let i = 0; i < encReason.byteLength; i++) {
+				view.setUint8(offset + i, encReason[i])
 			}
 			call(send, ws, view.buffer)
-			alert(statusMsg)*/
-		});
+			alert(statusMsg)
+		}
+		this.sendModAction = _sendModAction;
 
 		const injectedCjs = document.createElement("script");
 		injectedCjs.innerHTML = `
@@ -2522,7 +2512,6 @@ export function chatCancelReplies() {
 	messageReplyPanel.setAttribute('closed', 'true')
 }
 
-
 /**
  * @param {ModerationPacket} packet 
  * @param {number} intId
@@ -2546,7 +2535,68 @@ export function applyPunishment(packet, intId) {
 }
 
 // Moderation UI
+/**
+ * @typedef {"kick" | "mute" | "ban" | "captcha" | "delete"} ModAction
+ */
+/**
+ * @typedef {Object} ModOptions
+ * @property {ModAction} action
+ * @property {string} reason
+ * @property {number} [memberId]
+ * @property {number} [messageId]
+ * @property {boolean} [affectsAll]
+ * @property {number} [duration] // In seconds
+ */
+const modOptionsButton = /**@type {HTMLButtonElement}*/($("#modOptionsButton"));
+modOptionsButton.addEventListener("click", function (e) {
+	const options = getModOptions();
+	if (!options) {
+		return;
+	}
+	instance.sendModAction(options);
+	clearChatModerate();
+})
+/**
+ * @returns {ModOptions | null}
+ */
+function getModOptions() {
+	const reason = modReason.value.slice(0, 300);
+	const memberId = +modMemberId.value;
+	const messageId = +modMessageId.value;
+	const affectsAll = modAffectsAll.checked;
 
+	if (modActionKick.checked) {
+		return { action: "kick", reason, memberId };
+	}
+	else if (modActionMute.checked || modActionBan.checked) {
+		const seconds = (+modDurationS.value || 0);
+		const minutes = (+modDurationM.value || 0);
+		const hours = (+modDurationH.value || 0);
+		const duration = seconds + minutes * 60 + hours * 3600;
+		return {
+			action: modActionMute.checked ? "mute" : "ban",
+			reason,
+			memberId,
+			duration
+		};
+	}
+	else if (modActionCaptcha.checked) {
+		return {
+			action: "captcha",
+			reason,
+			memberId,
+			affectsAll
+		};
+	}
+	else if (modActionDelete.checked) {
+		return {
+			action: "delete",
+			reason,
+			messageId
+		};
+	}
+	return null;
+}
 function clearChatModerate() {
 	modMessageId.value = ""
 	modMessagePreview.innerHTML = ""
@@ -2556,7 +2606,6 @@ function clearChatModerate() {
 	modAffectsAll.checked = false
 	modReason.value = ""
 }
-
 function closeChatModerate() {
 	moderationMenu.removeAttribute('opened')
 	clearChatModerate()
@@ -2567,7 +2616,6 @@ modCancelButtonn.addEventListener("click", closeChatModerate);
 export function handleCaptchaSuccess() {
 	captchaPopup.style.display = "none";
 }
-
 
 /**
  * @param {"delete"|"kick"|"mute"|"ban"|"captcha"} mode
@@ -2601,7 +2649,7 @@ export function chatModerate(mode, senderId, messageId = null, messageElement = 
 	}
 }
 
-
+// Chat messages UI
 function closeMessageEmojisPanel() {
 	messageEmojisPanel.setAttribute("closed", "true")
 	messageInput.setAttribute("state", "default")
