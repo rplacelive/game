@@ -5,7 +5,7 @@
   "author": "rplace.live",
   "dependencies": {
     "@datastructures-js/queue": "^4.2.3",
-    "@inquirer/prompts": "^7.4.0",
+    "@inquirer/prompts": "^7.4.1",
     "@types/cookie": "^1.0.0",
     "@types/sha256": "^0.2.2",
     "basic-repl": "^2.2.2",
@@ -15,6 +15,7 @@
     "fs.promises.exists": "^1.1.4",
     "ipapi-sync": "^1.4.2",
     "lru-cache": "^11.1.0",
+    "rate-limiter-flexible": "^7.0.0",
     "sha256": "^0.2.0"
   },
   "devDependencies": {

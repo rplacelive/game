@@ -23,6 +23,7 @@ import { PublicPromise } from "./server-types.js"
 import type { ChallengeModule } from "./padlock/server.d.ts"
 import { distance } from "fastest-levenshtein"
 import sha256 from "sha256"
+import { RateLimiterMemory, RateLimiterRes } from "rate-limiter-flexible"
 
 let BOARD:Uint8Array, CHANGES:Uint8Array, PLACERS:Buffer
 
@@ -781,6 +782,48 @@ function rejectPixel(ws:ServerWebSocket<ClientData>, i:number, cd:number) {
 	ws.send(data)
 }
 
+
+const burstLimiter = new RateLimiterMemory({ // Short burst limiter (4 requests per 5 seconds)
+	points: 4,
+	duration: 5,
+	keyPrefix: "rl_burst"
+})
+const slidingLimiter = new RateLimiterMemory({ // Long-term sliding limiter (100 requests per 10 mins)
+	points: 100,
+	duration: 600,
+	keyPrefix: "rl_sliding"
+})
+const violationLimiter = new RateLimiterMemory({ // Violation tracking limiter (16 violations per 5 mins)
+	points: 16,           // Allow 5 violations
+	duration: 300,        // Within 5 minutes
+	keyPrefix: 'rl_violation'
+})
+// Main limiter
+export async function rateLimitExceeded(ip: string): Promise<boolean> {
+	try {
+		await burstLimiter.consume(ip)
+		await slidingLimiter.consume(ip)
+		return false
+	}
+	catch (err) {
+		if (err instanceof RateLimiterRes) {
+			console.log(`[RATE LIMIT] ${ip} hit a limit, retry after ${Math.ceil(err.msBeforeNext / 1000)}s`);
+		}
+
+		try {
+			const res = await violationLimiter.consume(ip);
+			if (res.remainingPoints <= 0) {
+				blacklist(ip, 'Too many rate limit violations');
+			}
+		}
+		catch {
+			// Already over the violation limit — ignore
+		}
+
+		return true
+	}
+}
+
 interface TenorMediaFormat {
 	url: string;
 	dims: [number, number];
@@ -1167,6 +1210,10 @@ const serverOptions:TLSWebSocketServeOptions<ClientData> = {
 			if (!realIp || realIp.startsWith("%")) return ws.close(4000, "No IP")
 			const IP = ws.data.ip = realIp
 			const URL = ws.data.url
+			if (await rateLimitExceeded(IP)) {
+				ws.close(4000, "Rate limited")
+				return
+			}
 			if (!isUser(IP)) {
 				ws.close(4000, "Not user")
 				return
@@ -1265,7 +1312,7 @@ const serverOptions:TLSWebSocketServeOptions<ClientData> = {
 			if (playerIntIds.has(intId)) {
 				const existingWs = playerIntIds.get(intId)
 				if (existingWs && existingWs !== ws) {
-					existingWs.close(4000, "You have connected with this user ID on another session")
+					existingWs.close(4000, "You may only play on one session at a time")
 				}
 			}
 
