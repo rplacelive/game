@@ -2049,6 +2049,7 @@ export function handleLiveChatCommand(command, message) {
 		}
 		case "vip": {
 			const key = message.slice(4).trim();
+			localStorage.vip2 = key;
 			localStorage.vip = key;
 			window.location.reload();
 			break;
