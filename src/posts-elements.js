@@ -67,7 +67,7 @@ export class Post extends LitElement {
 				</div>
 				<div id="main" class="main ${this.showAuthor ? "authored" : ""}">
 					<div id="title" class="title">${this.title}</div>
-					<p id="description" class="description">${until(this.#renderDescription, html`...`)}</p>
+					<p id="description" class="description">${until(this.#renderDescription(), html`...`)}</p>
 					${this.showContents ? this.#renderContents() : ""}
 				</div>
 				${this.hidden ? this.#renderHiddenButton() : ""}
@@ -439,6 +439,10 @@ export class CreatePostContentsPreview extends HTMLElement {
 		this.#uploadLabel = document.createElement("span")
 		this.#uploadLabel.textContent = "Content upload:"
 		this.#contentsContainer = document.createElement("div")
+	}
+
+	get contents() {
+		return Array.from(this.#contents)
 	}
 
 	/**

@@ -1,4 +1,4 @@
-import { DEFAULT_AUTH, makeRequest } from "./shared.js"
+import { addMessageHandler, DEFAULT_AUTH, makeRequest } from "./shared.js"
 
 // Injects the iframe containing the account.html page into the DOM
 export function openAccountFrame(page=null, unauthed=null) {
@@ -16,8 +16,8 @@ export function openAccountFrame(page=null, unauthed=null) {
 	iframe.id = "accountFrame"
 	iframe.classList.add("iframe-modal")
 	iframe.addEventListener("load", () => {
-		const loginPanel = iframe.contentDocument?.querySelector("#loginPanel")
-		const unauthedPage = iframe.contentDocument?.querySelector("#unauthedPage")
+		const loginPanel = /**@type {HTMLElement}*/iframe.contentDocument?.querySelector("#loginPanel")
+		const unauthedPage = /**@type {HTMLElement}*/iframe.contentDocument?.querySelector("#unauthedPage")
 		if (loginPanel && page) {
 			loginPanel.dataset.page = page
 		}
@@ -75,3 +75,7 @@ export function dispatchAccountEvent(eventName, detail = {}) {
 	})
 	window.dispatchEvent(event)
 }
+
+// Hook up cross frame / parent window IPC request handlers
+addMessageHandler("closeAccountFrame", closeAccountFrame);
+addMessageHandler("dispatchAccountEvent", dispatchAccountEvent);

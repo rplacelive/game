@@ -73,8 +73,9 @@ r-post > .cover-image, .post > .cover-image {
 	height: 40px;
 }
 r-post .main > .description, .post .main > .description {
-	white-space: preserve-breaks;
-	word-wrap: anywhere;
+	/* TODO: Figure out how to make this work properly with the new markdown renderer */
+	/*white-space: preserve-breaks;
+	word-wrap: anywhere;*/
 }
 r-post .main > .title, .post .main > .title {
 	color: black;
@@ -411,7 +412,7 @@ r-post-contents-preview > span {
 	min-width: min-content;
 }
 r-post-contents-preview > div {
-	overflow-x: scroll;
+	overflow-x: auto;
 	display: flex;
 	column-gap: 8px;
 }

@@ -8,8 +8,7 @@
 	<link rel="stylesheet" href="styles.css">
 	<link rel="stylesheet" href="shared.css">
 	<link rel="stylesheet" href="posts.css">
-	<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2508999262953411"
-	crossorigin="anonymous"></script>
+	<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2508999262953411" crossorigin="anonymous"></script>
 	<script type="module" src="src/shared.js"></script>
 	<script type="module" src="src/account.js"></script>
 	<script type="module" src="src/shared-elements.js" defer></script>
@@ -54,7 +53,7 @@
 						<path d="M480-345 240-585l43-43 197 198 197-197 43 43-240 239Z"></path>
 					</svg>Jump to community posts
 				</button>
-				<a type="button" style="column-gap: 4px" class="posts-button" href="#" onclick="event.preventDefault(); sendParentMessage('open', './posts.html')">
+				<a type="button" id="postsExpandButton" style="column-gap: 4px" class="posts-button" href="#">
 					<img alt="Expand" src="./svg/expand-external.svg" width="24" height="24"> See more
 				</a>
 			</div>
@@ -74,7 +73,7 @@
 					<input type="text" id="createPostTitle" minlength="1" maxlength="64" required class="create-post-input create-post-extra" placeholder="Post title...">
 					<textarea id="createPostInput" maxlength="360" class="create-post-input" placeholder="Create post..."></textarea>
 				</div>
-				<button class="create-post-content-button" onclick="createPostContentInput.click()">
+				<button type="button" class="create-post-content-button" onclick="createPostContentInput.click()">
 					<img src="./svg/image.svg" alt="Add post attachment" width="32" height="32">
 				</button>
 				<input type="file" id="createPostContentInput" accept="image/gif,image/jpeg,image/png,image/webp" style="display: none;">
@@ -82,52 +81,13 @@
 			<div id="createPostOptions" class="create-post-extra">
 				<r-post-contents-preview id="createPostContent"></r-post-contents-preview>
 				<div class="create-post-create-discard">
-					<button id="discardPostButton" type="button" class="post-button discard-post-button" onclick="resetCreatePost()">Discard</button>
-					<button id="createPostButton" type="button" class="post-button create-post-button" onclick="
-						async function uploadAndUpdatePosts() {
-							discardPostButton.disabled = true
-							createPostButton.disabled = true
-							const progressCb = function(stage, info) {
-								if (stage == 'uploadPost') {
-									createPostStatus.textContent = 'Uploading post: ' + `${info.progress}%`
-								}
-								else if (stage == 'uploadContent') {
-									createPostStatus.textContent = 'Uploading attachment...' + `(${info.current}/${info.total})`
-								}
-							}
-							if (await uploadPost(createPostTitle.value, createPostInput.value, createPostContent.contents, progressCb)) {
-								resetCreatePost()
-								alert('Post success!')
-								await tryLoadTopPosts()
-							}
-							else {
-								createPostStatus.textContent = ''
-								createPostButton.disabled = false
-								discardPostButton.disabled = false
-							}
-						}
-						if (!createPostTitle.checkValidity()) {
-							createPostTitle.reportValidity()
-							return
-						}
-						if (!localStorage.agredPostRules) {
-							sendParentMessage('scrollToPosts')
-							postRulesDialog.showModal()
-							postRulesDialog.onclose = function(e) {
-								if (postRulesDialog.returnValue === true) {
-									uploadAndUpdatePosts()
-								}
-							}
-						}
-						else {
-							uploadAndUpdatePosts()
-						}
-					">Post</button>
+					<button id="discardPostButton" type="button" class="post-button discard-post-button">Discard</button>
+					<button id="createPostButton" type="button" class="post-button create-post-button">Post</button>
 				</div>
 				<span id="createPostStatus" class="create-post-status"></span>
 			</div>
 		</div>
-		<div id="liveChatPost" onclick="sendParentMessage('openChatPanel')" class="post" style="cursor: pointer;" novotes="true">
+		<div id="liveChatPost" class="post" style="cursor: pointer;" novotes="true">
 			<img alt="Live chat icon" class="cover-image" src="images/live.png">
 			<div class="body">
 				<div class="main">
@@ -146,13 +106,13 @@
 			</div>
 			<r-clipboard-copy title="Copy canvas URL to clipbaord" href="https://rplace.live/?server=wss://server.rplace.live:443&board=https://raw.githubusercontent.com/rplacetk/canvas1/main/place"></r-clipboard-copy>
 		</div>
-		<r-post onclick="/*openAccountFrame();*/" style="cursor: pointer; opacity: 0.6; pointer-events: none;" class="post" novotes="true" title="My Account" description="Login or signup to an rplace.live account, access special features and host your own custom canvases"
+		<r-post id="accountPost" style="cursor: pointer; opacity: 0.6; pointer-events: none;" class="post" novotes="true" title="My Account" description="Login or signup to an rplace.live account, access special features and host your own custom canvases"
 			coverimageurl="images/account-profile.png"></r-post>
 		<!--<r-post onclick="window.open('https:\/\/lamda.count.land/', '_blank')" class="post" novotes="true" title="Lamda" description="Chat anonymously with strangers online. Start random voice calls and meet others!"
 			coverimageurl="images/lamda.png"></r-post>
 		<r-post onclick="toggleTlPanel()" class="post" style="opacity: 0.6; pointer-events: none;" novotes="true" title="Timelapse tool" description="Combine a sequence from the history of the canvas to create your own timelapse video!"
 			coverimageurl="images/timelapse.png"></r-post>-->
-		<r-post id="overlayPost" onclick="sendParentMessage('openOverlayMenu')" style="cursor: pointer;" class="post" novotes="true" title="Overlay menu" description="Visualise your build with template images!"
+		<r-post id="overlayPost" style="cursor: pointer;" class="post" novotes="true" title="Overlay menu" description="Visualise your build with template images!"
 			coverimageurl="images/hammer-and-wrench.png"></r-post>
 		<r-post onclick="window.open('https:\/\/discord.gg/r-place-2-960966748289507338','_blank')" style="cursor: pointer;" class="post" novotes="true" title="Discord" description="Join the community at discord.gg/r-place-2-960966748289507338"
 			coverimageurl="images/discord.png"></r-post>
@@ -180,7 +140,7 @@
 				</div>
 				<div style="display: flex; column-gap: 16px; align-items: center; justify-content: center;">
 					<label for="postsSortSelect" translate="sortBy">Sort by:</label>
-					<select id="postsSortSelect" style="box-shadow: none; border-radius: 64px; background: white;">
+					<select id="postsSortSelect" style="box-shadow: none; border-radius: 64px; background: rgb(226, 218, 218);">
 						<option value="date" translate="date">Date</option>
 						<option value="upvotes" translate="upvotes">Upvotes</option>
 					</select>
@@ -203,7 +163,7 @@
 			<img src="images/example-post.png" alt="Example post" style="height: 256px;object-fit: contain;">
 			<button type="button" class="reddit-modal-button" onclick="
 				localStorage.agredPostRules = true
-				postRulesDialog.close(true)
+				postRulesDialog.close('true')
 				">Create post</button>
 		</div>
 	</dialog>

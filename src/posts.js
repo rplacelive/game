@@ -1,6 +1,6 @@
-import { translateAll, $, PublicPromise, DEFAULT_AUTH, DEFAULT_SERVER, DEFAULT_BOARD, makeRequest } from "./shared.js"
-import { clearPosts, tryLoadBottomPosts, tryLoadKeywordPosts } from "./posts-manager.js"
-import { getAccount } from "./account.js";
+import { translateAll, $, PublicPromise, DEFAULT_AUTH, DEFAULT_SERVER, DEFAULT_BOARD, makeRequest, sendParentMessage, makeParentRequest } from "./shared.js"
+import { clearPosts, tryLoadBottomPosts, tryLoadKeywordPosts, tryLoadTopPosts } from "./posts-manager.js"
+import { getAccount, openAccountFrame } from "./account.js";
 
 // Bidirectional IPC, similar to server.ts - db-worker.ts communication
 // Methods called by iframe parent
@@ -10,19 +10,6 @@ function onlineCounter(/**@type {number}*/count) {
 }
 function updateDialogTop(/**@type {number}*/topHeight) {
 	document.body.style.setProperty("--posts-dialog-top", topHeight + "px")
-}
-let parentReqId = 0
-let parentReqs = new Map()
-async function makeParentRequest(/**@type {string}*/messageCall, args = undefined) {
-	const handle = parentReqId++
-	const promise = new PublicPromise()
-	const postCall = { call: messageCall, data: args, handle: handle }
-	parentReqs.set(handle, promise)
-	window.parent.postMessage(postCall)
-	return await promise.promise
-}
-function sendParentMessage(/**@type {string}*/messageCall, args = undefined) {
-	window.parent.postMessage({ call: messageCall, data: args }, location.origin)
 }
 
 //  Main
@@ -94,8 +81,68 @@ postsSearchbar.addEventListener("change", function(/**@type {Event}*/e) {
 	}
 });
 
+const postsExpandButton = /**@type {HTMLButtonElement}*/($("#postsExpandButton"));
+postsExpandButton.addEventListener("click", function(e) {
+	e.preventDefault();
+	sendParentMessage("open", "./posts.html");
+});
+const liveChatPost = /**@type {HTMLElement}*/($("#liveChatPost"));
+liveChatPost.addEventListener("click", function(e) {
+	sendParentMessage("openChatPanel");
+});
 const createPostPost = /**@type {HTMLElement}*/($("#createPostPost"));
 const createPostContent = /**@type {import("./posts-elements.js").CreatePostContentsPreview}*/($("#createPostContent"));
+const postRulesDialog = /**@type {HTMLDialogElement}*/($("#postRulesDialog"));
+const discardPostButton = /**@type {HTMLButtonElement}*/($("#discardPostButton"));
+discardPostButton.addEventListener("click", function(e) {
+	e.stopPropagation();
+	resetCreatePost();
+});
+const createPostButton = /**@type {HTMLButtonElement}*/($("#createPostButton"));
+createPostButton.addEventListener("click", async function(e) {
+	async function uploadAndUpdatePosts() {
+		discardPostButton.disabled = true;
+		createPostButton.disabled = true;
+		const progressCb = function(/**@type {string}*/stage, /**@type {any}*/info) {
+			if (stage === "uploadPost") {
+				// TODO: Translate
+				createPostStatus.textContent = "Uploading post: " + `${info.progress}%`;
+			}
+			else if (stage === "uploadContent") {
+				// TODO: Translate
+				createPostStatus.textContent = "Uploading attachment..." + `(${info.current}/${info.total})`
+			}
+		}
+		if (await uploadPost(createPostTitle.value, createPostInput.value, createPostContent.contents, progressCb)) {
+			resetCreatePost()
+			// TODO: Make proper UI for this (toast?)
+			alert("Post success!")
+			await tryLoadTopPosts()
+		}
+		else {
+			createPostStatus.textContent = "";
+			createPostButton.disabled = false;
+			discardPostButton.disabled = false;
+		}
+	}
+	if (!createPostTitle.checkValidity()) {
+		createPostTitle.reportValidity()
+		return
+	}
+	if (!localStorage.agredPostRules) {
+		sendParentMessage("scrollToPosts")
+		postRulesDialog.showModal()
+		postRulesDialog.onclose = function(e) {
+			if (postRulesDialog.returnValue == "true") {
+				uploadAndUpdatePosts()
+			}
+		}
+	}
+	else {
+		uploadAndUpdatePosts()
+	}
+});
+
 const createPostTitle = /**@type {HTMLInputElement}*/($("#createPostTitle"));
 const createPostInput = /**@type {HTMLInputElement}*/($("#createPostInput"));
 createPostPost.addEventListener("dragenter", function(e) {
@@ -208,9 +255,15 @@ async function initMainCanvasPost(embedded = false) {
 	}
 }
 
-const contents = /**@type {HTMLElement}*/($("#contents"));
-const liveChatPost = /**@type {HTMLElement}*/($("#liveChatPost"));
+const accountPost = /**@type {HTMLElement}*/($("#accountPost"));
+accountPost.addEventListener("click", function(e) {
+	openAccountFrame();
+});
 const overlayPost = /**@type {HTMLElement}*/($("#overlayPost"));
+overlayPost.addEventListener("click", function(e) {
+	sendParentMessage("openOverlayMenu");
+});
+const contents = /**@type {HTMLElement}*/($("#contents"));
 
 // Embedded switches
 if (window.parent !== window) {
@@ -293,6 +346,7 @@ window.addEventListener("account-logout", () => {
  * @param {any[]} contents
  * @param {(arg0: string, arg1: { progress?: number; current?: any; success?: boolean; uploaded?: number; successfullyUploaded?: number; total?: any; }) => void} progressCb
  */
+// TODO: Fix authentication
 async function uploadPost(title, content, contents, progressCb) {
 	const postData = {
 		title: title,
@@ -415,8 +469,6 @@ async function uploadPost(title, content, contents, progressCb) {
 	return true;
 }
 
-const createPostButton = /**@type {HTMLButtonElement}*/($("#createPostButton"));
-const discardPostButton = /**@type {HTMLButtonElement}*/($("#discardPostButton"));
 const createPostStatus = /**@type {HTMLElement}*/($("#createPostStatus"));
 
 function resetCreatePost() {

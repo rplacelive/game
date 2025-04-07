@@ -1,6 +1,6 @@
-import { AUDIOS } from "./defaults"
+import { AUDIOS } from "./defaults";
 import { confetti } from "@tsparticles/confetti";
-import { syncLocalStorage } from "./shared";
+import { addMessageHandler, syncLocalStorage } from "./shared";
 
 /**
  * @typedef {Record<string, any>} Quests
@@ -15,55 +15,70 @@ const stages = {
 	// seeCommunityPosts
 	closebtnClicked: 1,
 	postJumpButtonClicked: 2
-}
+};
 if (!localStorage.quests) {
 	const DEFAULT_QUESTS = {
 		seeCommunityPosts: { stage: stages.notStarted }
 	}
 	quests = DEFAULT_QUESTS
-	localStorage.quests = JSON.stringify(quests)
+	localStorage.quests = JSON.stringify(quests);
 }
 else {
-	quests = JSON.parse(localStorage.quests)
+	quests = JSON.parse(localStorage.quests);
 }
-
-/** @type {Record<string, any>} */
-quests = syncLocalStorage("quests", quests)
+quests = syncLocalStorage("quests", /**@type {Quests}*/(quests));
 
 const questsFrame = /**@type {HTMLIFrameElement}*/(document.getElementById("questsFrame"));
 questsFrame.addEventListener("load", function() {
 	const closeButton = /**@type {HTMLElement}*/(document.getElementById("closebtn"));
 
 	if (quests.seeCommunityPosts.stage <= stages.notStarted) {
-		closeButton.classList.add("please-click")
-		const closeClicked = () => {
-			closeButton.classList.remove("please-click")
-			quests.seeCommunityPosts.stage = stages.closebtnClicked
-			AUDIOS.bell.run()
-			confetti({
+		closeButton.classList.add("please-click");
+		const closeClicked = async () => {
+			closeButton.classList.remove("please-click");
+			quests.seeCommunityPosts.stage = stages.closebtnClicked;
+
+			// Play bell sound
+			AUDIOS.bell.currentTime = 0;
+			AUDIOS.bell.play();
+
+			// Play confetti animation
+			const confettiInstance = await confetti({
 				particleCount: 100,
 				spread: 70,
 				origin: { y: 0.6 },
-			})
-			closeButton.removeEventListener("click", closeClicked)
+			});
+			setTimeout(() => {
+				confettiInstance?.destroy()
+			}, 3000);
+
+			closeButton.removeEventListener("click", closeClicked);
 		}
-		closeButton.addEventListener("click", closeClicked)
+		closeButton.addEventListener("click", closeClicked);
 	}
 	if (quests.seeCommunityPosts.stage <= stages.closebtnClicked) {
 		const postsFrame = /**@type {HTMLIFrameElement}*/(document.getElementById("postsFrame"));
 		postsFrame.addEventListener("load", function(e) {
 			const postJumpButton = /**@type {HTMLButtonElement}*/(postsFrame.contentDocument?.querySelector("#postJumpButton"));
 			postJumpButton.classList.add("please-click");
-			const postJumpClicked = () => {
+			const postJumpClicked = async () => {
 				postJumpButton.classList.remove("please-click");
 				quests.seeCommunityPosts.stage = stages.postJumpButtonClicked;
-				AUDIOS.celebration.run();
-				confetti({
+
+				// Play celebration sound
+				AUDIOS.celebration.currentTime = 0;
+				AUDIOS.celebration.play();
+
+				// Play confetti animation
+				const confettiInstance = await confetti({
 					particleCount: 100,
 					spread: 100,
-					origin: { y: 0.6 },
-				})
-	
+					origin: { y: 0.6 }
+				});
+				setTimeout(() => {
+					confettiInstance?.destroy()
+				}, 3000);
+
 				// Display quests popup
 				questsFrame.style.display = "block"
 				const questsDescription = /**@type {HTMLElement}*/(questsFrame.contentDocument?.querySelector("#questsDescription"));
@@ -72,11 +87,14 @@ questsFrame.addEventListener("load", function() {
 	
 				postJumpButton.removeEventListener("click", postJumpClicked);
 			}
-			postJumpButton.addEventListener("click", postJumpClicked)    
-		})    
+			postJumpButton.addEventListener("click", postJumpClicked);
+		})
 	}
 })
 
 export function closeQuestsFrame() {
-	questsFrame.style.display = "none"
+	questsFrame.style.display = "none";
 }
+
+// Hook up cross frame / parent window IPC request handlers
+addMessageHandler("closeQuestsFrame", closeQuestsFrame);

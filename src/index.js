@@ -1,5 +1,5 @@
 import { ADS, AUDIOS, CHAT_COLOURS, COMMANDS, CUSTOM_EMOJIS, DEFAULT_HEIGHT, DEFAULT_PALETTE_KEYS, DEFAULT_THEMES, DEFAULT_WIDTH, EMOJIS, LANG_INFOS, MAX_CHANNEL_MESSAGES, PUNISHMENT_STATE, DEFAULT_PALETTE_USABLE_REGION, DEFAULT_PALETTE, DEFAULT_COOLDOWN } from "./defaults.js"
-import { DEFAULT_BOARD, DEFAULT_SERVER, lang, PublicPromise, translate, translateAll, hash, $, $$, stringToHtml } from "./shared.js"
+import { DEFAULT_BOARD, DEFAULT_SERVER, lang, PublicPromise, translate, translateAll, hash, $, $$, stringToHtml, addMessageHandler } from "./shared.js"
 import { showLoadingScreen, hideLoadingScreen } from "./loading-screen.js"
 import { enableDarkplace, disableDarkplace } from "./darkplace.js"
 import { enableWinter, disableWinter } from "./snowplace.js"
@@ -689,7 +689,6 @@ class WsCapsule {
 			return linkInfo;
 		}
 		this.fetchLinkKey = _fetchLinkKey;
-		window["fetchLinkKey"] = _fetchLinkKey;
 
 		/**
 		 * @param {string | any[]} uname
@@ -1189,7 +1188,7 @@ document.body.addEventListener("keydown", function(/**@type {KeyboardEvent}*/e) 
 		el.classList.remove("sel")
 	}
 	PEN = keyIndex;
-	AUDIOS.selectColour.run()
+	runAudio(AUDIOS.selectColour)
 	canvSelect.style.background = colours.children[keyIndex].style.background
 	colours.children[keyIndex].classList.add("sel")
 	placeOkButton.classList.add("enabled")
@@ -1495,11 +1494,11 @@ function clicked(clientX, clientY) {
 			showPalette()
 		}
 		else {
-			AUDIOS.invalid.run()
+			runAudio(AUDIOS.invalid)
 		}
 		return
 	}
-	((cooldownEndDate||0) > Date.now() ? AUDIOS.invalid : AUDIOS.highlight).run()
+	runAudio((cooldownEndDate||0) > Date.now() ? AUDIOS.invalid : AUDIOS.highlight)
 	anim = setInterval(function() {
 		x += (clientX - x) / 10
 		y += (clientY - y) / 10
@@ -1522,14 +1521,6 @@ function zoomIn() {
 			clearInterval(anim)
 		}
 	}, 15)
-}
-
-HTMLAudioElement.prototype.run = Audio.prototype.run = async function() {
-	if (muted) {
-		return
-	}
-	this.currentTime = 0
-	this.play().catch((/** @type {any} */ e) => e)
 }
 
 // Modal settings (mute, place chat)
@@ -1555,6 +1546,17 @@ placeChatButton.addEventListener("click", function() {
 	localStorage.placeChat = String(placeChat)
 	placeChatButtonImage.style.opacity = placeChat ? "1" : "0.6"
 });
+
+/**
+ * @param {HTMLAudioElement} audio 
+ */
+export async function runAudio(audio) {
+	if (muted) {
+		return;
+	}
+	audio.currentTime = 0;
+	await audio.play().catch((/** @type {any} */ e) => console.error(e));
+}
 
 // Client state
 let onCooldown = false;
@@ -1593,7 +1595,7 @@ placeOkButton.addEventListener("click", function(e) {
 	canvSelect.style.outline = ""
 	canvSelect.style.boxShadow = ""
 	palette.style.transform = "translateY(100%)"
-	AUDIOS.cooldownStart.run()
+	runAudio(AUDIOS.cooldownStart)
 
 	if (!mobile) {
 		colours.children[PEN].classList.remove("sel")
@@ -1620,7 +1622,7 @@ placeButton.addEventListener("click", function(e) {
 		}
 	}
 	else {
-		AUDIOS.invalid.run()
+		runAudio(AUDIOS.invalid)
 	}
 });
 
@@ -1629,7 +1631,7 @@ placeCancelButton.addEventListener("click", function(e) {
 		return;
 	}
 
-	AUDIOS.closePalette.run()
+	runAudio(AUDIOS.closePalette)
 	canvSelect.style.background = ''
 	palette.style.transform = 'translateY(100%)'
 	if (PEN != -1) {
@@ -1644,7 +1646,7 @@ placeCancelButton.addEventListener("click", function(e) {
 })
 
 setInterval(async () => {
-	let left = Math.floor(((cooldownEndDate||0) - Date.now()) / 1000)
+	const left = Math.floor(((cooldownEndDate||0) - Date.now()) / 1000);
 	placeButton.innerHTML = initialConnect
 		? cooldownEndDate === null // They have made initial connect
 			? `<span style="color:#f50; white-space: nowrap;">${await translate("connectingFail")}</span>` // They connected but now have disconnected
@@ -1655,17 +1657,19 @@ setInterval(async () => {
 		: await translate("connecting") // They are yet to connect
 
 	if ((cooldownEndDate||0) > Date.now() && !onCooldown) {
-		onCooldown = true
+		onCooldown = true;
 	}
 	if ((cooldownEndDate||0) < Date.now() && onCooldown) {
-		onCooldown = false
-		if (!document.hasFocus()) AUDIOS.cooldownEnd.run()
+		onCooldown = false;
+		if (!document.hasFocus()) {
+			runAudio(AUDIOS.cooldownEnd)
+		}
 	}
 }, 200)
 
 function showPalette() {
 	palette.style.transform = "";
-	AUDIOS.highlight.run();
+	runAudio(AUDIOS.highlight);
 }
 
 export function generatePalette() {
@@ -1693,25 +1697,25 @@ generatePalette()
 colours.onclick = (/**@type {MouseEvent}*/e) => {
 	const clickedColour = /**@type {HTMLElement}*/(e.target);
 	if (!clickedColour || !clickedColour.dataset.index) {
-		return
+		return;
 	}
-	const i = parseInt(clickedColour.dataset.index)
+	const i = parseInt(clickedColour.dataset.index);
 	if (Number.isNaN(i) || i < PALETTE_USABLE_REGION.start || i >= PALETTE_USABLE_REGION.end) {
-		return
+		return;
 	}
 	for (let i = 0; i < colours.children.length; i++) {
 		const colour = colours.children[i];
-		colour.classList.remove("sel")
+		colour.classList.remove("sel");
 	}
-	PEN = i
-	canvSelect.style.background = clickedColour.style.background
-	clickedColour.classList.add("sel")
-	placeOkButton.classList.add("enabled")
-	canvSelect.children[0].style.display = "none"
-	canvSelect.style.outline = "8px white solid"
-	canvSelect.style.boxShadow = "0px 2px 4px 0px rgb(0 0 0 / 50%)"
-	hideIndicators()
-	AUDIOS.selectColour.run()
+	PEN = i;
+	canvSelect.style.background = clickedColour.style.background;
+	clickedColour.classList.add("sel");
+	placeOkButton.classList.add("enabled");
+	canvSelect.children[0].style.display = "none";
+	canvSelect.style.outline = "8px white solid";
+	canvSelect.style.boxShadow = "0px 2px 4px 0px rgb(0 0 0 / 50%)";
+	hideIndicators();
+	runAudio(AUDIOS.selectColour);
 }
 
 /**
@@ -1719,23 +1723,24 @@ colours.onclick = (/**@type {MouseEvent}*/e) => {
  * @param {any} buffer
  */
 export function runLengthChanges(data, buffer) {
-	let i = 9,
-	boardI = 0
-	let w = data.getUint32(1), h = data.getUint32(5)
+	let i = 9;
+	let boardI = 0;
+	let w = data.getUint32(1);
+	let h = data.getUint32(5);
 	if (w != WIDTH || h != HEIGHT) {
-		setSize(w, h)
+		setSize(w, h);
 	}
-	board = new Uint8Array(buffer)
+	board = new Uint8Array(buffer);
 	while (i < data.byteLength) {
-		let cell = data.getUint8(i++)
-		let c = cell >> 6
-		if (c == 1) c = data.getUint8(i++)
-		else if (c == 2) c = data.getUint16(i++), i++
-		else if (c == 3) c = data.getUint32(i++), i += 3
-		boardI += c
-		board[boardI++] = cell & 63
+		let cell = data.getUint8(i++);
+		let c = cell >> 6;
+		if (c == 1) c = data.getUint8(i++);
+		else if (c == 2) c = data.getUint16(i++), i++;
+		else if (c == 3) c = data.getUint32(i++), i += 3;
+		boardI += c;
+		board[boardI++] = cell & 63;
 	}
-	renderAll()
+	renderAll();
 }
 
 // The new server's equivalent for run length changes, based upon run length encoding
@@ -2207,7 +2212,7 @@ export function addLiveChatMessage(message, channel) {
 		message.txt.includes("@everyone")) {
 		newMessage.setAttribute("mention", "true");
 		if (channel === currentChannel) {
-			AUDIOS.closePalette.run();
+			runAudio(AUDIOS.closePalette);
 		}
 	}
 
@@ -3201,6 +3206,13 @@ showLoadingScreen();
 );
 /**@type {(messageId:number, senderId:number)=>void}*/export let chatReport = (/**@type {number}*/messageId, /**@type {number}*/senderId) => instance.chatReport(messageId, senderId);
 /**@type {(messageId:number, reaction:string)=>void}*/export let chatReact = (/**@type {number}*/ messageId, /**@type {string}*/reaction) => instance.chatReact(messageId, reaction);
+// Hook up cross frame / parent window IPC request handlers
+addMessageHandler("fetchLinkKey", instance.fetchLinkKey);
+addMessageHandler("openChatPanel", openChatPanel);
+addMessageHandler("scrollToPosts", scrollToPosts);
+addMessageHandler("switchGameServer", switchGameServer);
+addMessageHandler("openOverlayMenu", openOverlayMenu);
+addMessageHandler("resizePostsFrame", resizePostsFrame);
 
 // Blank default render and canvas size init before we have loaded board
 setSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);

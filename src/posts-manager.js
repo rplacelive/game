@@ -88,7 +88,7 @@ function insertElementAtIndex(parentElement, newElement, index) {
 
 async function finishPostLoadWithCd() {
 	await new Promise(resolve => setTimeout(resolve, postLoadCooldown));
-	postFinishedLastLoad?.resolve();
+	postFinishedLastLoad?.resolve(undefined);
 }
 
 /**

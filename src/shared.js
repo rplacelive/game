@@ -504,7 +504,7 @@ export async function cachedFetch(keystore, id, url, expiry) {
 }
 
 /**
- * @param {URL} url
+ * @param {string|URL|globalThis.Request} url
  * @param {string} method
  * @param {any} body
  */
@@ -584,12 +584,41 @@ export function handleFormSubmit(form, endpoint, { bind, checkCustomValidity, pr
 	})
 }
 
-
-// Cross-frame IPC system
-let frameReqId = 0
-let frameReqs = new Map()
+// Cross-frame / parent window IPC system
 /**
- * @param {{ contentWindow: { postMessage: (arg0: { call: any; data: undefined; handle: number; source: string; }, arg1: string) => void; }; }} frameEl
+ * @typedef {Object} IpcMessage
+ * @property {string} call
+ * @property {any} data
+ * @property {number} handle
+ * @property {string} source
+ * @property {string} error
+ */
+
+let frameReqId = 0
+/**@type {Map<number, PublicPromise>}*/const frameReqs = new Map()
+/**
+ * 
+ * @param {string} messageCall 
+ * @param {any} args 
+ */
+export async function makeParentRequest(messageCall, args = undefined) {
+	const handle = frameReqId++
+	const promise = new PublicPromise()
+	const postCall = { call: messageCall, data: args, handle: handle, source: window.name }
+	frameReqs.set(handle, promise)
+	window.parent.postMessage(postCall)
+	return await promise.promise
+}
+/**
+ * 
+ * @param {string} messageCall 
+ * @param {any} args 
+ */
+export function sendParentMessage(messageCall, args = undefined) {
+	window.parent.postMessage({ call: messageCall, data: args }, location.origin)
+}
+/**
+ * @param {HTMLIFrameElement} frameEl
  * @param {any} messageCall
  */
 export async function makeCrossFrameRequest(frameEl, messageCall, args = undefined) {
@@ -602,7 +631,7 @@ export async function makeCrossFrameRequest(frameEl, messageCall, args = undefin
 		source: window.name || "main"
 	}
 	frameReqs.set(handle, promise)
-	frameEl.contentWindow.postMessage(postCall, location.origin)
+	frameEl.contentWindow?.postMessage(postCall, location.origin)
 	return await promise.promise
 }
 /**
@@ -610,60 +639,79 @@ export async function makeCrossFrameRequest(frameEl, messageCall, args = undefin
  * @param {any} messageCall
  */
 export function sendCrossFrameMessage(frameEl, messageCall, args = undefined) {
-	frameEl.contentWindow.postMessage({ 
+	frameEl.contentWindow?.postMessage({ 
 		call: messageCall, 
 		data: args,
 		source: window.name || "main"
 	}, location.origin)
 }
+
+// Listen for messages from other frames / child windows
+/**@type {Map<string, Function>}*/const frameReqHandlers = new Map();
+/**
+ * 
+ * @param {string} name 
+ * @param {Function} handler 
+ */
+export function addMessageHandler(name, handler) {
+	frameReqHandlers.set(name, handler)
+}
 window.addEventListener("message", async function(event) {
 	if (!event.origin.startsWith(location.origin)) {
-		return
+		return;
 	}
-	const message = event.data
+	
+	/**@type {IpcMessage}*/const message = event.data;
 	if (!message) {
-		return
+		return;
 	}
-	if (message.call) { // Another frame asking to call window method
-		let result = undefined
+
+	if (message.call && typeof message.call === "string") {
+		/** @type {any} */let result = undefined;
 		try {
 			// Check if the method exists and is callable
 			if (typeof window[message.call] === "function") {
-				result = await window[message.call](message.data)
+				result = await (window[message.call])(message.data);
 			}
+			else if (frameReqHandlers.has(message.call)) {
+				const reqHandler = /**@type {Function}*/(frameReqHandlers.get(message.call));
+				result = await reqHandler(message.data);
+			}
+
 			// Send return result back if handle was provided
 			if (message.handle !== undefined && message.handle !== null) {
-				event.source.postMessage({ 
+				/** @type {Window} */ (event.source).postMessage({ 
 					handle: message.handle, 
 					data: result,
 					source: window.name || "main"
-				}, event.origin)
+				}, event.origin);
 			}
 		}
 		catch (error) {
-			console.error(`Error executing cross-frame call '${message.call}':`, error)
+			console.error(`Error executing cross-frame call '${message.call}':`, error);
 			if (message.handle !== undefined && message.handle !== null) {
-				event.source.postMessage({ 
+				/** @type {Window} */ (event.source).postMessage({ 
 					handle: message.handle, 
-					error: error.message,
+					error: error instanceof Error ? error.message : String(error),
 					source: window.name || "main"
-				}, event.origin)
+				}, event.origin);
 			}
 		}
 	}
-	else { // Return value from calling another frames method
-		const request = frameReqs.get(message.handle)
+	else if (message.handle) { 
+		// Return value from calling another frames method
+		const request = frameReqs.get(message.handle);
 		if (request) {
 			if (message.error) {
-				request.reject(new Error(message.error))
+				request.reject(new Error(message.error));
 			}
 			else {
-				request.resolve(message.data)
+				request.resolve(message.data);
 			}
-			frameReqs.delete(message.handle)
+			frameReqs.delete(message.handle);
 		}
 	}
-})
+});
 
 /**
  * @param {string} text - The input string to be hashed
