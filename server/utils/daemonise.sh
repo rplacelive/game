@@ -1,37 +1,43 @@
 #!/bin/bash
-# This script will alow the server software to always run in the background, and auto load on reboot using a systemd unit (only works on linux)
+# This script sets up a systemd unit for the rplace server to run in the background and start on boot (Linux only).
+
 if [ -z "$1" ]
 then
-    echo -e "\x1b[31mPlease input the path to the rplace server directory as an argument e.g home/pi/rslashplace2.github.io"
-    exit 0
+	echo -e "\x1b[31mPlease input the absolute path to the rplace server directory as an argument, e.g. /home/pi/rslashplace2.github.io"
+	exit 1
+fi
+
+if [ ! -d "$1" ]; then
+	echo -e "\x1b[31mProvided path is not a valid directory."
+	exit 1
 fi
 
 bun_dir=$(which bun)
-dotnet_dir=$(which dotnet)
+
+if [ -z "$bun_dir" ]; then
+	echo -e "\x1b[31mBun is not installed or not in PATH."
+	exit 1
+fi
 
 echo -e "
 [Unit]
-Description=main place websocket server, see http-place for the static http server.
+Description=rplace.live canvas server
 After=network.target
 
 [Service]
 Type=simple
-StandardInput=tty-force
-TTYVHangup=yes
-TTYPath=/dev/tty20
-TTYReset=yes
 WorkingDirectory=$1
 ExecStart=
-ExecStart=$bun_dir server.js
+ExecStart=$bun_dir run server.ts
 Restart=always
 RestartSec=2
 
 [Install]
 WantedBy=multi-user.target
-" | sudo tee -a /etc/systemd/system/place.service
-sudo systemctl daemon-reload
+" | sudo tee /etc/systemd/system/place.service > /dev/null
 
+sudo systemctl daemon-reload
 sudo systemctl enable place.service
 sudo systemctl start place.service
 
-echo "Task completed."
+echo "Task completed. You can check the service with: sudo systemctl status place.service"
