@@ -22,7 +22,7 @@ import { DbInternals, LiveChatMessage } from "./db-worker.js"
 import { PublicPromise } from "./server-types.js"
 import type { ChallengeModule } from "./padlock/server.d.ts"
 import { distance } from "fastest-levenshtein"
-import * as sha256 from "sha256"
+import sha256 from "sha256"
 
 let BOARD:Uint8Array, CHANGES:Uint8Array, PLACERS:Buffer
 
@@ -494,14 +494,28 @@ function postDbMessage<T extends DbInternals>(messageCall: keyof T, args?: Param
 	dbWorker.postMessage({ call: messageCall, data: args })
 }
 
-const playerIntIds = new Map<ServerWebSocket<ClientData>, number>() // Player ws instance<Object> : intID<Number>
-const playerChatNames = new Map<number, string>() // intId<Number> : chatName<String>
+/**
+ * IntId (number) : Player (ServerWebSocket<ClientData>)
+ */
+const playerIntIds = new Map<number, ServerWebSocket<ClientData>>()
+/**
+ * IntId  (number) : Chat name (string)
+ */
+const playerChatNames = new Map<number, string>() 
+/**
+ * IP : finishDate (unix epoch offset ms)
+ */
+const mutes = new Map<string, number>()
+/**
+ * IP : finishDate (unix epoch offset ms)
+ */
+const bans = new Map<string, number>()
+/**
+ * VIP key (string) : Player (ServerWebSocket<ClientData>)
+ */
+const activeVips = new Map<string, ServerWebSocket<ClientData>>()
 let liveChatMessageId:number = (await makeDbRequest("getMaxLiveChatId")) as number || 0
 let placeChatMessageId:number = (await makeDbRequest("getMaxPlaceChatId")) as number || 0
-const mutes = new Map<string, number>() // IP : finishDate (unix epoch offset ms)
-const bans = new Map<string, number>() // IP : finishDate (unix epoch offset ms)
-const activeVips = new Map<string, ServerWebSocket<ClientData>>() // String VIP key : client
-
 
 // vip key, cooldown
 const vipTxt = (await fs.readFile("./vip.txt")).toString()
@@ -1248,8 +1262,15 @@ const serverOptions:TLSWebSocketServeOptions<ClientData> = {
 				console.error(`Could not authenticate user ${IP}, user ID was null, even after new creation`)
 				return ws.close()
 			}
+			if (playerIntIds.has(intId)) {
+				const existingWs = playerIntIds.get(intId)
+				if (existingWs && existingWs !== ws) {
+					existingWs.close(4000, "You have connected with this user ID on another session")
+				}
+			}
+
 			ws.data.intId = intId
-			playerIntIds.set(ws, intId)
+			playerIntIds.set(intId, ws)
 			const pIdBuf = Buffer.alloc(5)
 			pIdBuf.writeUInt8(11, 0) // TODO: Integrate into packet 1
 			pIdBuf.writeUInt32BE(intId, 1)
@@ -1654,14 +1675,13 @@ const serverOptions:TLSWebSocketServeOptions<ClientData> = {
 						case 0: { // Kick
 							const actionIntId = data.readUInt32BE(offset); offset += 4
 							const actionReason = data.slice(offset, Math.min(data.byteLength, 300 + offset)).toString()
-							if (actionReason.length == 0) return
-
-							let actionCli:ServerWebSocket<ClientData>|null = null
-							for (const [p, uid] of playerIntIds) {
-								if (uid === actionIntId) actionCli = p
+							if (actionReason.length == 0) {
+								return
 							}
-							if (actionCli === null) return
-
+							const actionCli = playerIntIds.get(actionIntId);
+							if (!actionCli){
+								return
+							}
 							if (action == 0) { // kick
 								modWebhookLog(`Moderator (${ws.data.codeHash}) requested to **kick** user **${
 									actionCli.data.ip}**, with reason: '${
@@ -1675,13 +1695,13 @@ const serverOptions:TLSWebSocketServeOptions<ClientData> = {
 							const actionIntId = data.readUInt32BE(offset); offset += 4
 							const actionTimeS = data.readUInt32BE(offset); offset += 4
 							const actionReason = data.slice(offset, Math.min(data.byteLength, 300 + offset)).toString()
-							if (actionReason.length == 0) return
-
-							let actionCli:ServerWebSocket<ClientData>|null = null
-							for (const [p, uid] of playerIntIds) {
-								if (uid === actionIntId) actionCli = p
+							if (actionReason.length == 0) {
+								return
 							}
-							if (actionCli == null) return
+							const actionCli = playerIntIds.get(actionIntId);
+							if (!actionCli){
+								return
+							}
 
 							modWebhookLog(`Moderator (${ws.data.codeHash}) requested to **${["mute", "ban"][action - 1]
 								}** user **${actionCli.data.intId} (${actionCli.data.chatName})**, for **${formatTimeSeconds(actionTimeS)}** seconds, with reason: '${
@@ -1694,15 +1714,16 @@ const serverOptions:TLSWebSocketServeOptions<ClientData> = {
 						case 3: { // Force captcha revalidation
 							const actionIntId = data.readUInt32BE(offset); offset += 4
 							const actionReason = data.subarray(offset, Math.min(data.byteLength, 300 + offset)).toString()
-							if (actionReason.length == 0) return
+							if (actionReason.length == 0) {
+								return
+							}
 
-							let actionCli:ServerWebSocket<ClientData>|null = null
+							let actionCli:ServerWebSocket<ClientData>|undefined|null = null
 							if (actionIntId !== 0) {
-								for (const [p, uid] of playerIntIds) {
-									if (uid === actionIntId) actionCli = p
+								actionCli = playerIntIds.get(actionIntId)
+								if (!actionCli) {
+									return
 								}
-								if (actionCli == null) return
-
 								await forceCaptchaSolve(actionCli)
 							}
 							else {
@@ -1772,14 +1793,14 @@ const serverOptions:TLSWebSocketServeOptions<ClientData> = {
 			}
 		},
 		async close(ws:ServerWebSocket<ClientData>, code: number, message: string) {
-			playerChatNames.delete(ws.data.intId)
-			playerIntIds.delete(ws)
-			toValidate.delete(ws)
-			activeVips.delete(ws.data.codeHash)
+			playerChatNames.delete(ws.data.intId);
+			playerIntIds.delete(ws.data.intId);
+			toValidate.delete(ws);
+			activeVips.delete(ws.data.codeHash);
 			dbWorker.postMessage({ call: "exec", data: {
 				stmt: "UPDATE Users SET playTimeSeconds = playTimeSeconds + ?1 WHERE intId = ?2",
 				params: [ Math.floor((NOW - ws.data.connDate) / 1000), ws.data.intId ] } })
-			wss.clients.delete(ws)
+			wss.clients.delete(ws);
 		},
 		perMessageDeflate: false,
 	},
