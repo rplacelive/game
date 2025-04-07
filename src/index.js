@@ -100,6 +100,7 @@ const idPosition = /**@type {HTMLElement}*/($("#idPosition"));
 const onlineCounter = /**@type {HTMLElement}*/($("#onlineCounter"));
 const canvasLock = /**@type {HTMLElement}*/($("#canvasLock"));
 const namePanel = /**@type {HTMLElement}*/($("#namePanel"));
+const nameInput = /**@type {HTMLInputElement}*/(document.getElementById("nameInput"));
 const muteButton = /**@type {HTMLButtonElement}*/($("#muteButton"));
 const muteButtonImage = /**@type {HTMLImageElement}*/($("#muteButtonImage"));
 const placeChatButton = /**@type {HTMLButtonElement}*/($("#placeChatButton"));
@@ -2010,6 +2011,27 @@ export function createLiveChatMessage(messageId, txt, senderId, name, sendDate, 
 	return message;
 }
 
+nameInput.addEventListener("keydown", function(e) {
+	if (e.key == "Enter") {
+		nameInput.blur();
+		instance.setName(nameInput.value);
+	}
+	else if (e.key == "Escape") {
+		namePanel.style.visibility = "hidden"
+	}
+	else if (e.key == "Backspace" && nameInput.value.length == 0) {
+		namePanel.style.visibility = "hidden"
+	}
+});
+nameInput.addEventListener("input", function() {
+	nameInput.value = nameInput.value.replace(/\W+/g, "").toLowerCase()
+});
+const nameButton = /**@type {HTMLButtonElement}*/($("#nameButton"));
+nameButton.addEventListener("click", function() {
+	nameInput.blur();
+	instance.setName(nameInput.value);
+});
+
 /**
  * @param {string} command 
  * @param {string} message 
@@ -2017,8 +2039,6 @@ export function createLiveChatMessage(messageId, txt, senderId, name, sendDate, 
 export function handleLiveChatCommand(command, message) {
 	switch (command) {
 		case "name": {
-			const namePanel = /**@type {HTMLElement}*/(document.getElementById("namePanel"));
-			const nameInput = /**@type {HTMLInputElement}*/(document.getElementById("nameInput"));
 			namePanel.style.visibility = "visible";
 			nameInput.value = message.slice(5).trim();
 			break;

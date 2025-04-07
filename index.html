@@ -352,11 +352,9 @@
 				<h4 id="nicknameSubheading" style="color: lightgrey;" translate="pleaseBeRespectful">Please be respectful and try not to spam!</h4>
 				<br>
 				<div class="name-input-container">
-					<input id="nameInput" type="text" placeholder="Enter nickname..." translate="enterNickname"
-						onkeydown="if (event.keyCode == 13) setName(this.value)"
-						oninput="this.value = this.value.replace(/\W+/g, '').toLowerCase()" maxlength="16">
-					<button onclick="setName(nameInput.value)">
-						<img src="svg/green-checkmark.svg">
+					<input id="nameInput" type="text" placeholder="Enter nickname..." translate="enterNickname" maxlength="16">
+					<button id="nameButton" type="button" title="Confirm name">
+						<img alt="✔️" src="svg/green-checkmark.svg">
 					</button>
 				</div>
 			</div>
