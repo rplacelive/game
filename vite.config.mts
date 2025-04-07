@@ -2,7 +2,7 @@ import { defineConfig } from "vite"
 import { serviceWorkerPlugin } from "@gautemo/vite-plugin-service-worker"
 import { glob } from "glob"
 
-const htmlFiles = await glob("*.html");
+const pages = await glob("*.html");
 
 export default defineConfig({
 	base: "/",
@@ -15,7 +15,7 @@ export default defineConfig({
 		target: "esnext",
 		rollupOptions: {
 			input: Object.fromEntries(
-				htmlFiles.map(file => [
+				pages.map(file => [
 					file.replace(/\.html$/, ""),
 					file
 				])

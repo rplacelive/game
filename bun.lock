@@ -5,7 +5,6 @@
       "name": "rslashplace2.github.io",
       "dependencies": {
         "@cycjimmy/canvas-snow": "^3.0.3",
-        "@gautemo/vite-plugin-service-worker": "^0.1.0",
         "@tsparticles/confetti": "^3.8.1",
         "dompurify": "^3.2.5",
         "lit": "^3.2.1",
@@ -14,6 +13,7 @@
         "marked": "^15.0.8",
       },
       "devDependencies": {
+        "@gautemo/vite-plugin-service-worker": "^0.1.0",
         "@types/bun": "latest",
         "glob": "^11.0.1",
         "vite": "^6.2.5",
