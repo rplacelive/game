@@ -2599,11 +2599,11 @@ modMessageId.addEventListener("input", async function (e) {
 				modMessagePreview.appendChild(messageElement);
 			}
 			else {
-				modMessagePreview.innerHTML = "Message not found";
+				modMessagePreview.textContent = "Message not found";
 			}
 		}
 		catch (error) {
-			modMessagePreview.innerHTML = "Message not found";
+			modMessagePreview.textContent = "Message not found";
 		}
 	}
 });
