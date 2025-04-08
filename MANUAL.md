@@ -10,8 +10,8 @@ Setting up a custom server that users can connect to via the posts menu is very 
 
 ### Important notes:
  - To run a rplace custom server, you require:
-    * Acess to a `server` or `PC` capable of running bun (support may only be available on windows under WSL). 
-    * Acess to your routers/server's `port forwarding` rules in order to connect your custom server to the internet.
+    * Access to a `server` or `PC` capable of running bun (support may only be available on windows under WSL). 
+    * Access to your routers/server's `port forwarding` rules in order to connect your custom server to the internet.
     * A `web domain` for https connections (will be outlined later in this document).
  - If you encounter a bug, please ask us on the discord or submit a github issue.
  - Make sure that you are running the latest versions of runtimes and libraries, such as the latest bun, or you may encounter issues.
@@ -24,7 +24,7 @@ Setting up a custom server that users can connect to via the posts menu is very 
 ![image](https://user-images.githubusercontent.com/73035340/184675516-b4f6063c-0e27-4ecb-8004-47dded1d0839.png)
 ![image](https://user-images.githubusercontent.com/73035340/184676979-6683220f-b2f9-44d6-b168-91b18cef22be.png)
 
-3. Install the latest versions of `certbot`, `bun`, `npm`, and `git` on your system.
+3. Install the latest versions of `certbot`, `bun`, and `git` on your system.
 
 ![image](https://user-images.githubusercontent.com/73035340/184677594-f7386cb1-2d33-4ea9-b921-02a46e1703fc.png)
 
@@ -32,9 +32,9 @@ Setting up a custom server that users can connect to via the posts menu is very 
 
 ![image](https://user-images.githubusercontent.com/73035340/184679276-f5d48324-beb7-421e-a58f-1749705ee75f.png)
 
-5. Clone the project with git. This can be done with `git clone https://rslashplace2/rslashplace2.github.io`
+5. Clone the project with git. This can be done with `git clone https://github.com/rplacelive/game`
 
-6. Enter the cloned project directory with `cd rslashplace2.github.io`. Run `bun i` and `npm i` to install all required packages respectively.
+6. Enter the cloned project directory with `cd game`. Run `bun i` to install all required packages respectively.
 
 7. Run the server with `bun run server.js`
 
@@ -44,4 +44,4 @@ Setting up a custom server that users can connect to via the posts menu is very 
 
 10. If you encountered no errors, Bon Voilà, you have set up an rplace custom server acessable from in the game.
 
-11. If you did encounter errors, no worries, visit the rplace discord, acessable through out site `https://rplace.live` and ask one of the admins (our usernames are usually `@BlobKat`/`@zekiahepic`), and we will try our best to assist you!
+11. If you did encounter errors, feel free to make a githb issue, or contact us on [discord](https://rplace.live/discord), and we will try our best to assist you!

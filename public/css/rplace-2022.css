@@ -1,0 +1,501 @@
+:root {
+	--ui-frame-shadow: none;
+	--ui-background: #333;
+	--ui-panel-hover: lightgrey;
+	--ui-panel-bg: white;
+	--ui-text: black;
+}
+
+:root[data-variant="dark"] {
+	--ui-frame-shadow: none;
+	--ui-background: black;
+	--ui-panel-hover: #313131;
+	--ui-panel-bg: #141414;
+	--ui-text: white;
+}
+:root[data-variant="dark"] .icon-image {
+	filter: invert(1);
+}
+
+:root[data-variant="merry"] {
+	--ui-frame-shadow: inset 0 0 32px #10ad3a;
+	--ui-background: linear-gradient(to bottom, #568dae, #7fa2b4 30%, #8e9eac 60%, #bdb6a7 90%);
+	--ui-panel-hover: #f7c6c6;
+	--ui-panel-bg: #ffffff;
+	--ui-text: #333333;
+}
+
+::selection {
+	background-color: var(--ui-panel-hover);
+}
+
+html, body {
+	color: var(--ui-text);
+	background: var(--ui-background);
+}
+
+select {
+	background-color: var(--ui-panel-bg);
+	border-radius: 10px;
+	font-size: 16px;
+	border: 1px solid gray;
+	box-shadow: 0 0 10px rgba(0,0,0,0.4);
+	height: 35px;
+	padding: 5px;
+	font-family: bold;
+	color: #747474;
+}
+
+input, button, textarea {
+	color: unset;
+	font: unset;
+	background-color: var(--ui-panel-bg);
+	border-radius: 10px;
+	font-size: 16px;
+	border: none;
+	box-shadow: 0 0 10px rgba(0,0,0,0.4);
+	height: 35px;
+	padding: 5px;
+	outline: none;
+}
+:root[data-variant="dark"] input, :root[data-variant="dark"] button, :root[data-variant="dark"] textarea {
+	border: 1px solid var(--ui-panel-hover);
+}
+
+button, input[type="button"] {
+	cursor: pointer;
+}
+
+input[type="button"]:disabled, button:disabled {
+	cursor: default;
+	color: #0000009c;
+	pointer-events: none;
+}
+
+input[type="radio"] {
+	height: auto;
+	width: auto;
+	appearance: radio;
+}
+
+input[type="checkbox"] {
+	appearance: auto;
+}
+
+input[type=file]::file-selector-button {
+	border-radius: 5px;
+	background-color: var(--ui-panel-bg);
+	border: 0px solid black;
+	box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.5);
+	height: 100%;
+	color: var(--ui-text);
+}
+
+input[type=range]::-moz-range-thumb {
+	position: relative;
+	appearance: none;
+	width: 25px;
+	height: 25px;
+	box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.5);
+	border: 1px solid darkgray;
+	border-radius: 5px;
+	background: var(--ui-panel-bg);
+	cursor: pointer;
+}
+
+input[type=range]::-webkit-slider-thumb {
+	position: relative;
+	appearance: none;
+	width: 25px;
+	height: 25px;
+	box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.5);
+	border: 1px solid darkgray;
+	border-radius: 5px;
+	background: var(--ui-panel-bg);
+	cursor: pointer;
+}
+
+input:focus-visible, button:focus-visible, textarea:focus-visible {
+	outline: auto;
+}
+
+a {
+	cursor: pointer;
+}
+
+#loadingScreen {
+	background: #d6dfe3;
+}
+
+#maincontent {
+	box-shadow: var(--ui-frame-shadow);
+}
+
+#modal {
+	border: none;
+	background: var(--ui-panel-bg);
+	border-radius: 8px;
+	width: min(325px, calc(100% - 64px));
+	padding: 24px;
+}
+
+@media (max-width:500px){
+	#modal {
+		padding: 16px;
+	}
+
+	.modal-install {
+		width: 100% !important;
+	}
+
+	.modal-footer {
+		margin-top: 16px;
+	}
+}
+
+r-close-icon {
+	fill: var(--ui-text);
+}
+
+dialog {
+	color: var(--ui-text);
+}
+.modal-close-button {
+	width: 20px;
+  	height: 20px;
+  	font-size: 20px;
+  	cursor: pointer;
+	display: inline-block;
+	fill: var(--ui-text);
+	vertical-align: middle;
+	line-height: 1em;
+}
+.modal-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 24px;
+}
+
+.modal-content {
+	color: var(--ui-text);
+	font-family: reddit;
+	font-size: 18px;
+	line-height: 20px;
+	margin: 0px 0px 20px;
+}
+
+.modal-install {
+	height: 40px;
+	background: var(--ui-panel-bg);
+	align-self: center;
+	width: 60%;
+	border: 1px solid lightgray;
+	border-radius: 40px;
+	text-align: center;
+	line-height: 40px;
+	cursor: pointer;
+	transition: .1s border;
+	color: var(--ui-text);
+}
+
+.modal-install:hover {
+	border: 2px solid #ff4500;
+	line-height: 38px;
+}
+
+.modal-footer-button {
+	color: var(--ui-text);
+	box-shadow: 0 3px 10px rgba(0,0,0,.3);
+	border-radius: 18px;
+}
+
+.context-menu {
+	background: var(--ui-panel-bg);
+	border-radius: 5px;
+	box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.5);
+}
+.context-menu > ul > li:hover {
+	background: var(--ui-panel-hover);
+	border-radius: 4px;
+}
+
+/* Layout buttons */
+.layout {
+	display: block;
+	width: 36px;
+	height: 36px;
+	padding: 8px;
+	box-shadow: 0 3px 10px rgba(0,0,0,.3);
+	border-radius: 18px;
+	position: absolute;
+	cursor: pointer;
+	background: var(--ui-panel-bg);
+	fill: var(--ui-text);
+	z-index: 5;
+}
+
+#helpbtn {
+	top: 20px;
+	right: 20px;
+}
+
+#chatbtn {
+	bottom: 20px;
+	right: 20px;
+	line-height: 15px;
+	background: var(--ui-panel-bg);
+	border-radius: 100px;
+	text-align: center;
+	z-index: 5;
+	cursor: pointer;
+}
+
+#closebtn {
+	right: unset;
+	left: 20px;
+	top: 20px;
+	text-align: center;
+	font-size: 25px;
+	line-height: 8px;
+	display: flex;
+	justify-content: center;
+}
+
+#helpbtn, #posel, #place, #archiveView, .toast-menu, #captchaPopup, #closebtn, #timelapsePanel {
+	box-shadow: 0 0 30px black;
+}
+
+#place {
+	min-width: 155px;
+	height: 24px;
+	padding: 5px;
+	line-height: 15px;
+	background: var(--ui-panel-bg);
+	border-radius: 100px;
+	cursor: pointer;
+}
+
+#chatPanel {
+	border-radius: 10px;
+	background-color: var(--ui-panel-bg);
+	padding: 10px;
+}
+#chatPanel[open] {
+	box-shadow: 0 0 30px black;
+}
+
+#messageInput {
+	color: var(--ui-text);
+	padding-top: 8px;
+	height: max(36px, var(--message-input-height));
+}
+#messageInput[state="command"] {
+	color: #00FA9A;
+}
+.message-input-actions > button {
+	box-shadow: none;
+	opacity: 0.6;
+	transition: .2s opacity;
+}
+.message-input-actions > button:hover {
+	opacity: 1;
+}
+
+.message-emojis-suggestion {
+	box-shadow: none;
+}
+.message-emojis-suggestion:hover {
+	background: var(--ui-panel-hover);
+	border-radius: 4px;
+}
+
+r-live-chat-message .reaction-details {
+	background-color: var(--ui-panel-bg);
+}
+r-live-chat-message .emoji-reactors-count {
+	background-color: var(--ui-panel-hover);
+}
+
+.chat-ad-ins::before {
+	background: var(--ui-panel-bg);
+}
+.chat-ad-close {
+	color: var(--ui-text);
+}
+
+.toast-menu {
+	padding: 10px;
+	line-height: 17px;
+	background: var(--ui-panel-bg);
+	border-radius: 15px;
+}
+
+#modMessagePreview {
+	border-radius: 12px;
+	padding: 8px;
+	box-shadow: inset 2px 2px #dbdbdb;
+	background: #f7f7f7;
+	padding: 4px;
+	border: 1px solid lightgray;
+}
+
+#posel{
+	position: absolute;
+	top: 20px;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 155px;
+	height: 24px;
+	padding: 5px;
+	line-height: 17px;
+	background: var(--ui-panel-bg);
+	border-radius: 100px;
+	text-align: center;
+	z-index: 5;
+	font-family: mono;
+	transition: .2s border-radius;
+}
+
+#palette {
+	background: var(--ui-panel-bg);
+	box-shadow: 0 0 10px black;
+}
+
+#namePanel {
+	background-color: var(--ui-panel-bg);
+	border-radius: 15px;
+}
+
+.name-input-container > button {
+	background: var(--ui-panel-bg);
+	box-shadow: 0 3px 10px rgba(0,0,0,.3);
+	border: none;
+	border-radius: 10px;
+	padding: 2px;
+	transition: transform .1s ease-in;
+	cursor: pointer;
+}
+
+.name-input-container > button:hover {
+	transform: rotate(5deg) scale(110%);
+}
+
+.message-options {
+	height: 35px;
+	aspect-ratio: 1/1;
+	text-align: center;
+	line-height: 18px;
+	cursor: pointer;
+	font-weight: bolder;
+	border-radius: 10px;
+	box-shadow: 0 0 10px rgba(0,0,0,0.4);
+}
+
+#chatMessages > .message > .actions {
+	background-color: var(--ui-panel-bg);
+}
+
+#chatPreviousButton {
+	border: none;
+}
+
+.chat-input-panel {
+	padding: 5px;
+	background: var(--ui-panel-bg);
+	border: 1px solid var(--ui-panel-hover);
+	border-radius: 5px 5px 10px 10px;
+}
+
+.channels-options {
+	border-radius: 20px;
+	box-shadow: 0 0 10px rgba(0,0,0,0.4);
+}
+
+.channel-button {
+	background: transparent;
+	box-shadow: none;
+}
+
+#captchaPopup {
+	padding: 24px;
+	border-radius: 8px;
+	background-color: var(--ui-panel-bg);
+}
+
+.captcha-options-button {
+	background: url(svg/loading-spinner.svg) no-repeat 50%;
+	border-radius: 8px;
+	border: none;
+	box-shadow: 0px 0px 5px gray;
+	transition: transform cubic-bezier(0.215, 0.610, 0.355, 1) .1s;
+}
+
+.captcha-options-button.loaded {
+	background: var(--ui-panel-bg);
+}
+
+.captcha-options-button:hover {
+	transform: scale(1.1);
+}
+
+#captchaImg {
+	border: 1px solid grey;
+	border-radius: 5px;
+}
+
+/* TODO: Unjank */
+.live-chat-header1 {
+	display: block !important;
+}
+.live-chat-header2 {
+	display: none;
+}
+
+#onlinePanel {
+	color: white;
+	background: rgba(0, 0, 0, 0.6);
+	border-radius: 20px;
+}
+
+#playerIcon {
+	stroke: white;
+	fill: white;
+}
+
+#popup {
+	border: none;
+	background: white;
+	border-radius: 20px;
+	box-shadow: 0 0 0 1000px #0004, 0 0 100px #000;
+}
+
+#popup r-close-icon {
+	position: absolute;
+	top: 9px;
+	right: 12px;
+}
+
+#popup > div {
+	padding: 12px;
+}
+
+#eventCountdown {
+	background: var(--ui-panel-bg);
+}
+r-spoiler {
+	transition: .2s opacity, .2s color;
+	display: inline;
+}
+r-spoiler[hidden] {
+	color: transparent;
+	position: relative;
+	cursor: pointer;
+	background-color: var(--ui-panel-hover);
+	border-radius: 4px;
+	filter: blur(3px);
+}
+r-spoiler[hidden]:hover {
+	opacity: 0.8;
+	color: black;
+}

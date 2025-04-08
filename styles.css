@@ -48,15 +48,15 @@ body {
 
 @font-face {
 	font-family: mono;
-	src: url(fonts/RedditMono-Bold.woff2);
+	src: url(/fonts/RedditMono-Bold.woff2);
 }
 @font-face {
 	font-family: bold;
-	src: url(fonts/RedditSans-Bold.woff2);
+	src: url(/fonts/RedditSans-Bold.woff2);
 }
 @font-face {
 	font-family: reddit;
-	src: url(fonts/RedditSans-Regular.woff2);
+	src: url(/fonts/RedditSans-Regular.woff2);
 }
 
 #maincontent {
@@ -306,19 +306,19 @@ r-close-icon {
 	cursor: pointer;
 }
 
-mute-button {
+#muteButton {
 	bottom: -2px;
 	left: -6px;
 }
 
-place-chat-button {
+#placeChatButton {
 	bottom: -2px;
 	right: -6px;
 	margin-left: -36px; /* HACK: Until how to centre the middle select can be figured out */
 	width: 72px !important
 }
 
-place-chat-button > img {
+#placeChatButton > img {
 	position: absolute;
 	left: 50%;
 	transform: translateX(-50%);
@@ -564,7 +564,7 @@ body[eventphase="3"] #eventCountdown {
 
 body[eventphase="3"] #eventCountdown::before {
 	content: " ";
-	background: url(svg/pattern.svg);
+	background: url(/svg/pattern.svg);
 	background-size: auto;
 	left: 0px;
 	top: 0px;
@@ -632,6 +632,7 @@ body[eventphase="3"] .coverer-title {
 	padding: 3px;
 	display: flex;
 	column-gap: 8px;
+	align-items: center;
 }
 
 #turnstileContainer {
@@ -658,9 +659,44 @@ body[eventphase="3"] .coverer-title {
 	transform: translateX(0);
 }
 
+.chat-bottom {
+	display: flex;
+	column-gap: 8px;
+	z-index: 1;
+}
+
+.message-input-container {
+	position: relative;
+	flex-grow: 1;
+}
+
+.message-input-actions {
+	position: absolute;
+	right: 2px;
+	top: 0;
+	height: 36px;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+}
+
+.message-input-actions > button {
+	padding: 0;
+	display: flex;
+	align-items: center;
+	margin-right: 4px;
+	height: min-content;
+}
+
 #messageInput {
 	resize: none;
-	flex-grow: 1;
+	width: 100%;
+}
+
+.chat-bottom-panel {
+	bottom: calc(var(--message-input-height) + 24px);
+	max-width: 256px;
+	right: 60px;
 }
 
 .chat-header {
@@ -677,7 +713,7 @@ body[eventphase="3"] .coverer-title {
 
 #chatAd {
 	/* Default: 'Advertise here', will be overriden in element style */
-	--adurl: url(./images/default-ad.png);
+	--adurl: url(/images/default-ad.png);
 	flex-shrink: 0;
 	background-image: var(--adurl);
 	background-position: center;
@@ -796,7 +832,7 @@ body[eventphase="3"] .coverer-title {
 	cursor: pointer;
 }
 
-#chatMessages > .message > div {
+#chatMessages > .message > .actions {
 	position: absolute;
 	right: 0px;
 	top: -4px;
@@ -813,7 +849,7 @@ body[eventphase="3"] .coverer-title {
 	transition: .2s opacity;
 }
 
-#chatMessages > .message:hover > div {
+#chatMessages > .message:hover > .actions {
 	opacity: 1;
 	cursor: pointer;
 }
@@ -883,7 +919,7 @@ body[eventphase="3"] .coverer-title {
 	height: 100%;
 }
 
-#captchaImagePositon {
+#captchaImagePosition {
 	display: block;
 	position: relative;
 	width: 196px;
@@ -970,7 +1006,7 @@ body[eventphase="3"] .coverer-title {
 	text-align: left;
 }
 #messageReplyPanel {
-	height: calc(var(--message-input-height) + 44px);
+	height: calc(var(--message-input-height) + 48px);
 	display: flex;
 }
 #messageReplyPanel > div:nth-child(1) {
@@ -1211,7 +1247,7 @@ kbd {
 #channelDropParent[open] > #channelDrop {
 	display: block;
 }
-#channelDropParent[open] > svg {
+#channelDropParent[open] > .channel-button > svg {
 	transform: rotate(180deg);
 }
 
@@ -1437,6 +1473,20 @@ r-live-chat-message r-emoji-panel {
 	right: 5px;
 	top: 24px;
 }
+r-live-chat-message > .content blockquote {
+	border-left: 4px solid gray;
+	padding: 2px 4px 2px 8px;
+	margin-left: 1px;
+}
+r-live-chat-message > .content h1, r-live-chat-message > .content h2, r-live-chat-message > .content h3 {
+	margin: 8px 0px;
+}
+r-live-chat-message > .content ul, r-live-chat-message > .content ol {
+	padding-inline-start: 32px;
+}
+r-live-chat-message > .content > *:first-child {
+	display: inline-block;
+}
 r-live-chat-message .reactions {
 	display: flex;
 	list-style: none;
@@ -1469,10 +1519,10 @@ r-live-chat-message .emoji-container {
 }
 r-live-chat-message .emoji-reactors-count {
 	background: lightgray;
-    border-radius: 100%;
+	border-radius: 100%;
 	text-align: center;
-    width: 16px;
-    height: 16px;
+	width: 16px;
+	height: 16px;
 }
 r-live-chat-message .emoji-container p {
 	width: 100%;
@@ -1536,7 +1586,7 @@ r-live-chat-message .reactor {
 	list-style: inside;
 }
 
-r-emoji-panel.context-menu {
+.context-panel {
 	display: none;
 	width: 240px;
 	max-height: 360px;
@@ -1546,16 +1596,20 @@ r-emoji-panel.context-menu {
 	min-height: 120px;
 	padding: 0;
 }
-r-emoji-panel[open].context-menu {
+.context-panel, .context-panel * {
+	touch-action: pan-y;
+}
+.context-panel[open] {
 	display: block;
 }
-r-emoji-panel .emojis-header {
+.context-panel header {
 	display: flex;
 	justify-content: space-between;
 	position: sticky;
 	top: 0px;
 	padding: 5px;
 	background: var(--ui-panel-bg);
+	z-index: 1;
 }
 
 r-emoji-panel .emojis-body {
@@ -1564,7 +1618,6 @@ r-emoji-panel .emojis-body {
 	flex-direction: column;
 	row-gap: 8px;
 }
-
 r-emoji-panel .emojis-container {
 	padding: 0px;
 	margin: 0px;
@@ -1574,7 +1627,6 @@ r-emoji-panel .emojis-container {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(32px, 1fr));
 }
-
 r-emoji-panel .emojis-container > li {
 	display: flex;
 	align-items: center;
@@ -1582,7 +1634,6 @@ r-emoji-panel .emojis-container > li {
 	list-style-type: none;
 	padding: 0;
 }
-
 r-emoji-panel button {
 	box-shadow: none;
 	background: none;
@@ -1593,6 +1644,61 @@ r-emoji-panel button {
 	width: 32px;
 	height: 32px;
 	padding: 0;
+}
+
+r-gif-panel.context-panel {
+	resize: both;
+	max-width: 512px;
+	width: 512px;
+	min-width: 256px;
+}
+@media screen and (max-width: 612px) {
+	r-gif-panel.context-panel {
+		max-width: calc(100% - 68px);
+		width: calc(100% - 68px);	
+	}
+}
+r-gif-panel .panel-header {
+	display: flex;
+	flex-direction: column;
+	row-gap: 4px;
+}
+r-gif-panel .error-state {
+	padding: 4px;
+}
+r-gif-panel .gif-grid {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	padding: 8px;
+	column-gap: 4px;
+}
+r-gif-panel .gif-column {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	row-gap: 4px;
+}
+r-gif-panel .gif-item > button {
+	height: auto;
+}
+r-gif-panel .gif-player {
+	width: 100%;
+	border-radius: 4px;
+}
+r-gif-panel footer {
+	padding: 4px;
+}
+
+r-gif {
+	display: block;
+	width: min(100%, 256px);
+    overflow: hidden;
+}
+
+r-gif video {
+	width: 100%;
+	border-radius: 4px;
 }
 
 #questsFrame {

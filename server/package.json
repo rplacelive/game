@@ -1,0 +1,33 @@
+{
+  "type": "module",
+  "main": "server.js",
+  "license": "LGPL-3.0-or-later",
+  "author": "rplace.live",
+  "dependencies": {
+    "@datastructures-js/queue": "^4.2.3",
+    "@inquirer/prompts": "^7.4.1",
+    "@types/cookie": "^1.0.0",
+    "@types/sha256": "^0.2.2",
+    "basic-repl": "^2.2.2",
+    "bun-types": "^1.2.8",
+    "cookie": "^0.6.0",
+    "fastest-levenshtein": "^1.0.16",
+    "fs.promises.exists": "^1.1.4",
+    "inquirer": "^12.5.2",
+    "ipapi-sync": "^1.4.2",
+    "lru-cache": "^11.1.0",
+    "rate-limiter-flexible": "^7.0.0",
+    "sha256": "^0.2.0"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "eslint": "^8.57.1",
+    "eslint-plugin-jsdoc": "^46.10.1",
+    "eslint-plugin-node": "^11.1.0",
+    "@types/bun": "latest"
+  },
+  "engines": {
+    "node": ">=12.11.0"
+  }
+}

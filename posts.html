@@ -4,55 +4,44 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Posts | rplace</title>
-	<link rel="stylesheet" href="rplace-2022.css?v=13">
-	<link rel="stylesheet" href="styles.css?v=359">
-	<link rel="stylesheet" href="shared.css?v=2">
-	<link rel="stylesheet" href="posts.css?v=3">
-	<script type="text/javascript" src="shared.js?v=9"></script>
-	<script type="text/javascript" src="account.js"></script>
-	<script id="postsManager" type="text/javascript" src="posts-manager.js?v=6" defer></script>
-	<script type="module" src="shared-elements.js?v=10" defer></script>
-	<script type="module" src="posts-elements.js?v=8" defer></script>
-	<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2508999262953411"
-		crossorigin="anonymous"></script>
+	<link rel="stylesheet" href="/css/rplace-2022.css">
+	<link rel="stylesheet" href="/styles.css">
+	<link rel="stylesheet" href="/shared.css">
+	<link rel="stylesheet" href="/posts.css">
+	<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2508999262953411" crossorigin="anonymous"></script>
+	<script type="module" src="/src/shared.js"></script>
+	<script type="module" src="/src/account.js"></script>
+	<script type="module" src="/src/shared-elements.js" defer></script>
+	<script type="module" src="/src/posts-elements.js" defer></script>
+	<script type="module" src="/src/posts-manager.js" defer></script>
 </head>
 <body>
 	<header>
 		<div class="header-title-container">
-			<button type="button" class="header-menu" onclick="openSidebar()">
+			<button id="sidebarButton" type="button" class="header-menu">
 				<img src="./svg/menu.svg" alt="Menu" width="36" height="36">
 			</button>
 			<img src="./images/rplace.png" class="header-icon" alt="Rplace logo">
 			<h1 class="header-title" translate="rplaceLivePosts">rplace.live posts</h1>
 		</div>
-		<input id="postsSearchbar" type="text" class="post-input searchbar" translate="searchKeyword" placeholder="Search keyword" onchange="
-			const keyword = this.value.trim().toLowerCase()
-			if (keyword) {
-				tryLoadKeywordPosts(keyword)
-				this.dataset.searching = 'true'
-			}
-			else {
-				this.dataset.searching = 'false'
-				clearPosts()
-				tryLoadBottomPosts()
-			}">
+		<input id="postsSearchbar" type="text" class="post-input searchbar" translate="searchKeyword" placeholder="Search keyword">
 		<div><!--Spacer--></div>
 	</header>
 	<div id="sidebar" class="sidebar">
-		<a type="button" href="./posts.html" style="column-gap: 8px;">
+		<a type="button" href="/posts" style="column-gap: 8px;">
 			<svg fill="currentColor" icon-name="home-fill" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
 				<path d="m19.724 6.765-9.08-6.11A1.115 1.115 0 0 0 9.368.647L.276 6.765a.623.623 0 0 0 .35 1.141h.444v10.001c.001.278.113.544.31.74.196.195.462.304.739.303h5.16a.704.704 0 0 0 .706-.707v-4.507c0-.76 1.138-1.475 2.02-1.475.882 0 2.02.715 2.02 1.475v4.507a.71.71 0 0 0 .707.707h5.16c.274-.001.538-.112.732-.307.195-.195.305-.46.306-.736v-10h.445a.618.618 0 0 0 .598-.44.625.625 0 0 0-.25-.702Z"></path>
 			</svg>
 			Posts
 		</a>
-		<a type="button" href="./">
-			<img alt="rplace.live" src="svg/rplace.svg" width="24" height="24">
+		<a type="button" href="/">
+			<img alt="rplace.live" src="/svg/rplace.svg" width="24" height="24">
 			Game
 		</a>
 		<div class="sidebar-footer">
 			<a href="https://rplace.live">rplace.live</a> |
 			<a href="./disclaimer.html">disclaimer</a> |
-			<a href="https://github.com/rplacetk">github</a>
+			<a href="https://github.com/rplacelive">github</a>
 		</div>
 	</div>
 	<div id="sidebarBackground" class="sidebar-background"></div>
@@ -64,32 +53,12 @@
 						<path d="M480-345 240-585l43-43 197 198 197-197 43 43-240 239Z"></path>
 					</svg>Jump to community posts
 				</button>
-				<a type="button" style="column-gap: 4px" class="posts-button" href="#" onclick="event.preventDefault(); sendParentMessage('open', './posts.html')">
+				<a type="button" id="postsExpandButton" style="column-gap: 4px" class="posts-button" href="#">
 					<img alt="Expand" src="./svg/expand-external.svg" width="24" height="24"> See more
 				</a>
 			</div>
 		</div>
-		<div id="createPostPost" class="post" style="padding-left: 15px; cursor: default;" ondragenter="
-			event.stopPropagation()
-			event.preventDefault()
-		" ondragover="
-			event.stopPropagation()
-			event.preventDefault()
-			this.classList.add('image-drop')
-		" ondrop="
-			event.stopPropagation()
-			event.preventDefault()
-			this.classList.remove('image-drop')
-			for (const file of event.dataTransfer.files) {
-				if (file.type.startsWith('image/')) {
-					createPostContent.addContent(file)
-				}
-			}
-		" ondragleave="
-			event.stopPropagation()
-			event.preventDefault()
-			this.classList.remove('image-drop')
-		">
+		<div id="createPostPost" class="post" style="padding-left: 15px; cursor: default;">
 			<div class="create-post-image-drop">
 				<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24">
 					<path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h360v80H200v560h560v-360h80v360q0 33-23.5 56.5T760-120H200Zm480-480v-80h-80v-80h80v-80h80v80h80v80h-80v80h-80ZM240-280h480L570-480 450-320l-90-120-120 160Zm-40-480v560-560Z"/>
@@ -101,82 +70,24 @@
 					<img src="./svg/account.svg" alt="Account icon" width="32" height="32">
 				</div>
 				<div class="create-post-inputs-container">
-					<input type="text" id="createPostTitle" minlength="1" maxlength="64" required class="create-post-input create-post-extra" placeholder="Post title..." onchange="
-							createPostTitle.value = createPostTitle.value.trim()
-							const validityState = createPostTitle.validity
-							if (validityState.tooLong || validityState.tooShort || validityState.valueMissing) {
-								createPostTitle.setCustomValidity('Post title should be between 1-64 characters long!')
-							}
-							else {
-								createPostTitle.setCustomValidity('')
-							}
-							createPostTitle.reportValidity()
-						">
-					<textarea id="createPostInput" maxlength="360" class="create-post-input" placeholder="Create post..."
-						onkeypress="event.stopPropagation()"
-						onfocus="
-							createPostPost.classList.add('focused')
-							createPostInput.placeholder = 'Post content...'
-						"></textarea>
+					<input type="text" id="createPostTitle" minlength="1" maxlength="64" required class="create-post-input create-post-extra" placeholder="Post title...">
+					<textarea id="createPostInput" maxlength="360" class="create-post-input" placeholder="Create post..."></textarea>
 				</div>
-				<button class="create-post-content-button" onclick="createPostContentInput.click()">
+				<button type="button" class="create-post-content-button" onclick="createPostContentInput.click()">
 					<img src="./svg/image.svg" alt="Add post attachment" width="32" height="32">
 				</button>
-				<input type="file" id="createPostContentInput" accept="image/gif,image/jpeg,image/png,image/webp" onchange="
-					for (const file of this.files) {
-						createPostContent.addContent(file)
-					}
-				" style="display: none;">
+				<input type="file" id="createPostContentInput" accept="image/gif,image/jpeg,image/png,image/webp" style="display: none;">
 			</div>
 			<div id="createPostOptions" class="create-post-extra">
 				<r-post-contents-preview id="createPostContent"></r-post-contents-preview>
 				<div class="create-post-create-discard">
-					<button id="discardPostButton" type="button" class="post-button discard-post-button" onclick="resetCreatePost()">Discard</button>
-					<button id="createPostButton" type="button" class="post-button create-post-button" onclick="
-						async function uploadAndUpdatePosts() {
-							discardPostButton.disabled = true
-							createPostButton.disabled = true
-							const progressCb = function(stage, info) {
-								if (stage == 'uploadPost') {
-									createPostStatus.textContent = 'Uploading post: ' + `${info.progress}%`
-								}
-								else if (stage == 'uploadContent') {
-									createPostStatus.textContent = 'Uploading attachment...' + `(${info.current}/${info.total})`
-								}
-							}
-							if (await uploadPost(createPostTitle.value, createPostInput.value, createPostContent.contents, progressCb)) {
-								resetCreatePost()
-								alert('Post success!')
-								await tryLoadTopPosts()
-							}
-							else {
-								createPostStatus.textContent = ''
-								createPostButton.disabled = false
-								discardPostButton.disabled = false
-							}
-						}
-						if (!createPostTitle.checkValidity()) {
-							createPostTitle.reportValidity()
-							return
-						}
-						if (!localStorage.agredPostRules) {
-							sendParentMessage('scrollToPosts')
-							postRulesDialog.showModal()
-							postRulesDialog.onclose = function(e) {
-								if (postRulesDialog.returnValue === true) {
-									uploadAndUpdatePosts()
-								}
-							}
-						}
-						else {
-							uploadAndUpdatePosts()
-						}
-					">Post</button>
+					<button id="discardPostButton" type="button" class="post-button discard-post-button">Discard</button>
+					<button id="createPostButton" type="button" class="post-button create-post-button">Post</button>
 				</div>
 				<span id="createPostStatus" class="create-post-status"></span>
 			</div>
 		</div>
-		<div id="liveChatPost" onclick="sendParentMessage('openChatPanel')" class="post" style="cursor: pointer;" novotes="true">
+		<div id="liveChatPost" class="post" style="cursor: pointer;" novotes="true">
 			<img alt="Live chat icon" class="cover-image" src="images/live.png">
 			<div class="body">
 				<div class="main">
@@ -193,15 +104,15 @@
 					<div class="description">750x750 (cooldown: 800ms)</div>
 				</div>
 			</div>
-			<r-clipboard-copy title="Copy canvas URL to clipbaord" href="https://rplace.live/?server=wss://server.rplace.live:443&board=https://raw.githubusercontent.com/rplacetk/canvas1/main/place"></r-clipboard-copy>
+			<r-clipboard-copy title="Copy canvas URL to clipbaord" href="https://rplace.live/?server=wss://server.rplace.live:443&board=https://raw.githubusercontent.com/rplacelive/canvas1/main/place"></r-clipboard-copy>
 		</div>
-		<r-post onclick="/*openAccountFrame();*/" style="cursor: pointer; opacity: 0.6; pointer-events: none;" class="post" novotes="true" title="My Account" description="Login or signup to an rplace.live account, access special features and host your own custom canvases"
+		<r-post id="accountPost" style="cursor: pointer; opacity: 0.6; pointer-events: none;" class="post" novotes="true" title="My Account" description="Login or signup to an rplace.live account, access special features and host your own custom canvases"
 			coverimageurl="images/account-profile.png"></r-post>
 		<!--<r-post onclick="window.open('https:\/\/lamda.count.land/', '_blank')" class="post" novotes="true" title="Lamda" description="Chat anonymously with strangers online. Start random voice calls and meet others!"
 			coverimageurl="images/lamda.png"></r-post>
 		<r-post onclick="toggleTlPanel()" class="post" style="opacity: 0.6; pointer-events: none;" novotes="true" title="Timelapse tool" description="Combine a sequence from the history of the canvas to create your own timelapse video!"
 			coverimageurl="images/timelapse.png"></r-post>-->
-		<r-post id="overlayPost" onclick="sendParentMessage('openOverlayMenu')" style="cursor: pointer;" class="post" novotes="true" title="Overlay menu" description="Visualise your build with template images!"
+		<r-post id="overlayPost" style="cursor: pointer;" class="post" novotes="true" title="Overlay menu" description="Visualise your build with template images!"
 			coverimageurl="images/hammer-and-wrench.png"></r-post>
 		<r-post onclick="window.open('https:\/\/discord.gg/r-place-2-960966748289507338','_blank')" style="cursor: pointer;" class="post" novotes="true" title="Discord" description="Join the community at discord.gg/r-place-2-960966748289507338"
 			coverimageurl="images/discord.png"></r-post>
@@ -209,7 +120,7 @@
 			coverimageurl="images/patreon.png"></r-post>
 		<r-post onclick="window.open('https:/\/reddit.com/r/placetk','_blank')" style="cursor: pointer;" class="post" novotes="true" title="Subreddit" description="Visit the official rplace.live subreddit (r/placetk)"
 			coverimageurl="images/reddit.png"></r-post>
-		<r-post onclick="window.open('https:\/\/rplacetk.github.io\/colour-utils\/','_blank')" style="cursor: pointer;" class="post" novotes="true" title="Colour utils" description="A collection of nifty utilities to work with rplace.live canvases"
+		<r-post onclick="window.open('https:\/\/rplacelive.github.io\/colour-utils\/','_blank')" style="cursor: pointer;" class="post" novotes="true" title="Colour utils" description="A collection of nifty utilities to work with rplace.live canvases"
 			coverimageurl="images/colour-utils.png"></r-post>
 		<r-post onclick="window.open('https:\/\/canv.tk/', '_blank')" style="cursor: pointer;" class="post" novotes="true" title="Canv.tk" description="Visit our sister site, the proof of concept this site itself was built off, canv.tk here!"
 			coverimageurl="images/canv.png"></r-post>
@@ -229,7 +140,7 @@
 				</div>
 				<div style="display: flex; column-gap: 16px; align-items: center; justify-content: center;">
 					<label for="postsSortSelect" translate="sortBy">Sort by:</label>
-					<select id="postsSortSelect" style="box-shadow: none; border-radius: 64px; background: white;">
+					<select id="postsSortSelect" style="box-shadow: none; border-radius: 64px; background: rgb(226, 218, 218);">
 						<option value="date" translate="date">Date</option>
 						<option value="upvotes" translate="upvotes">Upvotes</option>
 					</select>
@@ -252,293 +163,13 @@
 			<img src="images/example-post.png" alt="Example post" style="height: 256px;object-fit: contain;">
 			<button type="button" class="reddit-modal-button" onclick="
 				localStorage.agredPostRules = true
-				postRulesDialog.close(true)
+				postRulesDialog.close('true')
 				">Create post</button>
 		</div>
 	</dialog>
 </body>
+<script type="module" src="/src/posts.js" defer></script>
 <script>
-	// Bidirectional IPC, similar to server.ts - db-worker.ts communication
-	// Methods called by iframe parent
-	function onlineCounter(count) {
-		onlineCounter2.textContent = count + " online"
-	}
-	function updateDialogTop(topHeight) {
-		document.body.style.setProperty("--posts-dialog-top", topHeight + "px")
-	}
-	let parentReqId = 0
-	let parentReqs = new Map()
-	async function makeParentRequest(messageCall, args = undefined) {
-		const handle = parentReqId++
-		const promise = new PublicPromise()
-		const postCall = { call: messageCall, data: args, handle: handle }
-		parentReqs.set(handle, promise)
-		window.parent.postMessage(postCall)
-		return await promise.promise
-	}
-	function sendParentMessage(messageCall, args = undefined) {
-		window.parent.postMessage({ call: messageCall, data: args }, location.origin)
-	}
-
-	//  Main
-	function lerp(from, to, weight) {
-		return from + weight * (to - from)
-	}
-	let sidebarDragLastX = 0, sidebarDragStartX = 0, sidebarDragStartY = 0,
-		sidebarOpen = false, sidebarDrag = 0, sidebarDragging = false
-	function openSidebar() {
-		sidebarOpen = true
-		sidebarDragging = false
-		sidebar.tabindex = "0"
-		transitionSidebar()
-	}
-	function closeSidebar() {
-		sidebarOpen = false
-		sidebarDrag = 0
-		sidebarDragging = false
-		sidebar.tabindex = "-1"
-		transformSidebar()
-	}
-	function transitionSidebar() {
-		sidebarDrag = lerp(sidebarDrag, sidebarOpen, 0.3)
-		if ((!sidebarOpen && sidebarDrag < 0.05) || (sidebarOpen && sidebarDrag > 0.95)) {
-			sidebarDrag = Math.round(sidebarDrag)
-		}
-		else {
-			requestAnimationFrame(transitionSidebar)
-		}
-		transformSidebar()
-	}
-	function transformSidebar() {
-		if (window.innerWidth < 1200) {
-			sidebarBackground.style.background = `rgba(0, 0, 0, ${0.2 * sidebarDrag})`
-			sidebar.style.transform = `translateX(${(sidebarDrag - 1) * 100}%)`
-		}
-		else {
-			sidebarBackground.style.background = `rgba(0, 0, 0, 0)`
-			sidebar.style.transform = `translateX(0%)`
-		}
-	}
-	transformSidebar()
-
-	// Embedded switches
-	if (window.parent !== window) {
-		document.documentElement.setAttribute("embedded", "true")
-		mainCanvasPost.onclick = function() {
-			sendParentMessage('switchGameServer')
-		}
-	}
-	else {
-		document.documentElement.setAttribute("embedded", "false")
-		postsManager.addEventListener("load", async () => {
-			tryLoadBottomPosts()
-			document.body.style.setProperty("--posts-dialog-top", "50%")
-			if (!await getAccount()) {
-				disableCreatePost()
-			}
-			liveChatPost.remove()
-			overlayPost.remove()
-			mainCanvasPost.onclick = function() {
-				window.open(`${window.location.origin}/?server=${DEFAULT_SERVER}&board=${DEFAULT_BOARD}`)
-			}
-
-			// Load more posts on scroll down
-			const body = document.body
-			body.addEventListener("scroll", function(e) {
-				const bodyMaxScroll = body.scrollHeight - body.clientHeight
-				if (bodyMaxScroll - body.scrollTop < 256 && postsSearchbar.dataset.searching != "true") {
-					tryLoadBottomPosts()
-				}
-			}, { passive: true })
-
-			// Sidebar navigation
-			contents.addEventListener("touchstart", (e) => {
-				sidebarDragging = true
-				sidebarDragStartX = sidebarDragLastX = e.touches[0].clientX
-				sidebarDragStartY = e.touches[0].clientY
-				transformSidebar()
-			})
-			contents.addEventListener("touchmove", (e) => {
-				if (!sidebarDragging) {
-					return
-				}
-				const deltaY = sidebarDragStartY - e.touches[0].clientY
-				if (deltaY > 16 && sidebarDrag < 0.1) {
-					closeSidebar()
-				}
-				const deltaX = e.touches[0].clientX - sidebarDragLastX
-				sidebarDrag = Math.max(0, Math.min(sidebarDrag + (deltaX / sidebar.offsetWidth), 1))
-				transformSidebar()
-				sidebarDragLastX = e.touches[0].clientX
-			})
-			contents.addEventListener("touchend", (e) => {
-				sidebarOpen = sidebarDrag > 0.3
-				sidebarDragging = false
-				requestAnimationFrame(transitionSidebar)
-			})
-			contents.addEventListener("click", closeSidebar)
-			window.addEventListener("resize", transformSidebar)
-		})
-	}
-
-	function enableCreatePost() {
-		createPostPost.style.opacity = "1"
-		createPostPost.style.pointerEvents = "all"
-		createPostInput.disabled = false
-		createPostTitle.disabled = false
-	}
-	function disableCreatePost() {
-		createPostPost.style.opacity = "0.6"
-		createPostPost.style.pointerEvents = "none"
-		createPostInput.disabled = true
-		createPostTitle.disabled =  true
-	}
-	window.addEventListener("account-login", () => {
-		enableCreatePost()
-	})
-	window.addEventListener("account-logout", () => {
-		disableCreatePost()
-	})
-
-	async function uploadPost(title, content, contents, progressCb) {
-		const postData = {
-			title: title,
-			description: content,
-			// TODO: Until we add forums, forum ID will always be 1 (canvas1)
-			forumId: 1
-		}
-
-		// If we are logged in to an account, 
-		const account = await getAccount()
-		if (!account) {
-			// Get link key from canvas server to prove we own this Canvas User ID
-			const linkInfo = await makeParentRequest("fetchLinkKey")
-			if (!linkInfo) {
-				alert("Could not upload post. Error communicating with server")
-				console.error("Couldn't upload post: failed to retrieve link key from instance server", linkInfo)
-				return false
-			}
-			postData.canvasUser = linkInfo // { linkKey: number, instanceId: number }
-
-			// Pre-authenticate canvas uuser with auth server using link key
-			const result = await makeRequest(`${localStorage.auth || DEFAULT_AUTH}/auth/link`, "POST", linkInfo)
-			if (result.status === "error") {
-				const err = result.data
-				if (typeof err === "object") {
-					console.error("Couldn't upload post:", err.message, err.metadata)
-				}
-				else {
-					console.error("Couldn't upload post:", err)
-				}
-				return
-			}
-		}
-
-		// Upload post
-		const uploadResponse = await new Promise((resolve, reject) => {
-			const xhr = new XMLHttpRequest()
-			xhr.open("POST", `${localStorage.auth || DEFAULT_AUTH}/posts`, true)
-			xhr.setRequestHeader("Content-Type", "application/json")
-			xhr.withCredentials = true
-			xhr.upload.onprogress = (event) => {
-				if (progressCb && event.lengthComputable) {
-					const progress = event.loaded / event.total
-					progressCb("uploadPost", { progress })
-				}
-			}
-			xhr.onload = () => {
-				if (xhr.status >= 200 && xhr.status < 300) {
-					if (progressCb) progressCb("uploadPost", { progress: 1 })
-					resolve(JSON.parse(xhr.responseText))
-				}
-				else {
-					let err = null;
-					try {
-						err = JSON.parse(xhr.responseText)
-					}
-					catch (e) {
-						console.error(e);
-						reject(xhr)
-						return
-					}
-
-					if (xhr.status === 401) {
-						alert("Error: You are being rate limited. Please wait before posting again");
-					}
-					else {
-						alert("Couldn't upload post: " + (err?.message || xhr.statusText));
-					}
-					reject(xhr)
-				}
-			}
-			xhr.onerror = () => {
-				console.error("Couldn't upload post: Network error occurred during upload");
-				reject(xhr)
-			}
-			xhr.send(JSON.stringify(postData));
-			if (progressCb) progressCb("uploadPost", { progress: 0 })
-		})
-		if (!uploadResponse) {
-			return
-		}
-
-		// Upload file as form content
-		let contentsUploaded = 0
-		let contentsUploadedSuccess = 0
-		const contentUploadTasks = []
-		contents.forEach((file, index) => {
-			const contentForm = new FormData() // new Blob([], { type: "text/plain" })
-			contentForm.append("file", file)
-			contentUploadTasks.push(
-				fetch(`${localStorage.auth || DEFAULT_AUTH}/posts/${uploadResponse.postId}/contents/`, {
-						method: "POST",
-						body: contentForm,
-					})
-					.then(async (contentResponse) => {
-						if (!contentResponse.ok) {
-							const jsonError = await contentResponse.json().catch(e => console.error(e))
-							alert("Error: Failed to upload one of the post attachments: " + jsonError.message)
-							console.error(contentResponse.status, contentResponse.statusText)
-							contentsUploadedSuccess++
-						}
-						contentsUploaded++
-						if (progressCb) progressCb("uploadContent", {
-							current: index,
-							success: contentResponse.ok,
-							uploaded: contentsUploaded,
-							successfullyUploaded: contentsUploadedSuccess,
-							total: contents.length
-						})
-					})
-					.catch(e => {
-						alert("Error: Failed to upload one of the post attachments")
-						console.error(e)
-					}))
-		})
-		await Promise.all(contentUploadTasks)
-		return true
-	}
-
-	function resetCreatePost() {
-		createPostButton.disabled = false
-		discardPostButton.disabled = false
-		createPostStatus.textContent = ""
-		createPostTitle.value = ""
-		createPostInput.value = ""
-		createPostContent.clearContents()
-		createPostInput.placeholder = "Create post..."
-		createPostPost.classList.remove("focused")
-	}
-
-	translateAll()
-
-    const resizeObserver = new ResizeObserver(entries => {
-		for (let entry of entries) {
-			sendParentMessage("resizePostsFrame")
-		}
-    })
-    resizeObserver.observe(contents)
-
 	// Ads
 	;(adsbygoogle = window.adsbygoogle || []).push({});
 </script>

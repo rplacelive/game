@@ -1,23 +1,228 @@
 # Rplace.live protocol documentation
 
-## Preramble & protocol outline
-The site was initially coded within a day, and main development, jump started by BlobKat over three. This has had many long lasting impacts on the site, resulting in some development decisions that made sense for that short term period, but have proved very complicated and confusing in the long term. One of the biggest impacts was the choice to use "git and changes system", for syncing the canvas between the client and server on the main [javascript server software](server.js), while also ensuring minimal bandwidth on the hoster's behalf. Further complicated by the introduction of the new server software, [RplaceServer](https://github.com/Zekiah-A/RplaceServer), which chose to use a completely new system, wherein the site is solely dependent on the monolithic server software, which handles both the socket live pixels, and hosting the canvas files directly for client consumption in a compressed form. 
+## Preramble:
+rplace.live started as a weekend hack. BlobKat cranked out the first version in a day, and the "real" version only took three. You can still see those early decisions haunting the codebase like ghosts of "it worked at the time" past.
 
-## Packets
-The site uses websocket for live client server communication. All packets are composed of an initial '''code''' byte, representing the type of the packet to be identified on the server, with all numberic packet data being formatted as big endian. 
+The biggest oops-turned-feature? Using git as a canvas sync system. We literally `git commit`'d pixel changes. It was weird, it was janky, but damn did it save bandwidth. Then along came [RplaceServer](https://github.com/Zekiah-A/RplaceServer) like a fancy new roommate who replaces all your duct-tape furniture with actual IKEA stuff.
 
-### Pixel packet:
-The pixel packet is one of the simplest. It is a six byte packet, the first byte being the packet '''code,''' the second to 5th 
-bytes being '''position (board index)''' of the pixel, represented by a 4 byte unsigned 32 bit integer, and finally a byte representing the index of the '''colour''' in the palette that the pixel represents.
+Now we've got this awkward hybrid teenager of a protocol - WebSocket for the fast stuff, HTTP endpoints creeping their way over the nonsensical things that should *not* have been packets, a completely separate Auth & Posts server software, and enough legacy code to make archaeologists excited.
 
-One can retrieve the X and Y position from an given pixel index with some basic math. To get the X position, we do '''index % canvas_width''', and to get the Y position '''floor(index / canvas_width)'''.
+> Remember: This isn't a bug, it's ~~a feature~~ technical debt we'll fix later.
 
-### Chat history packet
-The chat history packet is used to ask the server to load a certain set of messages from the database, for example, in the context of attempting to load previous chat messages from before a client connected to the game session when scrolling up in the chat history.
+## Table of Contents
+1. [Protocol Notes](#protocol-notes)
+1. [WebSocket Protocol](#websocket-protocol)
+   - [Packet Structure](#packet-structure)
+   - [Pixel Packet](#pixel-packet)
+   - [Chat History Packet](#chat-history-packet)
+   
+2. [HTTP REST API](#http-rest-api)
+   - [User Endpoints](#user-endpoints)
+   - [Chat Endpoints](#chat-endpoints)
+   - [GIF Service](#gif-service)
+   - [Instance Info](#instance-info)
 
- * (u8) packetCode = 13
- * (u32) fromMessageId (If set to 0, AND you are asking for messages sent BEFORE this specified message Id (see next byte), it will give you messages relative the most recent messageId in the channel (see last n bytes))
- * (u8) message count AND before|after (last 7 bits will tell the server how many messages you want before or since the specified message Id, first (most significant) bit will tell the server if you want messages from BEFORE or AFTER the specified message Id)
- * (n bytes) name of chat channel as a UTF8 encoded string
+3. [Authentication](#authentication)
+4. [Error Handling](#error-handling)
 
-MessageId ascends as new chat messages are sent, so greater message ID = more recent.
+---
+
+## Protocol Notes
+The rplace.live instance (game) server backend uses a hybrid communication model combining WebSocket for real-time interactions and HTTP REST API for stateless requests. This documentation covers both protocols in detail.
+
+## WebSocket Protocol
+
+### Packet Structure
+
+All WebSocket packets follow this basic format:
+- First byte: Packet type code (u8)
+- Remaining bytes: Packet-specific data (big-endian)
+
+### Pixel Packet
+
+**code:** 1 (u8)
+
+**Format:**
+```
+0      1          5        6
++------+----------+--------+
+| code | Position | colour |
++------+----------+--------+
+```
+- **position** (u32): Pixel index on canvas
+  - Calculate coordinates:
+    - `x = index % canvas_width`
+    - `y = Math.floor(index / canvas_width)`
+- **colour** (u8): Palette colour index
+
+> Pro tip: Position is just `y * width + x`. We could've sent coordinates but nah, maths is fun!
+
+### Chat History Packet
+> When you scroll up in chat and wonder "how does this work?" - surprise, it's this packet:
+
+**code:** 13 (u8)
+
+**Format:**
+```
+0       1           5                           6               7         N
++-------+-----------+---------------------------+---------------+---------+
+| code  | messageId | flags(before|after,count) | channelLength | channel |
++-------+-----------+---------------------------+---------------+---------+
+```
+- **messageId** (u32): Anchor message ID
+- **flags** (u8):
+  - Bit 7 (MSB): Direction (0=after, 1=before)
+  - Bits 0-6: Message count (1-127)
+- **channelLength** (u8): UTF-8 channel name length
+- **channel** (string): UTF-8 encoded channel name
+
+**Behaviour:**
+- When messageId==0 and direction==before, returns most recent messages
+- messageIDs ascend chronologically (higher = newer)
+
+---
+
+## HTTP REST API
+All endpoints support CORS and return JSON unless noted.
+
+### User Endpoints
+
+#### Get User Information
+`GET /users/{intId}`
+> Returns everything we ~~will admit we~~ know about a user, including whether they're currently online (because stalkers gonna stalk):
+
+**Response:**
+```ts
+{
+    "intId": number,
+    "chatName": string,
+    "lastJoined": string,
+    "pixelsPlaced": number,
+    "playTimeSeconds": number,
+    "online": boolean
+}
+```
+**Errors:**
+- 400: Invalid user ID format
+- 404: User not found
+
+### Chat Endpoints
+
+#### Get Chat History
+`GET /live-chat/messages?messageId={id}&count={n}&before={bool}&channel={name}`
+> The HTTP version of the WebSocket chat history - same data, more bloat, less binary:
+
+**Parameters:**
+- `messageId`: Anchor message ID (required)
+- `count`: Number of messages (1-127, default 50)
+- `before`: Direction (true=older messages)
+- `channel`: Channel name (default "global")
+
+**Response:**
+```ts
+{
+    "messages": [
+        {
+            "id": number,
+            "senderIntId": number,
+            "channel": string,
+            "date": number,
+            "message": string,
+            "repliesTo": number|null
+        }
+    ],
+    "users": {
+        "[intId]": "chatName"
+    }
+}
+```
+
+**Errors:**
+- 400: Invalid parameters
+- 500: Server error
+
+### GIF Service
+> We proxy Tenor because apparently nobody wants to type URLs anymore:
+
+#### Search GIFs
+`GET /gifs/search?q={query}&limit={n}&pos={cursor}&source=tenor`
+> Returns GIFs in three formats because someone's still on IE11:
+
+**Parameters:**
+- `q`: Search query (i.e `ts+pmo`)
+- `limit`: Results per page (default 16)
+- `pos`: Pagination cursor (basically the result of `next`)
+- `source`: Must be "tenor"
+
+**Response:**
+```ts
+{
+    "source": "tenor",
+    "next": string|null,
+    "results": [
+        {
+            "id": string, // Tenor GIF Id
+            "source": string, // .webm (just use this)
+            "sourceFallback": string, // .mp4 (bruh)
+            "preview": string, // .webp (lowkey useless)
+            "width": number,
+            "height": number,
+            "description": string // (AI generated slop)
+        }
+    ]
+}
+```
+
+#### Get GIF by ID
+`GET /gifs/{id}`
+
+**Response:**
+Same format as search result items
+
+### Instance
+
+#### Instance Info:
+`GET /`
+
+**Response:**
+```ts
+{
+    "version": "legacy",
+    "instance": {
+        "id": string,
+        "name": string,
+        "icon": string
+    },
+    "canvas": {
+        "width": number,
+        "height": number,
+        "cooldown": number
+    }
+}
+```
+
+## Authentication
+
+### WebSocket
+- Uses cookie-based authentication
+- On first connection, server sets persistent cookie:
+  - Name: uidToken
+  - HttpOnly: true
+  - Secure: true (in production)
+  - SameSite: Lax/None (configurable)
+
+### HTTP API
+- Read-only endpoints require no authentication
+- Modifying endpoints use same cookie as WebSocket
+
+## Error Handling
+### HTTP Status Codes
+- 200: Success
+- 400: Invalid request
+- 404: Not found
+- 426: WebSocket upgrade required
+- 500: Server error
+
+### WebSocket Errors
+- Connection closed with appropriate WebSocket close code
+- Error messages in relevant packets
