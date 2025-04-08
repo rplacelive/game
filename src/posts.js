@@ -1,16 +1,6 @@
-import { translateAll, $, PublicPromise, DEFAULT_AUTH, DEFAULT_SERVER, DEFAULT_BOARD, makeRequest, sendParentMessage, makeParentRequest } from "./shared.js"
+import { translateAll, $, PublicPromise, DEFAULT_AUTH, DEFAULT_SERVER, DEFAULT_BOARD, makeRequest, sendParentMessage, makeParentRequest, addMessageHandler } from "./shared.js"
 import { clearPosts, tryLoadBottomPosts, tryLoadKeywordPosts, tryLoadTopPosts } from "./posts-manager.js"
 import { getAccount, openAccountFrame } from "./account.js";
-
-// Bidirectional IPC, similar to server.ts - db-worker.ts communication
-// Methods called by iframe parent
-function onlineCounter(/**@type {number}*/count) {
-	const onlineCounter2 = $("#onlineCounter2");
-	onlineCounter2.textContent = count + " online"
-}
-function updateDialogTop(/**@type {number}*/topHeight) {
-	document.body.style.setProperty("--posts-dialog-top", topHeight + "px")
-}
 
 //  Main
 /**
@@ -486,5 +476,18 @@ const resizeObserver = new ResizeObserver(entries => {
 	sendParentMessage("resizePostsFrame");
 })
 resizeObserver.observe(contents);
+
+// Bidirectional IPC, similar to server.ts - db-worker.ts communication
+// Methods called by iframe parent
+function onlineCounter(/**@type {number}*/count) {
+	const onlineCounter2 = $("#onlineCounter2");
+	onlineCounter2.textContent = count + " online"
+}
+function updateDialogTop(/**@type {number}*/topHeight) {
+	document.body.style.setProperty("--posts-dialog-top", topHeight + "px")
+}
+addMessageHandler("onlineCounter", onlineCounter);
+addMessageHandler("updateDialogTop", updateDialogTop);
+addMessageHandler("tryLoadBottomPosts", tryLoadBottomPosts);
 
 translateAll();
