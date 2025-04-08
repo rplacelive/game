@@ -197,39 +197,33 @@ async function initMainCanvasPost(embedded = false) {
 	try {
 		// Setup event handlers
 		if (embedded) {
-			mainCanvasPost.onclick = function () {
+			mainCanvasPost.addEventListener("click", function() {
 				sendParentMessage("defaultServer");
-			}
+			});
 		}
 		else {
-			mainCanvasPost.onclick = function () {
+			mainCanvasPost.addEventListener("click", function() {
 				window.open(`${window.location.origin}/?server=${DEFAULT_SERVER}&board=${DEFAULT_BOARD}`);
-			}
+			});
 		}
 
 		// Retrieve canvas info
-		if (window.location.hostname === "localhost") {
-			return;
-		}
-		const req = await fetch(DEFAULT_SERVER.replace("wss://", "https://").replace("ws://", "http://"), {
+		const httpServerUrl = (localStorage.server || DEFAULT_SERVER)
+			.replace("wss://", "https://").replace("ws://", "http://");
+		const req = await fetch(httpServerUrl, {
 			method: "GET",
 			headers: {
 				"Content-Type": "application/json",
-				"Accept": "application/json",
-			},
+				"Accept": "application/json"
+			}
 		});
-
-		if (req.status !== 200) {
-			console.error("Failed to fetch main canvas info", req);
-			return;
+		if (!req.ok) {
+			throw new Error("Failed to fetch main canvas info");
 		}
-
-		const mainCanvasInfo = await req.json()
-		if (mainCanvasInfo.status !== "ok") {
-			console.error("Failed to fetch main canvas info", mainCanvasInfo);
-			return;
+		const mainCanvasInfo = await req.json();
+		if (!mainCanvasInfo) {
+			throw new Error("Failed to parse main canvas info");
 		}
-
 		const { instance, canvas } = mainCanvasInfo;
 		const { icon } = instance;
 		const { width, height, cooldown } = canvas;
@@ -256,60 +250,61 @@ overlayPost.addEventListener("click", function(e) {
 const contents = /**@type {HTMLElement}*/($("#contents"));
 
 // Embedded switches
-if (window.parent !== window) {
-	document.documentElement.setAttribute("embedded", "true");
-
-	initMainCanvasPost(true);
-}
-else {
-	document.documentElement.setAttribute("embedded", "false");
-
-	tryLoadBottomPosts()
-	document.body.style.setProperty("--posts-dialog-top", "50%")
-	if (!await getAccount()) {
-		disableCreatePost();
+window.addEventListener("DOMContentLoaded", async function() {
+	if (window.parent !== window) {
+		document.documentElement.setAttribute("embedded", "true");
+		initMainCanvasPost(true);
 	}
-	liveChatPost.remove();
-	overlayPost.remove();
-	initMainCanvasPost(false);
-
-	// Load more posts on scroll down
-	const body = document.body
-	body.addEventListener("scroll", function(e) {
-		const bodyMaxScroll = body.scrollHeight - body.clientHeight;
-		if (bodyMaxScroll - body.scrollTop < 256 && postsSearchbar.dataset.searching != "true") {
-			tryLoadBottomPosts();
+	else {
+		document.documentElement.setAttribute("embedded", "false");
+	
+		tryLoadBottomPosts()
+		document.body.style.setProperty("--posts-dialog-top", "50%")
+		if (!await getAccount()) {
+			disableCreatePost();
 		}
-	}, { passive: true })
-
-	// Sidebar navigation
-	contents.addEventListener("touchstart", (/**@type {TouchEvent}*/ e) => {
-		sidebarDragging = true;
-		sidebarDragStartX = sidebarDragLastX = e.touches[0].clientX;
-		sidebarDragStartY = e.touches[0].clientY;
-		transformSidebar();
-	})
-	contents.addEventListener("touchmove", (/**@type {TouchEvent}*/ e) => {
-		if (!sidebarDragging) {
-			return;
-		}
-		const deltaY = sidebarDragStartY - e.touches[0].clientY;
-		if (deltaY > 16 && sidebarDrag < 0.1) {
-			closeSidebar();
-		}
-		const deltaX = e.touches[0].clientX - sidebarDragLastX;
-		sidebarDrag = Math.max(0, Math.min(sidebarDrag + (deltaX / sidebar.offsetWidth), 1));
-		transformSidebar();
-		sidebarDragLastX = e.touches[0].clientX;
-	})
-	contents.addEventListener("touchend", (/** @type {any} */ e) => {
-		sidebarOpen = sidebarDrag > 0.3 ? 0 : 1;
-		sidebarDragging = false;
-		requestAnimationFrame(transitionSidebar);
-	})
-	contents.addEventListener("click", closeSidebar);
-	window.addEventListener("resize", transformSidebar);
-}
+		liveChatPost.remove();
+		overlayPost.remove();
+		initMainCanvasPost(false);
+	
+		// Load more posts on scroll down
+		const body = document.body
+		body.addEventListener("scroll", function(e) {
+			const bodyMaxScroll = body.scrollHeight - body.clientHeight;
+			if (bodyMaxScroll - body.scrollTop < 256 && postsSearchbar.dataset.searching != "true") {
+				tryLoadBottomPosts();
+			}
+		}, { passive: true })
+	
+		// Sidebar navigation
+		contents.addEventListener("touchstart", (/**@type {TouchEvent}*/ e) => {
+			sidebarDragging = true;
+			sidebarDragStartX = sidebarDragLastX = e.touches[0].clientX;
+			sidebarDragStartY = e.touches[0].clientY;
+			transformSidebar();
+		})
+		contents.addEventListener("touchmove", (/**@type {TouchEvent}*/ e) => {
+			if (!sidebarDragging) {
+				return;
+			}
+			const deltaY = sidebarDragStartY - e.touches[0].clientY;
+			if (deltaY > 16 && sidebarDrag < 0.1) {
+				closeSidebar();
+			}
+			const deltaX = e.touches[0].clientX - sidebarDragLastX;
+			sidebarDrag = Math.max(0, Math.min(sidebarDrag + (deltaX / sidebar.offsetWidth), 1));
+			transformSidebar();
+			sidebarDragLastX = e.touches[0].clientX;
+		})
+		contents.addEventListener("touchend", (/** @type {any} */ e) => {
+			sidebarOpen = sidebarDrag > 0.3 ? 0 : 1;
+			sidebarDragging = false;
+			requestAnimationFrame(transitionSidebar);
+		})
+		contents.addEventListener("click", closeSidebar);
+		window.addEventListener("resize", transformSidebar);
+	}	
+});
 
 function enableCreatePost() {
 	createPostPost.style.opacity = "1"
