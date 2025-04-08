@@ -1603,7 +1603,7 @@ function handlePixelPlace(e) {
 }
 // Any button that requires e.isTrusted to be true will cause a problem on mobile due to mobile
 // inputs emitting fake events. This is a workaround to prevent that.
-placeButton.addEventListener("touchstart", handlePixelPlace);
+placeOkButton.addEventListener("touchstart", handlePixelPlace);
 placeOkButton.addEventListener("click", handlePixelPlace);
 /**
  * @param {Event} e
