@@ -1563,7 +1563,6 @@ window.addEventListener("focus", () => {
 });
 
 /**
- * 
  * @param {Event} e 
  * @returns 
  */
@@ -1602,14 +1601,15 @@ function handlePixelPlace(e) {
 		PEN = -1
 	}
 }
-placeOkButton.addEventListener("click", (e) => {
-	if (e.isTrusted) {
-		handlePixelPlace(e);
-	}
-});
-
-placeButton.addEventListener("click", function(e) {
-	if (!e.isTrusted) {
+// Any button that requires e.isTrusted to be true will cause a problem on mobile due to mobile
+// inputs emitting fake events. This is a workaround to prevent that.
+placeButton.addEventListener("touchstart", handlePixelPlace);
+placeOkButton.addEventListener("click", handlePixelPlace);
+/**
+ * @param {Event} e
+ */
+function handlePlaceButtonClicked(e) {
+	if (!(e instanceof Event) || !e.isTrusted) {
 		return;
 	}
 
@@ -1629,13 +1629,11 @@ placeButton.addEventListener("click", function(e) {
 	else {
 		runAudio(AUDIOS.invalid)
 	}
-});
+}
+placeButton.addEventListener("touchstart", handlePlaceButtonClicked);
+placeButton.addEventListener("click", handlePlaceButtonClicked);
 
 placeCancelButton.addEventListener("click", function(e) {
-	if (!e.isTrusted) {
-		return;
-	}
-
 	runAudio(AUDIOS.closePalette)
 	canvSelect.style.background = ''
 	palette.style.transform = 'translateY(100%)'
