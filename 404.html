@@ -7,8 +7,9 @@
 	<link rel="icon" type="image/x-icon" href="favicon.ico">
 	<link rel="stylesheet" href="/shared.css">
 	<script type="module" src="/src/shared.js"></script>
-	<title>custom canvas</title>
+	<title>Custom canvas (404) | rplace</title>
 	<script>
+		// Window redirects
 		const REDIRECTS = {
 			"/discord": "https://discord.com/invite/xbRrVSXJdZ",
 			"/twitter": "https://x.com/rplacelive",
@@ -19,6 +20,16 @@
 			"/admin": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
 		};
 
+		let path = window.location.pathname
+		if (path.length > 1 && path.endsWith("/"))
+			path = path.slice(0, -1)
+
+		const target = REDIRECTS[path]
+		if (target) {
+			window.location.replace(target)
+		}
+
+		// Vanity lookup
 		async function getVanityInstance(name) {
 			try {
 				const response = await fetch(`${localStorage.auth || DEFAULT_AUTH}/instances/vanity/${name}`)
@@ -30,14 +41,8 @@
 				return null
 			}
 		}
-
 		let vanityRequestFinished = false
 		;(async function() {
-			const urlName = window.location.pathname.replaceAll("/", "");
-			if (REDIRECTS[window.location.pathname]) {
-				window.location.replace(REDIRECTS[window.location.pathname]);
-				return;
-			}
 			const info = await getVanityInstance(urlName)
 			if (info !== null) {
 				const protocol = info.usesHttps ? "https://" : "http://"
@@ -53,7 +58,7 @@
 				})
 			}
 			vanityRequestFinished = true
-		})()
+		})();
 	</script>
 <link rel="stylesheet" href="/posts.css">
 <link rel="stylesheet" href="/shared.css">
