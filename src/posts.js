@@ -1,6 +1,8 @@
-import { translateAll, $, PublicPromise, DEFAULT_AUTH, DEFAULT_SERVER, DEFAULT_BOARD, makeRequest, sendParentMessage, makeParentRequest, addMessageHandler } from "./shared.js"
+import { DEFAULT_AUTH, DEFAULT_SERVER, DEFAULT_BOARD } from "./defaults.js";
+import { translateAll, $, makeRequest } from "./shared.js"
 import { clearPosts, tryLoadBottomPosts, tryLoadKeywordPosts, tryLoadTopPosts } from "./posts-manager.js"
 import { getAccount, openAccountFrame } from "./account.js";
+import { addMessageHandler, handleMessage, sendIpcMessage, makeIpcRequest } from "shared-ipc";
 
 //  Main
 /**
@@ -74,11 +76,11 @@ postsSearchbar.addEventListener("change", function(/**@type {Event}*/e) {
 const postsExpandButton = /**@type {HTMLButtonElement}*/($("#postsExpandButton"));
 postsExpandButton.addEventListener("click", function(e) {
 	e.preventDefault();
-	sendParentMessage("open", "./posts.html");
+	sendIpcMessage(window.parent, "open", "./posts.html");
 });
 const liveChatPost = /**@type {HTMLElement}*/($("#liveChatPost"));
 liveChatPost.addEventListener("click", function(e) {
-	sendParentMessage("openChatPanel");
+	sendIpcMessage(window.parent, "openChatPanel");
 });
 const createPostPost = /**@type {HTMLElement}*/($("#createPostPost"));
 const createPostContent = /**@type {import("./posts-elements.js").CreatePostContentsPreview}*/($("#createPostContent"));
@@ -120,7 +122,7 @@ createPostButton.addEventListener("click", async function(e) {
 		return
 	}
 	if (!localStorage.agredPostRules) {
-		sendParentMessage("scrollToPosts")
+		sendIpcMessage(window.parent, "scrollToPosts")
 		postRulesDialog.showModal()
 		postRulesDialog.onclose = function(e) {
 			if (postRulesDialog.returnValue == "true") {
@@ -198,7 +200,7 @@ async function initMainCanvasPost(embedded = false) {
 		// Setup event handlers
 		if (embedded) {
 			mainCanvasPost.addEventListener("click", function() {
-				sendParentMessage("defaultServer");
+				sendIpcMessage(window.parent, "defaultServer");
 			});
 		}
 		else {
@@ -245,7 +247,7 @@ accountPost.addEventListener("click", function(e) {
 });
 const overlayPost = /**@type {HTMLElement}*/($("#overlayPost"));
 overlayPost.addEventListener("click", function(e) {
-	sendParentMessage("openOverlayMenu");
+	sendIpcMessage(window.parent, "openOverlayMenu");
 });
 const contents = /**@type {HTMLElement}*/($("#contents"));
 
@@ -344,7 +346,7 @@ async function uploadPost(title, content, contents, progressCb) {
 	const account = await getAccount()
 	if (!account) {
 		// Get link key from canvas server to prove we own this Canvas User ID
-		const linkInfo = await makeParentRequest("fetchLinkKey")
+		const linkInfo = await makeIpcRequest(window.parent, "fetchLinkKey")
 		if (!linkInfo) {
 			alert("Could not upload post. Error communicating with server")
 			console.error("Couldn't upload post: failed to retrieve link key from instance server", linkInfo)
@@ -468,7 +470,7 @@ function resetCreatePost() {
 }
 
 const resizeObserver = new ResizeObserver(entries => {
-	sendParentMessage("resizePostsFrame");
+	sendIpcMessage(window.parent, "resizePostsFrame");
 })
 resizeObserver.observe(contents);
 
@@ -484,5 +486,6 @@ function updateDialogTop(/**@type {number}*/topHeight) {
 addMessageHandler("onlineCounter", onlineCounter);
 addMessageHandler("updateDialogTop", updateDialogTop);
 addMessageHandler("tryLoadBottomPosts", tryLoadBottomPosts);
+window.addEventListener("message", handleMessage);
 
 translateAll();

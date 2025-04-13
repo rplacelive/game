@@ -1,6 +1,7 @@
-import { AUDIOS } from "./defaults";
 import { confetti } from "@tsparticles/confetti";
-import { addMessageHandler, syncLocalStorage } from "./shared";
+import { AUDIOS } from "./game-defaults.js";
+import { syncLocalStorage } from "./shared.js";
+import { addMessageHandler } from "shared-ipc";
 
 /**
  * @typedef {Record<string, any>} Quests

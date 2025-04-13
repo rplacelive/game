@@ -1,7 +1,7 @@
 import { LitElement, html } from "lit-element"
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { EMOJIS, CUSTOM_EMOJIS } from "./defaults.js";
-import { DEFAULT_SERVER, translate } from "./shared.js";
+import { DEFAULT_SERVER, EMOJIS, CUSTOM_EMOJIS } from "./defaults.js";
+import { translate } from "./shared.js";
 
 class Spoiler extends HTMLElement {
 	constructor() {

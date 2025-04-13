@@ -13,7 +13,6 @@ This site aims to be as similar to the april fools r/place event, where users we
 # Setting up my own custom canvas!
 To set up your own custom canvas to be played on rplace.live, we have made a guide at our [Manual](MANUAL.md)!
 
-
 # Development
 
 Forks of this project should either:
@@ -29,10 +28,8 @@ not run commercially (That is, they should not generate more than the cost of se
 - My app (`fork-of-a-place.tk`) connecting to `wss://fork-of-a-place.tk` [❌ Not cool: Uses both different app and different server]
 
 ### Testing:
- - Use `bun install` to install all required TS server dependencies
- - Enter the server directory
- - The server can be run with `bun run server.js` in the root directory of the project.
- - You can use the bun dev configuration to run a local HTTP server, i.e `bun run dev`
+ - Use `bun install` to install all required vite dependencies.
+ - You can use the bun dev configuration to run a local vite development server with `bun run dev`.
  
 For more information on the game's protocol, look to the [protocol documentation](PROTOCOL.md).
 

@@ -1,4 +1,5 @@
-import { handleFormSubmit, $, DEFAULT_AUTH, translate, makeRequest, BADGE_ICONS } from "./shared.js";
+import { DEFAULT_AUTH } from "./defaults.js";
+import { handleFormSubmit, $, translate, makeRequest, BADGE_ICONS } from "./shared.js";
 
 /**@type {number|null}*/let accountId = null
 /**@type {any|null}*/let accountInstance = null

@@ -56,7 +56,7 @@ body {
 	background: white;
 }
 
-#modal {
+.modal {
 	background: rgb(255, 255, 255);
 	color: rgb(0, 0, 0);
 	width: 261px;
@@ -85,6 +85,10 @@ body {
 
 #themeDropParent {
 	border-bottom: var(--pixel-border);
+}
+
+.dialog-modal {
+	padding: 16px;
 }
 
 .context-menu {

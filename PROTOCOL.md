@@ -15,7 +15,6 @@ Now we've got this awkward hybrid teenager of a protocol - WebSocket for the fas
    - [Packet Structure](#packet-structure)
    - [Pixel Packet](#pixel-packet)
    - [Chat History Packet](#chat-history-packet)
-   
 2. [HTTP REST API](#http-rest-api)
    - [User Endpoints](#user-endpoints)
    - [Chat Endpoints](#chat-endpoints)
@@ -40,7 +39,7 @@ All WebSocket packets follow this basic format:
 
 ### Pixel Packet
 
-**code:** 1 (u8)
+**code:** 4 (u8)
 
 **Format:**
 ```

@@ -374,43 +374,6 @@
 		}
 	}
 	
-	function objectToHtml(object, editable = false) {
-		let html = ""
-		let indent = 1
-		let last = false
-
-		function propToHtml(obj) {
-			for (let prop in obj) {
-				if (typeof obj[prop] === 'object' && !Array.isArray(obj[prop])) {
-					indent++
-					html += `<div style="margin-left: ${indent * 8}px"><span>${prop}:</span> ${propToHtml(obj[prop])}</div>\n`
-					last = false
-				}
-				else {
-					if (!last) indent--
-					last = true
-					if (!editable) {
-						html += `<div style="margin-left: ${indent * 8}px"><span>${prop}:</span> ${obj[prop]}</div>\n`
-					}
-					else {
-						let input = ""
-						switch (typeof obj[prop]) {
-							case 'string': input = `<input type="text" value=${obj[prop]}>`; break
-							case 'number': input = `<input type="number" value=${Number(obj[prop])}>`; break
-							case 'boolean': input = `<input type="checkbox" ${obj[prop] ? 'checked' : ''}>`; break
-							case 'object': input = `<button>+ Add new</button>`; break;
-						}
-
-						html += `<div style="margin-left: ${indent * 8}px"><span>${prop}:</span> ${input}</div>\n`
-					}
-				}
-			}
-		}
-		propToHtml(object)
-
-		return html
-	}
-
 	async function renderBoard(url) {
 		const ctx = instanceCanvas.getContext("2d")
 		ctx.clearRect(0, 0, +instanceCanvas.getAttribute("width") || 0, +instanceCanvas.getAttribute("height") || 0)

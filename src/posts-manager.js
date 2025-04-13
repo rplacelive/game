@@ -1,4 +1,5 @@
-import { DEFAULT_AUTH, PublicPromiseSync } from "./shared.js"
+import { DEFAULT_AUTH } from "./defaults.js";
+import { PublicPromiseSync } from "./shared.js";
 
 class PostElArray {
 	constructor() {

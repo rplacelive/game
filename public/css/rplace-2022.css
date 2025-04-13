@@ -131,7 +131,7 @@ a {
 	box-shadow: var(--ui-frame-shadow);
 }
 
-#modal {
+.modal {
 	border: none;
 	background: var(--ui-panel-bg);
 	border-radius: 8px;
@@ -140,7 +140,7 @@ a {
 }
 
 @media (max-width:500px){
-	#modal {
+	.modal {
 		padding: 16px;
 	}
 
@@ -208,6 +208,14 @@ dialog {
 	color: var(--ui-text);
 	box-shadow: 0 3px 10px rgba(0,0,0,.3);
 	border-radius: 18px;
+}
+
+.dialog-modal {
+	padding: 10px;
+	background: var(--ui-panel-bg);
+	border-radius: 15px;
+	border: none;
+	row-gap: 8px;
 }
 
 .context-menu {
@@ -364,7 +372,8 @@ r-live-chat-message .emoji-reactors-count {
 
 #namePanel {
 	background-color: var(--ui-panel-bg);
-	border-radius: 15px;
+	border-radius: 10px;
+	box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
 }
 
 .name-input-container > button {

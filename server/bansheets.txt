@@ -1,5 +1,0 @@
-https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/socks5.txt
-https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/socks4.txt
-https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/http.txt
-https://raw.githubusercontent.com/SecOps-Institute/Tor-IP-Addresses/master/tor-exit-nodes.lst
-https://check.torproject.org/torbulkexitlist
