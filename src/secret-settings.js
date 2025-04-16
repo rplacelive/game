@@ -12,7 +12,7 @@ enableWebglCanvasCheckbox.addEventListener("change", function() {
 	enableWebglCanvasCheckbox.checked = enableWebglCanvas;
 });
 const enableNewOverlayMenuCheckbox = /**@type {HTMLInputElement}*/($("#enableNewOverlayMenuCheckbox"));
-enableNewOverlayMenuCheckbox.checked = !enableNewOverlayMenu;
+enableNewOverlayMenuCheckbox.checked = enableNewOverlayMenu;
 enableNewOverlayMenuCheckbox.addEventListener("change", function() {
 	enableNewOverlayMenu = !enableNewOverlayMenu;
 	localStorage.enabledNewOverlayMenu = String(enableNewOverlayMenu);

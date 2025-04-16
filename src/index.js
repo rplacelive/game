@@ -6,10 +6,11 @@ import { enableWinter, disableWinter } from "./snowplace.js";
 import { clearCaptchaCanvas, updateImgCaptchaCanvas, updateImgCaptchaCanvasFallback } from "./captcha-canvas.js";
 import { BoardRenderer } from "./board-renderer.js";
 import { muted, placeChat } from "./game-settings.js";
-import { enableWebglCanvas } from "./secret-settings.js";
+import { enableNewOverlayMenu, enableWebglCanvas } from "./secret-settings.js";
 import { AUDIOS } from "./game-defaults.js";
-import { addMessageHandler, handleMessage, sendIpcMessage, makeIpcRequest } from "shared-ipc";
+import { addIpcMessageHandler, handleIpcMessage, sendIpcMessage, makeIpcRequest } from "shared-ipc";
 import FingerprintJS from "@fingerprintjs/fingerprintjs";
+import { openOverlayMenu } from "./overlay-menu.js";
 
 // Ws Capsule
 if(!("subtle" in (window.crypto || {}))) {
@@ -94,7 +95,8 @@ const modal = /**@type {HTMLDialogElement}*/($("#modal"));
 const modalInstall = /**@type {HTMLButtonElement}*/($("#modalInstall"));
 const templateImage = /**@type {HTMLImageElement}*/($("#templateImage"));
 const overlayMenuOld = /**@type {HTMLElement}*/($("#overlayMenuOld"));
-const posEl = /**@type {HTMLElement}*/($("#posel"));
+const overlayMenu = /**@type {HTMLDialogElement}*/($("#overlayMenu"));
+const positionIndicator = /**@type {import("./game-elements.js").PositionIndicator}*/($("#positionIndicator"));
 const idPosition = /**@type {HTMLElement}*/($("#idPosition"));
 const onlineCounter = /**@type {HTMLElement}*/($("#onlineCounter"));
 const canvasLock = /**@type {HTMLElement}*/($("#canvasLock"));
@@ -205,6 +207,7 @@ const url = URL.createObjectURL(blob);
 const wsCapsule = new Worker(url, {
 	type: "module"
 });
+wsCapsule.addEventListener("message", handleIpcMessage);
 const injectedCjs = document.createElement("script");
 injectedCjs.innerHTML = `
 	delete WebSocket;
@@ -236,7 +239,7 @@ function handleConnect() {
 		sendIpcMessage(wsCapsule, "informAutomatedActivity", activityObj);
 	}
 }
-addMessageHandler("handleConnect", handleConnect);
+addIpcMessageHandler("handleConnect", handleConnect);
 /**
  * 
  * @param {{ palette: number[], paletteUsableRegion: { start: number, end: number } }} param 
@@ -254,7 +257,7 @@ function handlePalette({ palette, paletteUsableRegion }) {
 		renderAll();
 	}
 }
-addMessageHandler("handlePalette", handlePalette);
+addIpcMessageHandler("handlePalette", handlePalette);
 /**
  * Used by both legacy & RplaceServer
  * @param {{ endDate: number, cooldown: number }} param 
@@ -263,7 +266,7 @@ function handleCooldownInfo({ endDate, cooldown }) {
 	cooldownEndDate = endDate;
 	COOLDOWN = cooldown;
 }
-addMessageHandler("handleCooldownInfo", handleCooldownInfo);
+addIpcMessageHandler("handleCooldownInfo", handleCooldownInfo);
 /**
  * Used by RplaceServer
  * @param {{ width: number, height: number }} param 
@@ -278,7 +281,7 @@ async function handleCanvasInfo({ width, height }) {
 		hideLoadingScreen();
 	}
 }
-addMessageHandler("handleCanvasInfo", handleCanvasInfo);
+addIpcMessageHandler("handleCanvasInfo", handleCanvasInfo);
 /**
  * Used by legacy server
  * @param {DataView<ArrayBuffer>} changes 
@@ -290,7 +293,7 @@ async function handleChanges(changes) {
 		hideLoadingScreen();
 	}
 }
-addMessageHandler("handleChanges", handleChanges);
+addIpcMessageHandler("handleChanges", handleChanges);
 /**
  * @param {number} count 
  */
@@ -299,7 +302,7 @@ function setOnline(count) {
 	onlineCounter.textContent = String(count);
 	sendPostsFrameMessage("onlineCounter", count);
 }
-addMessageHandler("setOnline", setOnline);
+addIpcMessageHandler("setOnline", setOnline);
 /**
  * @param {{ position: number, width: number, height: number, region: DataView<ArrayBuffer> }} param
  */
@@ -317,14 +320,14 @@ function handlePlacerInfoRegion({ position, width, height, region }) {
 		i += WIDTH;
 	}
 }
-addMessageHandler("handlePlacerInfoRegion", handlePlacerInfoRegion);
+addIpcMessageHandler("handlePlacerInfoRegion", handlePlacerInfoRegion);
 /**
  * @param {number} newIntId 
  */
 function handleSetIntId(newIntId) {
 	intId = newIntId;
 }
-addMessageHandler("handleSetIntId", handleSetIntId);
+addIpcMessageHandler("handleSetIntId", handleSetIntId);
 /**
  * @param {{ locked: boolean, reason: string|null }} params 
  */
@@ -336,7 +339,7 @@ function setCanvasLocked({ locked, reason }) {
 		alert(reason);
 	}
 }
-addMessageHandler("setCanvasLocked", setCanvasLocked);
+addIpcMessageHandler("setCanvasLocked", setCanvasLocked);
 /**
  * @param {{ position: number, colour: number, placer:number|undefined }[]} pixels 
  */
@@ -348,7 +351,7 @@ function handlePixels(pixels) {
 		}
 	}
 }
-addMessageHandler("handlePixels", handlePixels);
+addIpcMessageHandler("handlePixels", handlePixels);
 /**
  * @param {{ endDate: number, position: number, colour: number }} param 
  */
@@ -356,7 +359,7 @@ function handleRejectedPixel({ endDate, position, colour }) {
 	cooldownEndDate = endDate;
 	seti(position, colour);
 }
-addMessageHandler("handleRejectedPixel", handleRejectedPixel);
+addIpcMessageHandler("handleRejectedPixel", handleRejectedPixel);
 /**
  * @param {string} name 
  */
@@ -364,7 +367,7 @@ function setChatName(name) {
 	chatName = name;
 	namePanel.style.visibility = "hidden";
 }
-addMessageHandler("setChatName", setChatName);
+addIpcMessageHandler("setChatName", setChatName);
 /**
  * @param {{ message: LiveChatMessage, channel: string }} param
  */
@@ -423,7 +426,7 @@ function addLiveChatMessage({ message, channel }) {
 		});
 	}
 }
-addMessageHandler("addLiveChatMessage", addLiveChatMessage);
+addIpcMessageHandler("addLiveChatMessage", addLiveChatMessage);
 /**
  * @param {PlaceChatMessage} message
  */
@@ -444,7 +447,7 @@ function addPlaceChatMessage(message) {
 		placeMessage.remove();
 	}, localStorage.placeChatTime || 7e3)
 }
-addMessageHandler("addPlaceChatMessage", addPlaceChatMessage);
+addIpcMessageHandler("addPlaceChatMessage", addPlaceChatMessage);
 /**
  * @param {number} messageId 
  */
@@ -459,7 +462,7 @@ function handleLiveChatDelete(messageId) {
 		}
 	}
 }
-addMessageHandler("handleLiveChatDelete", handleLiveChatDelete);
+addIpcMessageHandler("handleLiveChatDelete", handleLiveChatDelete);
 /**
  * @param {{ messageId: number, reactorId: number, reactionKey: string }} params
  */
@@ -481,7 +484,7 @@ function handleLiveChatReaction({ messageId, reactorId, reactionKey }) {
 		}
 	}
 }
-addMessageHandler("handleLiveChatReaction", handleLiveChatReaction);
+addIpcMessageHandler("handleLiveChatReaction", handleLiveChatReaction);
 /**
  * @param {{ options: string[], imageData: Uint8Array, answerCallback:(answer:string) => void }} param
  */
@@ -514,7 +517,7 @@ function handleTextCaptcha({ options, imageData, answerCallback }) {
 		updateImgCaptchaCanvasFallback(imageBlob)
 	}
 }
-addMessageHandler("handleTextCaptcha", handleTextCaptcha);
+addIpcMessageHandler("handleTextCaptcha", handleTextCaptcha);
 /**
  * @param {{ options: string[], imageData: Uint8Array, answerCallback:(answer:string) => void }} param
  */
@@ -562,7 +565,7 @@ function handleEmojiCaptcha({ options, imageData, answerCallback }) {
 		updateImgCaptchaCanvasFallback(imageBlob)
 	}
 }
-addMessageHandler("handleEmojiCaptcha", handleEmojiCaptcha);
+addIpcMessageHandler("handleEmojiCaptcha", handleEmojiCaptcha);
 /**
  * @param {{ siteKey:string, turnstileCallback: (token: string) => void }} param
  */
@@ -583,11 +586,11 @@ function handleTurnstile({ siteKey, turnstileCallback }) {
 		})
 	}
 }
-addMessageHandler("handleTurnstile", handleTurnstile);
+addIpcMessageHandler("handleTurnstile", handleTurnstile);
 export function handleTurnstileSuccess() {
 	turnstileMenu.removeAttribute("open")
 }
-addMessageHandler("handleTurnstileSuccess", handleTurnstileSuccess);
+addIpcMessageHandler("handleTurnstileSuccess", handleTurnstileSuccess);
 /**
  * @param {ModerationPacket} packet
  */
@@ -609,7 +612,7 @@ function applyPunishment(packet) {
 	punishmentAppeal.textContent = `Appeal status: ${(packet.appeal && packet.appeal !== "null") ? packet.appeal : 'Unappealable'}`;
 	punishmentMenu.setAttribute("open", "true");
 }
-addMessageHandler("applyPunishment", applyPunishment);
+addIpcMessageHandler("applyPunishment", applyPunishment);
 /**
  * @param {{code: number, reason: string }} param 
  */
@@ -621,7 +624,20 @@ function handleDisconnect({ code, reason }) {
 	cooldownEndDate = null;
 	showLoadingScreen("disconnected", reason);
 }
-addMessageHandler("handleDisconnect", handleDisconnect);
+addIpcMessageHandler("handleDisconnect", handleDisconnect);
+function handleCaptchaSuccess() {
+	captchaPopup.style.display = "none";
+}
+addIpcMessageHandler("handleCaptchaSuccess", handleCaptchaSuccess);
+/**
+ * @param {{ source: string, input: string }} param0 
+ */
+async function handleChallenge({ source, input }) {
+	const result = await Object.getPrototypeOf(async function () { })
+		.constructor(source)(input);
+	sendIpcMessage(wsCapsule, "sendChallengeResult", result);
+}
+addIpcMessageHandler("handleChallenge", handleChallenge);
 
 // Touch & mouse canvas event handling
 let moved = 3
@@ -641,43 +657,28 @@ function resizePostsFrame() {
 }
 postsFrame.addEventListener("load", resizePostsFrame);
 
-function openOverlayMenu() {
-	overlayMenuOld.setAttribute("open", "true")
+function openOverlayMenuOld() {
+	if (enableNewOverlayMenu === true) {
+		openOverlayMenu();
+	}
+	else {
+		overlayMenuOld.setAttribute("open", "true");
+	}
 }
 function scrollToPosts() {
 	postsFrame.scrollIntoView({ behavior: "smooth", block: "start", inline: "start" })
-}
-let postsFrameReqId = 0
-let postsFrameReqs = new Map()
-/**
- * @param {any} messageCall
- */
-async function makePostsFrameRequest(messageCall, args = undefined) {
-	const handle = postsFrameReqId++
-	const promise = new PublicPromise()
-	const postCall = { call: messageCall, data: args, handle: handle }
-	postsFrameReqs.set(handle, promise)
-	postsFrame.contentWindow?.postMessage(postCall)
-	return await promise.promise
-}
-/**
- * @param {string} messageCall
- * @param {any} args
- */
-function sendPostsFrameMessage(messageCall, args = undefined) {
-	postsFrame.contentWindow?.postMessage({ call: messageCall, data: args })
 }
 
 // Load more posts on scroll down
 more.addEventListener("scroll", function(/**@type {any}*/ e) {
 	const moreMaxScroll = more.scrollHeight - more.clientHeight
 	if (moreMaxScroll - more.scrollTop < 256) {
-		sendPostsFrameMessage("tryLoadBottomPosts")
+		sendIpcMessage(postsFrame, "tryLoadBottomPosts");
 	}
 	// Dialog positioning is messed up as it only sees iframe window, this is cursed but it works
 	const dialogTopHeight = Math.max(more.scrollTop - spaceFiller.offsetHeight + window.innerHeight / 2,
 		spaceFiller.offsetHeight / 2)
-	sendPostsFrameMessage("updateDialogTop", dialogTopHeight)
+		sendIpcMessage(postsFrame, "updateDialogTop", dialogTopHeight);
 }, { passive: true })
 
 // Game input handling && overrides
@@ -962,8 +963,7 @@ export function setSize(w, h = w) {
 				y = overlayInfo.y;
 				z = Math.min(Math.max(z, minZoom), 1);
 				pos();
-
-				overlayMenuOld.setAttribute("open", "true");;
+				openOverlayMenuOld();
 				break;
 		}
 	}
@@ -982,22 +982,22 @@ export let mx = 0
 export let my = 0
 
 mainContent.addEventListener("mousemove", function(/** @type {{ target: any; clientX: number; clientY: number; }} */ e) {
-	lastMouseMove = Date.now()
+	lastMouseMove = Date.now();
 	if (e.target != mainContent && !canvParent2.contains(e.target)) {
-		return
+		return;
 	}
-	moved--
-	let dx = -(mx - (mx = e.clientX - innerWidth / 2))
-	let dy = -(my - (my = e.clientY - mainContent.offsetHeight / 2))
+	moved--;
+	let dx = -(mx - (mx = e.clientX - innerWidth / 2));
+	let dy = -(my - (my = e.clientY - mainContent.offsetHeight / 2));
 	if (dx != dx || dy != dy) {
-		return
+		return;
 	}
 	if (mouseDown) {
-		x -= dx / (z * 50)
-		y -= dy / (z * 50)
-		pos()
+		x -= dx / (z * 50);
+		y -= dy / (z * 50);
+		pos();
 		if (anim) {
-			clearInterval(anim)
+			clearInterval(anim);
 		}
 	}
 })
@@ -1006,57 +1006,60 @@ mainContent.addEventListener("wheel", function(/** @type {{ target: any; deltaY:
 	if (e.target != mainContent && !canvParent2.contains(e.target)) {
 		return
 	}
-	let d = Math.max(minZoom / z, Math.min(3 ** Math.max(-0.5, Math.min(0.5, e.deltaY * -0.01)), 1 / z))
-	z *= d
-	x += mx * (d - 1) / z / 50
-	y += my * (d - 1) / z / 50
-	pos()
+	const d = Math.max(minZoom / z, Math.min(3 ** Math.max(-0.5, Math.min(0.5, e.deltaY * -0.01)), 1 / z));
+	z *= d;
+	x += mx * (d - 1) / z / 50;
+	y += my * (d - 1) / z / 50;
+	pos();
 })
 
-let idPositionDebounce = false
-/**@type {Timer|null}*/let idPositionTimeout = null
-let lastIntX = Math.floor(x)
-let lastIntY = Math.floor(y)
+let idPositionDebounce = false;
+/**@type {Timer|null}*/let idPositionTimeout = null;
+let lastIntX = Math.floor(x);
+let lastIntY = Math.floor(y);
 
 export function pos(newX=x, newY=y, newZ=z) {
-	newX = x = Math.max(Math.min(newX, WIDTH - 1), 0)
-	newY = y = Math.max(Math.min(newY, HEIGHT - 1), 0)
-	newZ = z = Math.min(Math.max(newZ, minZoom), 1)
+	newX = x = Math.max(Math.min(newX, WIDTH - 1), 0);
+	newY = y = Math.max(Math.min(newY, HEIGHT - 1), 0);
+	newZ = z = Math.min(Math.max(newZ, minZoom), 1);
 
-	const right = newX - canvas.width + 0.01
-	const left = newX
-	const up = newY - canvas.height + 0.01
-	const down = newY
+	const right = newX - canvas.width + 0.01;
+	const left = newX;
+	const up = newY - canvas.height + 0.01;
+	const down = newY;
 
-	if (right >= left) newX = 0
-	else if (right > 0) newX -= right
-	else if (left < 0) newX -= left
-	if (up >= down) newY = 0
-	else if (up > 0) newY -= up
-	else if (down < 0) newY -= down
-	posEl.textContent = `(${Math.floor(newX)},${Math.floor(newY)}) ${newZ > 0.02 ? Math.round(newZ*50)/10 : Math.ceil(newZ*500)/100}x`
-	localStorage.x = Math.floor(newX) + 0.5
-	localStorage.y = Math.floor(newY) + 0.5
-	localStorage.z = newZ
-	transform()
+	if (right >= left) newX = 0;
+	else if (right > 0) newX -= right;
+	else if (left < 0) newX -= left;
+	if (up >= down) newY = 0;
+	else if (up > 0) newY -= up;
+	else if (down < 0) newY -= down;
+	localStorage.x = Math.floor(newX) + 0.5;
+	localStorage.y = Math.floor(newY) + 0.5;
+	localStorage.z = newZ;
+	transform();
+	if (positionIndicator.setPosition) {
+		positionIndicator.setPosition(x, y, z);
+	}
+	boardRenderer?.setPosition(x, y, z);
 
-	const intX = Math.floor(newX), intY = Math.floor(newY)
+	const intX = Math.floor(newX), intY = Math.floor(newY);
 	if (intX != lastIntX || intY != lastIntY) {
 		if(idPositionTimeout) {
-			clearTimeout(idPositionTimeout)
+			clearTimeout(idPositionTimeout);
 		}
-		idPosition.style.display = "none"
-		idPositionDebounce = false
+		idPosition.style.display = "none";
+		idPositionDebounce = false;
 	}
-	lastIntX = intX
-	lastIntY = intY
+	lastIntX = intX;
+	lastIntY = intY;
 
 	if (!idPositionDebounce) {
-		idPositionDebounce = true
+		idPositionDebounce = true;
 
 		idPositionTimeout = setTimeout(() => {
-			idPositionDebounce = false
-			let id = intIdPositions.get(intX + intY * WIDTH)
+			idPositionDebounce = false;
+			let id = intIdPositions.get(intX + intY * WIDTH);
 			if (id === undefined || id === null) {
 				// Request 16x16 region of pixel placers from server (fine tune if necessary)
 				const placersRadius = 16;
@@ -1066,20 +1069,20 @@ export function pos(newX=x, newY=y, newZ=z) {
 				const height = Math.min(placersRadius, HEIGHT - intY);
 				const position = centreX + centreY * WIDTH;
 
-				sendIpcMessage(wsCapsule, "requestPixelPlacers", { position, width, height });
-				return
+				if (initialConnect) {
+					sendIpcMessage(wsCapsule, "requestPixelPlacers", { position, width, height });
+				}
+				return;
 			}
-			idPosition.style.display = "flex"
-			idPosition.style.left = intX + "px"
-			idPosition.style.top = intY + "px"
+			idPosition.style.display = "flex";
+			idPosition.style.left = intX + "px";
+			idPosition.style.top = intY + "px";
 			if (idPosition.children[1]) {
-				/** @type {HTMLElement} */(idPosition.children[1]).style.color = CHAT_COLOURS[hash("" + id) & 7]
-				idPosition.children[1].textContent = intIdNames.get(id) || ("#" + id)
+				/** @type {HTMLElement} */(idPosition.children[1]).style.color = CHAT_COLOURS[hash("" + id) & 7];
+				idPosition.children[1].textContent = intIdNames.get(id) || ("#" + id);
 			}
 		}, 1000)
 	}
-
-	boardRenderer?.setPosition(x, y, z);
 }
 
 /**@type {BoardRenderer|null}*/let boardRenderer = null;
@@ -1215,10 +1218,13 @@ function clicked(clientX, clientY) {
 	}
 	runAudio((cooldownEndDate||0) > Date.now() ? AUDIOS.invalid : AUDIOS.highlight)
 	anim = setInterval(function() {
-		x += (clientX - x) / 10
-		y += (clientY - y) / 10
-		pos()
-		if (Math.abs(clientX - x) + Math.abs(clientY - y) < 0.1) clearInterval(anim)
+		x += (clientX - x) / 10;
+		y += (clientY - y) / 10;
+		pos();
+
+		if (Math.abs(clientX - x) + Math.abs(clientY - y) < 0.1) {
+			clearInterval(anim);
+		}
 	}, 15)
 }
 
@@ -1254,11 +1260,28 @@ let onCooldown = false;
 let PEN = -1;
 
 let focused = true;
+/**
+ * @param {boolean} state 
+ */
+function setFocused(state) {
+	if (focused !== state) {
+		focused = state;
+		// TODO: Disable pixel place UI, suspend clientside cooldown
+	}
+}
 window.addEventListener("blur", () => {
-	focused = false
+	setFocused(false);
 });
 window.addEventListener("focus", () => {
-	focused = true
+	setFocused(true);
+});
+document.addEventListener("visibilitychange", () => {
+	if (document.visibilityState === "visible") {
+		setFocused(true);
+	}
+	else {
+		setFocused(false);
+	}
 });
 
 /**
@@ -1274,10 +1297,10 @@ function handlePixelPlace(e) {
 	if (!focused || !initialConnect
 		|| (cooldownEndDate === null && initialConnect)
 		|| (cooldownEndDate && cooldownEndDate > Date.now())) {
-		return
+		return;
 	}
 	if (!placeOkButton.classList.contains("enabled")) {
-		return
+		return;
 	}
 
 	// Send place to websocket
@@ -1334,18 +1357,18 @@ placeButton.addEventListener("touchstart", handlePlaceButtonClicked);
 placeButton.addEventListener("click", handlePlaceButtonClicked);
 
 placeCancelButton.addEventListener("click", function(e) {
-	runAudio(AUDIOS.closePalette)
-	canvSelect.style.background = ''
-	palette.style.transform = 'translateY(100%)'
+	runAudio(AUDIOS.closePalette);
+	canvSelect.style.background = "";
+	palette.style.transform = "translateY(100%)";
 	if (PEN != -1) {
-		colours.children[PEN].classList.remove('sel')
-		PEN = -1
+		colours.children[PEN].classList.remove("sel");
+		PEN = -1;
 	}
-	placeOkButton.classList.remove('enabled')
-	canvSelect.children[0].style.display = 'block'
-	canvSelect.style.outline = ''
-	canvSelect.style.boxShadow = ''
-	hideIndicators()
+	placeOkButton.classList.remove("enabled");
+	canvSelect.children[0].style.display = "block";
+	canvSelect.style.outline = "";
+	canvSelect.style.boxShadow = "";
+	hideIndicators();
 })
 
 setInterval(async () => {
@@ -1428,8 +1451,8 @@ colours.onclick = (/**@type {MouseEvent}*/e) => {
 export function runLengthChanges(data, buffer) {
 	let i = 9;
 	let boardI = 0;
-	let w = data.getUint32(1);
-	let h = data.getUint32(5);
+	const w = data.getUint32(1);
+	const h = data.getUint32(5);
 	if (w != WIDTH || h != HEIGHT) {
 		setSize(w, h);
 	}
@@ -1566,7 +1589,7 @@ function rebindIndicator(e, i) {
 	indicator.blur()
 
 	let binds = (localStorage.paletteKeys || DEFAULT_PALETTE_KEYS).split("")
-	let preExisting = binds.indexOf(e.key)
+	const preExisting = binds.indexOf(e.key)
 	if (preExisting != -1) {
 		binds[preExisting] = "​"
 	}
@@ -1588,22 +1611,24 @@ generateIndicators(localStorage.paletteKeys || DEFAULT_PALETTE_KEYS)
 // Live chat channels
 
 function initChannelDrop() {
-	let containsMy = false
+	let containsMy = false;
 
-	channelDrop.children[0].innerHTML = ""
-	for (let [code, info] of LANG_INFOS) {
-		if (code == lang) containsMy = true
-		let el = document.createElement("li")
-		el.innerHTML = `<span>${info.name}</span> <img src="${info.flag}" style="height: 24px;">`
-		el.dataset.lang = code
-		channelDrop.children[0].appendChild(el)
+	channelDrop.children[0].innerHTML = "";
+	for (const [code, info] of LANG_INFOS) {
+		if (code == lang) {
+			containsMy = true;
+		}
+		const el = document.createElement("li");
+		el.innerHTML = `<span>${info.name}</span> <img src="${info.flag}" style="height: 24px;">`;
+		el.dataset.lang = code;
+		channelDrop.children[0].appendChild(el);
 	}
 
 	if (!containsMy) {
-		let el = document.createElement("li")
-		el.innerHTML = `<span>${lang}</span>`
-		el.dataset.lang = lang
-		channelDrop.children[0].appendChild(el)
+		const el = document.createElement("li");
+		el.innerHTML = `<span>${lang}</span>`;
+		el.dataset.lang = lang;
+		channelDrop.children[0].appendChild(el);
 	}
 }
 
@@ -1642,8 +1667,8 @@ channelEnButton.addEventListener("click", function(e) {
  * @param {string} code
  */
 function extraChannel(code) {
-	let info = LANG_INFOS.get(code)
-	channelMineName.innerText = code.toUpperCase()
+	let info = LANG_INFOS.get(code);
+	channelMineName.innerText = code.toUpperCase();
 	channelMineImg.src = info?.flag || "/svg/flag-unknown.svg";
 	//channelMineImg.style.display = ((info?.flag) ? "inline" : "none")
 	extraLanguage = code
@@ -1677,11 +1702,11 @@ function switchLanguageChannel(selected) {
 
 	if (cMessages.get(selected)?.length) {
 		for (const messageEl of cMessages.get(selected) ?? []) {
-			messageRenderPromises.push(messageEl.updateComplete)
-			chatMessages.appendChild(messageEl)
+			messageRenderPromises.push(messageEl.updateComplete);
+			chatMessages.appendChild(messageEl);
 		}
 		Promise.all(messageRenderPromises).then(() => {
-			chatMessages.scrollTo(0, chatMessages.scrollHeight)
+			chatMessages.scrollTo(0, chatMessages.scrollHeight);
 		})
 	}
 
@@ -1722,10 +1747,10 @@ nameInput.addEventListener("keydown", function(e) {
 		sendIpcMessage(wsCapsule, "setName", nameInput.value);
 	}
 	else if (e.key == "Escape") {
-		namePanel.style.visibility = "hidden"
+		namePanel.style.visibility = "hidden";
 	}
 	else if (e.key == "Backspace" && nameInput.value.length == 0) {
-		namePanel.style.visibility = "hidden"
+		namePanel.style.visibility = "hidden";
 	}
 });
 nameInput.addEventListener("input", function() {
@@ -1885,7 +1910,7 @@ function addChatMessages({ channel, messages, before }) {
 		chatPreviousLoadDebounce = false;
 	});
 }
-addMessageHandler("addChatMessages", addChatMessages);
+addIpcMessageHandler("addChatMessages", addChatMessages);
 
 chatMessages.addEventListener("scroll", () => {
 	if (chatMessages.scrollTop < 64) {
@@ -2046,6 +2071,28 @@ export async function chatReply(messageId, senderId) {
 	}
 }
 
+/**
+ * @param {number} messageId 
+ * @param {number} senderId 
+ */
+export function chatReport(messageId, senderId) {
+	const reason = prompt("Enter the reason for why you are reporting this message (max 280 chars)\n\n" +
+		`Additional info:\nMessage ID: ${messageId}\nSender ID: ${senderId}\n`)?.trim();
+	if (reason === null) {
+		return;
+	}
+	sendIpcMessage(wsCapsule, "chatReport", { messageId, reason });
+	alert("Report sent!\nIn the meantime you can block this user by 'right clicking / press hold on the message' > 'block'");
+}
+
+/**
+ * @param {number} messageId 
+ * @param {string} reactKey 
+ */
+export function chatReact(messageId, reactKey) {
+	sendIpcMessage(wsCapsule, "chatReact", { messageId, reactKey });
+}
+
 export function chatCancelReplies() {
 	for (const messageEl of cMessages.get(currentChannel) || []) {
 		messageEl.removeAttribute("reply")
@@ -2071,15 +2118,16 @@ export function chatCancelReplies() {
  * @property {number} duration - Seconds
  */
 const modOptionsButton = /**@type {HTMLButtonElement}*/($("#modOptionsButton"));
-modOptionsButton.addEventListener("click", function (e) {
+modOptionsButton.addEventListener("click", async function(e) {
 	const options = getModOptions();
 	if (!options) {
 		return;
 	}
-	sendIpcMessage(wsCapsule, "sendModAction", options);
+	const statusMsg = await makeIpcRequest(wsCapsule, "sendModAction", options);
+	alert(statusMsg);
 	clearChatModerate();
 })
-modMessageId.addEventListener("input", async function (e) {
+modMessageId.addEventListener("input", async function(e) {
 	// Show loading state immediately
 	modMessagePreview.textContent = "Loading message...";
 
@@ -2186,11 +2234,6 @@ function closeChatModerate() {
 modCloseButton.addEventListener("click", closeChatModerate);
 modCancelButtonn.addEventListener("click", closeChatModerate);
 
-export function handleCaptchaSuccess() {
-	captchaPopup.style.display = "none";
-}
-
-
 /**
  * @param {"delete"|"kick"|"mute"|"ban"|"captcha"} mode
  * @param {number|null} senderId
@@ -2239,9 +2282,12 @@ function updateMessageInputHeight() {
 	const diffHeight = messageInputHeight - oldHeight
 	chatMessages.scrollBy(0, diffHeight)
 }
-window.addEventListener("DOMContentLoaded", function (e) {
+if (document.readyState !== "loading") {
 	updateMessageInputHeight();
-})
+}
+else {
+	window.addEventListener("DOMContentLoaded", updateMessageInputHeight);
+}
 
 messageInput.oninput = (/** @type {{ isTrusted: any; }} */ e) => {
 	if (!e.isTrusted) return
@@ -2491,7 +2537,7 @@ async function theme(themeSet, variant = null, effects = null) {
 	}
 	document.documentElement.dataset.variant = variant
 }
-window.addEventListener("DOMContentLoaded", function(e) {
+function initTheme() {
 	let startupThemeSet = DEFAULT_THEMES.get(localStorage.theme || "r/place 2022");
 	if (!startupThemeSet) {
 		startupThemeSet = DEFAULT_THEMES.get("r/place 2022");
@@ -2505,7 +2551,13 @@ window.addEventListener("DOMContentLoaded", function(e) {
 		console.error(errorMessage, { availableThemes: DEFAULT_THEMES, savedTheme: localStorage.theme });
 		alert(errorMessage);
 	}
-});
+}
+if (document.readyState !== "loading") {
+	initTheme();
+}
+else {
+	window.addEventListener("DOMContentLoaded", initTheme);
+}
 
 const themeDropList = themeDrop.firstElementChild;
 themeDropList?.addEventListener("click", function(e) {
@@ -2883,34 +2935,28 @@ if (localStorage.noad && Date.now() - localStorage.noad < 1.21e9) { // 14 days
 else {
 	let adI = Math.floor(Math.random() * ADS.length)
 	function cycleAd() {
-		const currentAd = ADS[adI % ADS.length]
+		const currentAd = ADS[adI % ADS.length];
 		const langBanners = /**@type {Record<string, string>}*/(currentAd.banners);
-		chatAd.style.setProperty("--adurl", `url(${langBanners[lang] || langBanners["en"]})`)
-		chatAd.href = currentAd.url
-		adI++
+		chatAd.style.setProperty("--adurl", `url(${langBanners[lang] || langBanners["en"]})`);
+		chatAd.href = currentAd.url;
+		adI++;
 	}
-	setInterval(cycleAd, 12e4) // 2 mins
-	cycleAd()
+	setInterval(cycleAd, 12e4); // 2 mins
+	cycleAd();
 }
 
 // Final initialisation
 translateAll();
 showLoadingScreen();
 
-// Hook up IPC exports
-/**@type {(messageId:number, senderId:number)=>void}*/
-export let chatReport = (messageId, senderId) => sendIpcMessage(wsCapsule, "chatReport", { messageId, senderId });
-/**@type {(messageId:number, reaction:string)=>void}*/
-export let chatReact = (messageId, reactKey) => sendIpcMessage(wsCapsule, "chatReact", { messageId, reactKey });
-
 // Hook up cross frame / parent window IPC request handlers
-addMessageHandler("fetchLinkKey", () => makeIpcRequest(wsCapsule, "fetchLinkKey"));
-addMessageHandler("openChatPanel", openChatPanel);
-addMessageHandler("scrollToPosts", scrollToPosts);
-addMessageHandler("defaultServer", defaultServer);
-addMessageHandler("openOverlayMenu", openOverlayMenu);
-addMessageHandler("resizePostsFrame", resizePostsFrame);
-window.addEventListener("message", handleMessage);
+addIpcMessageHandler("fetchLinkKey", () => makeIpcRequest(wsCapsule, "fetchLinkKey"));
+addIpcMessageHandler("openChatPanel", openChatPanel);
+addIpcMessageHandler("scrollToPosts", scrollToPosts);
+addIpcMessageHandler("defaultServer", defaultServer);
+addIpcMessageHandler("openOverlayMenu", openOverlayMenuOld);
+addIpcMessageHandler("resizePostsFrame", resizePostsFrame);
+window.addEventListener("message", handleIpcMessage);
 
 // Tell wsCapsule to start initialising websocket connection
 const fingerprintJS = await FingerprintJS.load();
@@ -2924,6 +2970,3 @@ sendIpcMessage(wsCapsule, "connect", {
 // Blank default render and canvas size init before we have loaded board
 setSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
 renderAll();
-if (chatName) {
-	namePanel.style.visibility = "hidden"
-}

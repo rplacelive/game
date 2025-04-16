@@ -35,17 +35,16 @@ export class BoardRenderer {
 	 * @param {HTMLCanvasElement} canvas 
 	 */
 	constructor(canvas) {
-		const _this = this;
 		this.canvas = canvas;
 		this.#resizeObserver = new ResizeObserver(() => {
-			_this.#updateCanvasSize();
-			_this.queueRedraw();
+			this.#updateCanvasSize();
+			this.queueRedraw();
 		});
 		this.#devicePixelRatio = window.devicePixelRatio || 1;
-        window.addEventListener("resize", () => {
-            this.#devicePixelRatio = window.devicePixelRatio || 1;
-			_this.#updateCanvasSize();
-        });
+		window.addEventListener("resize", () => {
+			this.#devicePixelRatio = window.devicePixelRatio || 1;
+			this.#updateCanvasSize();
+		});
 		this.#resizeObserver.observe(canvas);
 		const gl = this.#gl = /**@type {WebGL2RenderingContext}*/(canvas.getContext("webgl2"));
 		if (!gl) {
@@ -218,8 +217,8 @@ export class BoardRenderer {
 
 		// Calculate canvas translation & scale
 		const effectiveZoom = 1 / (this.#zoom * 50 * this.#devicePixelRatio);
-        const ndcX = -(this.#x - this.#width / 2) / (this.#width / 2);
-        const ndcY = (this.#y - this.#width / 2) / (this.#width / 2);
+		const ndcX = -(this.#x - this.#width / 2) / (this.#width / 2);
+		const ndcY = (this.#y - this.#width / 2) / (this.#width / 2);
 
 		// Reset matrices
 		mat4.identity(model);
@@ -227,7 +226,7 @@ export class BoardRenderer {
 		mat4.identity(projection);
 
 		// Set up view matrix (panning)
-        mat4.translate(view, view, [ndcX, ndcY, 0]);
+		mat4.translate(view, view, [ndcX, ndcY, 0]);
 	
 		// Set up projection matrix (zooming)
 		const aspect = this.canvas.width / this.canvas.height;

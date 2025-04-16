@@ -1,6 +1,6 @@
 import { DEFAULT_AUTH } from "./defaults.js";
 import { makeRequest } from "./shared.js";
-import { addMessageHandler } from "shared-ipc";
+import { addIpcMessageHandler } from "shared-ipc";
 
 // Injects the iframe containing the account.html page into the DOM
 export function openAccountFrame(page=null, unauthed=null) {
@@ -79,5 +79,5 @@ export function dispatchAccountEvent(eventName, detail = {}) {
 }
 
 // Hook up cross frame / parent window IPC request handlers
-addMessageHandler("closeAccountFrame", closeAccountFrame);
-addMessageHandler("dispatchAccountEvent", dispatchAccountEvent);
+addIpcMessageHandler("closeAccountFrame", closeAccountFrame);
+addIpcMessageHandler("dispatchAccountEvent", dispatchAccountEvent);

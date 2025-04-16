@@ -159,7 +159,7 @@ r-close-icon {
 	border-bottom: var(--pixel-border);
 }
 
-#posel {
+#positionIndicator {
 	position: absolute;
 	bottom: 24px;
 	left: 50%;
@@ -321,6 +321,14 @@ r-close-icon {
 	box-shadow: var(--pixel-box-shadow);
 	padding: 21px;
 	background-color: white;
+}
+
+.modal-inner-container {
+	border: var(--pixel-border);
+	padding: 8px;
+	background: #f7f7f7;
+	padding: 4px;
+    opacity: 0.8;
 }
 
 #modMessagePreview {

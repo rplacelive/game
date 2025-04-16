@@ -51,11 +51,16 @@
 			<div id="bgWrapper" style="z-index: -1; position: absolute; pointer-events: none; left: 0; top: 0; width: 100%; height: 100%;">
 				<!--Special background effects or features can be rendered within here-->
 			</div>
-			<div id="posel" noselect>(0,0) 2.5x</div>
+			<r-position-indicator id="positionIndicator"></r-position-indicator>
+			<div id="placeContext" class="context-menu" style="display:none">
+				<ul>
+					<li>Report here</li>
+				</ul>
+			</div>
 			<div id="overlayMenuOld" noselect class="toast-menu">
 				<div style="display: flex;">
 					<h2 title="Make use of a canvas overlay image in order to help yourself better position your pixels" style="display: inline;flex-grow: 1;">Overlay:</h2>
-					<r-close-icon onclick="overlayMenuOld.removeAttribute('opened')" class="active"></r-close-icon>
+					<r-close-icon onclick="overlayMenuOld.removeAttribute('open')" class="active"></r-close-icon>
 				</div>
 				<br><br>
 				<input id="overlayInput" type="file" style="width: 100%;"/> <br><br>
@@ -296,7 +301,7 @@
 					modal.showModal()
 				}
 			">
-				<img class="icon-image" src="/svg/help.svg">
+				<img class="icon-image" alt="?" src="/svg/help.svg">
 			</button>
 			<dialog id="modal" class="modal">
 				<div class="modal-header">

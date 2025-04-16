@@ -80,6 +80,7 @@ input[type="radio"] {
 
 input[type="checkbox"] {
 	appearance: auto;
+	height: min-content;
 }
 
 input[type=file]::file-selector-button {
@@ -270,7 +271,7 @@ dialog {
 	justify-content: center;
 }
 
-#helpbtn, #posel, #place, #archiveView, .toast-menu, #captchaPopup, #closebtn, #timelapsePanel {
+#helpbtn, #positionIndicator, #place, #archiveView, .toast-menu, #captchaPopup, #closebtn, #timelapsePanel {
 	box-shadow: 0 0 30px black;
 }
 
@@ -339,6 +340,15 @@ r-live-chat-message .emoji-reactors-count {
 	border-radius: 15px;
 }
 
+.modal-inner-container {
+	border-radius: 12px;
+	padding: 8px;
+	box-shadow: inset 2px 2px #dbdbdb;
+	background: var(--ui-panel-inner);
+	padding: 4px;
+	border: 1px solid lightgray;
+}
+
 #modMessagePreview {
 	border-radius: 12px;
 	padding: 8px;
@@ -348,7 +358,7 @@ r-live-chat-message .emoji-reactors-count {
 	border: 1px solid lightgray;
 }
 
-#posel{
+#positionIndicator {
 	position: absolute;
 	top: 20px;
 	left: 50%;
@@ -362,6 +372,8 @@ r-live-chat-message .emoji-reactors-count {
 	text-align: center;
 	z-index: 5;
 	font-family: mono;
+	-webkit-user-select: none;
+	user-select: none;
 	transition: .2s border-radius;
 }
 

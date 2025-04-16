@@ -4,7 +4,46 @@ import { until } from "lit/directives/until.js"
 import { unsafeHTML } from "lit/directives/unsafe-html.js"
 import { CHAT_COLOURS, EMOJIS, CUSTOM_EMOJIS } from "./defaults.js"
 import { sanitise, translate, hash, $, markdownParse } from "./shared.js"
-import { chatMentionUser, chatModerate, chatReply, cMessages, currentChannel, onChatContext, pos, x, y, intIdNames, chatReport, chatReact } from "./index.js"
+import { chatMentionUser, chatModerate, chatReply, cMessages, currentChannel, onChatContext, pos, x, y, z, intIdNames, chatReport, chatReact } from "./index.js"
+
+export class PositionIndicator extends HTMLElement {
+	#root
+	#x
+	#y
+	#zoom
+
+	constructor() {
+		super();
+		this.#root = this.attachShadow({ mode: "closed" });
+		this.#x = x;
+		this.#y = y;
+		this.#zoom = z;
+	}
+
+	/**
+	 * @param {number} x 
+	 * @param {number} y 
+	 * @param {number} z 
+	 */
+	setPosition(x, y, z) {
+		this.#x = x;
+		this.#y = y;
+		this.#zoom = z;
+		this.render();
+	}
+
+	render() {
+		const displayedX = Math.floor(this.#x);
+		const displayedY = Math.floor(this.#y);
+		const displayedZoom = this.#zoom > 0.02 ? Math.round(this.#zoom * 50) / 10 : Math.ceil(this.#zoom * 500) / 100;
+		this.#root.textContent = `(${displayedX},${displayedY}) ${displayedZoom}x`;
+	}
+
+	connectedCallback() {
+		this.render();
+	}
+}
+customElements.define("r-position-indicator", PositionIndicator);
 
 export class LiveChatMessage extends LitElement {
 	static properties = {

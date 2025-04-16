@@ -557,7 +557,7 @@ body[eventphase="2"] .countdown {
 	visibility: visible;
 }
 
-body[eventphase="2"] #posel {
+body[eventphase="2"] #positionIndicator {
 	border-radius: 8px 8px 0px 0px;
 }
 

@@ -2,7 +2,7 @@ import { DEFAULT_AUTH, DEFAULT_SERVER, DEFAULT_BOARD } from "./defaults.js";
 import { translateAll, $, makeRequest } from "./shared.js"
 import { clearPosts, tryLoadBottomPosts, tryLoadKeywordPosts, tryLoadTopPosts } from "./posts-manager.js"
 import { getAccount, openAccountFrame } from "./account.js";
-import { addMessageHandler, handleMessage, sendIpcMessage, makeIpcRequest } from "shared-ipc";
+import { addIpcMessageHandler, handleIpcMessage, sendIpcMessage, makeIpcRequest } from "shared-ipc";
 
 //  Main
 /**
@@ -483,9 +483,9 @@ function onlineCounter(/**@type {number}*/count) {
 function updateDialogTop(/**@type {number}*/topHeight) {
 	document.body.style.setProperty("--posts-dialog-top", topHeight + "px")
 }
-addMessageHandler("onlineCounter", onlineCounter);
-addMessageHandler("updateDialogTop", updateDialogTop);
-addMessageHandler("tryLoadBottomPosts", tryLoadBottomPosts);
-window.addEventListener("message", handleMessage);
+addIpcMessageHandler("onlineCounter", onlineCounter);
+addIpcMessageHandler("updateDialogTop", updateDialogTop);
+addIpcMessageHandler("tryLoadBottomPosts", tryLoadBottomPosts);
+window.addEventListener("message", handleIpcMessage);
 
 translateAll();
