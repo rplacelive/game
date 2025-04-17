@@ -68,6 +68,7 @@ body {
 	overflow: hidden;
 	z-index: 1;
 }
+
 #posts {
 	position: absolute;
 	top: 90%;
@@ -92,6 +93,10 @@ body {
 	/* Needs a default value to hide anything behind that is still loading */
 	background-color: white;
 	transition: .2s background-color;
+}
+
+#placeContext {
+	z-index: 4;
 }
 
 .loading-logo {

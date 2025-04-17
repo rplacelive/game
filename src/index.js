@@ -95,7 +95,6 @@ const modal = /**@type {HTMLDialogElement}*/($("#modal"));
 const modalInstall = /**@type {HTMLButtonElement}*/($("#modalInstall"));
 const templateImage = /**@type {HTMLImageElement}*/($("#templateImage"));
 const overlayMenuOld = /**@type {HTMLElement}*/($("#overlayMenuOld"));
-const overlayMenu = /**@type {HTMLDialogElement}*/($("#overlayMenu"));
 const positionIndicator = /**@type {import("./game-elements.js").PositionIndicator}*/($("#positionIndicator"));
 const idPosition = /**@type {HTMLElement}*/($("#idPosition"));
 const onlineCounter = /**@type {HTMLElement}*/($("#onlineCounter"));
@@ -184,7 +183,6 @@ const themeDropParent = /**@type {HTMLElement}*/($("#themeDropParent"));
 /**@type {string|null}*/ let chatName = null;
 /**@type {boolean}*/ let includesPlacer = false; // Server will tell us this
 /**@type {boolean}*/ let initialConnect = false;
-/**@type {number|null}*/ let cooldownEndDate = null;
 /**@type {number}*/ let online = 1;
 /**@type {boolean}*/ let canvasLocked = false;
 
@@ -263,7 +261,7 @@ addIpcMessageHandler("handlePalette", handlePalette);
  * @param {{ endDate: number, cooldown: number }} param 
  */
 function handleCooldownInfo({ endDate, cooldown }) {
-	cooldownEndDate = endDate;
+	updateCooldown(endDate);
 	COOLDOWN = cooldown;
 }
 addIpcMessageHandler("handleCooldownInfo", handleCooldownInfo);
@@ -300,7 +298,7 @@ addIpcMessageHandler("handleChanges", handleChanges);
 function setOnline(count) {
 	online = count;
 	onlineCounter.textContent = String(count);
-	sendPostsFrameMessage("onlineCounter", count);
+	sendIpcMessage(postsFrame, "onlineCounter", count);
 }
 addIpcMessageHandler("setOnline", setOnline);
 /**
@@ -309,6 +307,7 @@ addIpcMessageHandler("setOnline", setOnline);
 function handlePlacerInfoRegion({ position, width, height, region }) {
 	let i = position;
 	let regionI = 0;
+	console.log(region)
 	while (regionI < region.byteLength) {
 		for (let xi = i; xi < i + width; xi++) {
 			const placerIntId = region.getUint32(regionI);
@@ -356,10 +355,17 @@ addIpcMessageHandler("handlePixels", handlePixels);
  * @param {{ endDate: number, position: number, colour: number }} param 
  */
 function handleRejectedPixel({ endDate, position, colour }) {
-	cooldownEndDate = endDate;
+	updateCooldown(endDate);
 	seti(position, colour);
 }
 addIpcMessageHandler("handleRejectedPixel", handleRejectedPixel);
+/**
+ * @param {{ endDate: number }} param0 
+ */
+function handleCooldown({ endDate }) {
+	updateCooldown(endDate);
+}
+addIpcMessageHandler("handleCooldown", handleCooldown);
 /**
  * @param {string} name 
  */
@@ -621,7 +627,7 @@ function handleDisconnect({ code, reason }) {
 		sessionStorage.err = "1";
 		window.location.reload();
 	}
-	cooldownEndDate = null;
+	updateCooldown(null);
 	showLoadingScreen("disconnected", reason);
 }
 addIpcMessageHandler("handleDisconnect", handleDisconnect);
@@ -746,26 +752,89 @@ mainContent.addEventListener("touchend", function(/** @type {TouchEvent} */ e) {
 	e.preventDefault();
 });
 mainContent.addEventListener("mousedown", function(/** @type {{ button: number; }} */ e) {
-	moved = 3
-	mouseDown = e.button + 1
+	moved = 3;
+	mouseDown = e.button + 1;
+
+	if (placeContext.style.display == "block") {
+		placeContext.style.display = "none";
+	}
 })
 
 mainContent.addEventListener("mouseup", function(/** @type {{ target: any; clientX: any; clientY: any; }} */ e) {
 	if (e.target != mainContent && !canvParent2.contains(e.target)) {
-		return (moved = 3, mouseDown = 0)
+		return (moved = 3, mouseDown = 0);
 	}
 
 	if (moved > 0 && canvParent2.contains(e.target)) {
-		clicked(e.clientX, e.clientY)
+		clicked(e.clientX, e.clientY);
 	}
 
-	moved = 3
-	mouseDown = 0
+	moved = 3;
+	mouseDown = 0;
 })
+const placeContext = /**@type {HTMLElement}*/($("#placeContext"));
+placeContext.addEventListener("click", function(e) {
+	e.stopPropagation();
+	e.preventDefault();
+});
+const placeContextReportButton = /**@type {HTMLButtonElement}*/($("#placeContextReportButton"));
+placeContextReportButton.addEventListener("click", function(e) {
+	
+});
+const placeContextInfoButton = /**@type {HTMLButtonElement}*/($("#placeContextInfoButton"));
+placeContextInfoButton.addEventListener("click", function(e) {
+	const px = Number(placeContext.dataset.x);
+	const py = Number(placeContext.dataset.y);
+	showPlacerInfo(px, py);
+});
+mainContent.addEventListener("contextmenu", function(e) {
+	placeContext.style.display = "block";
+	const canvasPos = screenToCanvas(e.clientX, e.clientY);
+	placeContext.dataset.x = String(canvasPos.x);
+	placeContext.dataset.y = String(canvasPos.y);
+	setPlaceContextPosition(canvasPos.x, canvasPos.y, z);
+});
+/**
+ * @param {number} x 
+ * @param {number} y 
+ * @returns 
+ */
+async function showPlacerInfo(x, y) {
+	const id = intIdPositions.get(Math.floor(x) + Math.floor(y) * WIDTH);
+	if (id === undefined) {
+		alert("Could not find details of who placed pixel at current location...");
+		return;
+	}
+	let name = intIdNames.get(id);
+	if (name === undefined) {
+		// Query server
+		const httpServerUrl = (localStorage.server || DEFAULT_SERVER)
+			.replace("wss://", "https://").replace("ws://", "http://");
+		try {
+			const res = await fetch(`${httpServerUrl}/users/${id}`);
+			if (!res.ok) {
+				throw new Error(`Could not fetch user info: ${res.status} ${res.statusText}`)
+			}
+			const user = await res.json();
+			if (!user) {
+				throw new Error("User was null")
+			}
+			name = user.chatName;
+		}
+		catch(e) {
+			alert("Could not find details of who placed pixel at current location...");
+			console.error("Couldn't show placer info:", e);
+		}
+	}
+	alert(`Details of who placed at ${
+		Math.floor(x)}, ${
+		Math.floor(y)}:\nName: ${
+		name || 'anon'}\nUser ID: #${
+		id}`);
+}
 
-
-let selX = 0
-let selY = 0
+let selX = 0;
+let selY = 0;
 const canvasCtx = canvas.getContext("2d");
 function transform() {
 	const scale = z * 50;
@@ -782,6 +851,23 @@ function transform() {
 	canvas.style.transform = `translate(${translateX}px, ${translateY}px)`;
 	canvas.style.imageRendering = z < 1 / 50 / devicePixelRatio ? "initial" : "";
 }
+
+/**
+ * @param {number} clientX
+ * @param {number} clientY
+ * @returns {{ x: number, y: number }}
+ */
+function screenToCanvas(clientX, clientY) {
+	const scale = z * 50;
+	const translateX = x * z * -50;
+	const translateY = y * z * -50;
+
+	const canvasX = (clientX - innerWidth / 2 - translateX) / scale;
+	const canvasY = (clientY - mainContent.offsetHeight / 2 - translateY) / scale;
+
+	return { x: canvasX, y: canvasY };
+}
+
 
 // Essential game variable definitions
 export let x = 0;
@@ -847,27 +933,29 @@ document.body.addEventListener("keydown", function(/**@type {KeyboardEvent}*/e) 
 		};
 		let repeatFunc = setInterval(function() {
 			// We use 55 because: 10/55+9/55+8/55+7/55+6/55+5/55+4/55+3/55+2/55+1/55 = 1
-			switch (e.keyCode) {
-			case 37:
-				x -= moveEaseI / 55
-				arrowkeyDown.right = true
-				break //right
-			case 38:
-				y -= moveEaseI / 55
-				arrowkeyDown.up = true
-				break //up
-			case 39:
-				x += moveEaseI / 55
-				arrowkeyDown.left = true
-				break //left
-			case 40:
-				y += moveEaseI / 55
-				arrowkeyDown.down = true
-				break //down
+			switch (e.code) {
+			case "ArrowLeft":
+				x -= moveEaseI / 55;
+				arrowkeyDown.right = true;
+				break;
+			case "ArrowUp":
+				y -= moveEaseI / 55;
+				arrowkeyDown.up = true;
+				break;
+			case "ArrowRight":
+				x += moveEaseI / 55;
+				arrowkeyDown.left = true;
+				break;
+			case "ArrowDown":
+				y += moveEaseI / 55;
+				arrowkeyDown.down = true;
+				break;
 			}
-			pos()
-			moveEaseI--
-			if (moveEaseI <= 0) clearInterval(repeatFunc)
+			pos();
+			moveEaseI--;
+			if (moveEaseI <= 0) {
+				clearInterval(repeatFunc);
+			}
 		}, 16);
 	}
 
@@ -1018,6 +1106,23 @@ let idPositionDebounce = false;
 let lastIntX = Math.floor(x);
 let lastIntY = Math.floor(y);
 
+/**
+ * @param {number} px 
+ * @param {number} py 
+ * @param {number} z 
+ */
+function setPlaceContextPosition(px, py, z) {
+	if (placeContext.style.display === "block") {
+		const scale = z * 50;
+		const translateX = x * z * -50;
+		const translateY = y * z * -50;
+		const screenX = (px * scale) + translateX + innerWidth / 2;
+		const screenY = (py * scale) + translateY + mainContent.offsetHeight / 2;
+		placeContext.style.left = `${screenX}px`;
+		placeContext.style.top = `${screenY}px`;
+	}
+}
+
 export function pos(newX=x, newY=y, newZ=z) {
 	newX = x = Math.max(Math.min(newX, WIDTH - 1), 0);
 	newY = y = Math.max(Math.min(newY, HEIGHT - 1), 0);
@@ -1038,11 +1143,14 @@ export function pos(newX=x, newY=y, newZ=z) {
 	localStorage.y = Math.floor(newY) + 0.5;
 	localStorage.z = newZ;
 	transform();
+	const px = Number(placeContext.dataset.x);
+	const py = Number(placeContext.dataset.y);
+	setPlaceContextPosition(px, py, z);
+	boardRenderer?.setPosition(x, y, z);
 	if (positionIndicator.setPosition) {
 		positionIndicator.setPosition(x, y, z);
 	}
-	boardRenderer?.setPosition(x, y, z);
-
+	
 	const intX = Math.floor(newX), intY = Math.floor(newY);
 	if (intX != lastIntX || intY != lastIntY) {
 		if(idPositionTimeout) {
@@ -1108,16 +1216,16 @@ export function renderAll() {
 		boardRenderer?.setSources(BOARD, new Uint32Array(PALETTE), WIDTH, HEIGHT);
 	}
 	if (canvasCtx) {
-		canvasCtx.putImageData(img, 0, 0)
+		canvasCtx.putImageData(img, 0, 0);
 		// HACK: Workaround for blank-canvas bug on chrome on M1 chips
-		canvasCtx.getImageData(0, 0, 1, 1)
-		boardAlreadyRendered = true
+		canvasCtx.getImageData(0, 0, 1, 1);
+		boardAlreadyRendered = true;
 	}
 }
 
 
-/**@type {Uint32Array}*/let xa = new Uint32Array(1)
-/**@type {Uint8Array}*/let xb = new Uint8Array(xa.buffer)
+/**@type {Uint32Array}*/const u32Colour = new Uint32Array(1);
+/**@type {Uint8Array}*/const u8ArrColour = new Uint8Array(u32Colour.buffer);
 
 /**
  * @param {number} x
@@ -1129,11 +1237,11 @@ export function set(x, y, colour) {
 		return;
 	}
 	BOARD[x % canvas.width + (y % canvas.height) * canvas.width] = colour
-	xa[0] = PALETTE[colour]
+	u32Colour[0] = PALETTE[colour]
 	if (canvasCtx) {
-		canvasCtx.fillStyle = "#" + (xb[0] < 16 ? "0" : "") + xb[0].toString(16) + (xb[1] < 16 ? "0" : "") + xb[1].toString(16) + (xb[2] < 16 ? "0" : "") + xb[2].toString(16) + (xb[3] < 16 ? "0" : "") + xb[3].toString(16)
-		canvasCtx.clearRect(x, y, 1, 1)
-		canvasCtx.fillRect(x, y, 1, 1)
+		canvasCtx.fillStyle = "#" + (u8ArrColour[0] < 16 ? "0" : "") + u8ArrColour[0].toString(16) + (u8ArrColour[1] < 16 ? "0" : "") + u8ArrColour[1].toString(16) + (u8ArrColour[2] < 16 ? "0" : "") + u8ArrColour[2].toString(16) + (u8ArrColour[3] < 16 ? "0" : "") + u8ArrColour[3].toString(16);
+		canvasCtx.clearRect(x, y, 1, 1);
+		canvasCtx.fillRect(x, y, 1, 1);
 	}
 }
 
@@ -1199,33 +1307,33 @@ mainContent.addEventListener("touchmove", function(/**@type {TouchEvent}*/ e) {
  */
 function clicked(clientX, clientY) {
 	if (anim) {
-		clearInterval(anim)
+		clearInterval(anim);
 	}
 
-	clientX = Math.floor(x + (clientX - innerWidth / 2) / z / 50) + 0.5
-	clientY = Math.floor(y + (clientY - mainContent.offsetHeight / 2) / z / 50) + 0.5
+	clientX = Math.floor(x + (clientX - innerWidth / 2) / z / 50) + 0.5;
+	clientY = Math.floor(y + (clientY - mainContent.offsetHeight / 2) / z / 50) + 0.5;
 	if (clientX == Math.floor(x) + 0.5 && clientY == Math.floor(y) + 0.5) {
 		clientX -= 0.5;
-		clientY -= 0.5
+		clientY -= 0.5;
 		if ((cooldownEndDate||0) < Date.now()) {
-			zoomIn()
-			showPalette()
+			zoomIn();
+			showPalette();
 		}
 		else {
-			runAudio(AUDIOS.invalid)
+			runAudio(AUDIOS.invalid);
 		}
-		return
+		return;
 	}
-	runAudio((cooldownEndDate||0) > Date.now() ? AUDIOS.invalid : AUDIOS.highlight)
+	runAudio((cooldownEndDate||0) > Date.now() ? AUDIOS.invalid : AUDIOS.highlight);
 	anim = setInterval(function() {
 		x += (clientX - x) / 10;
 		y += (clientY - y) / 10;
 		pos();
 
-		if (Math.abs(clientX - x) + Math.abs(clientY - y) < 0.1) {
+		if (anim && Math.abs(clientX - x) + Math.abs(clientY - y) < 0.1) {
 			clearInterval(anim);
 		}
-	}, 15)
+	}, 15);
 }
 
 function zoomIn() {
@@ -1256,10 +1364,9 @@ export async function runAudio(audio) {
 }
 
 // Client state
-let onCooldown = false;
 let PEN = -1;
-
 let focused = true;
+
 /**
  * @param {boolean} state 
  */
@@ -1305,12 +1412,14 @@ function handlePixelPlace(e) {
 
 	// Send place to websocket
 	const position = Math.floor(x) + Math.floor(y) * WIDTH;
-	sendIpcMessage(wsCapsule, "putPixel", { e, position, colour: PEN });
+	sendIpcMessage(wsCapsule, "putPixel", { position, colour: PEN });
 
-	// Apply on client-side
+	// We predict our cooldown end date and that the pixel went through - server will (in)validate after
 	cooldownEndDate = Date.now() + (localStorage.vip ? (localStorage.vip[0] === "!" ? 0 : COOLDOWN / 2) : COOLDOWN);
-	hideIndicators();
 	set(Math.floor(x), Math.floor(y), PEN)
+	
+	// Apply on client-side
+	hideIndicators();
 	placeOkButton.classList.remove("enabled")
 	canvSelect.style.background = ""
 	canvSelect.children[0].style.display = "block"
@@ -1371,34 +1480,93 @@ placeCancelButton.addEventListener("click", function(e) {
 	hideIndicators();
 })
 
-setInterval(async () => {
-	const left = Math.floor(((cooldownEndDate||0) - Date.now()) / 1000);
-	placeButton.innerHTML = initialConnect
-		? cooldownEndDate === null // They have made initial connect
-			? `<span style="color:#f50; white-space: nowrap;">${await translate("connectingFail")}</span>` // They connected but now have disconnected
-			: left > 0
-				? `<svg xmlns="http://www.w3.org/2000/svg" data-name="icons final" viewBox="0 0 20 20" style="height: 1.1rem;vertical-align:top"><path d="M13.558 14.442l-4.183-4.183V4h1.25v5.741l3.817 3.817-.884.884z"></path><path d="M10 19.625A9.625 9.625 0 1119.625 10 9.636 9.636 0 0110 19.625zm0-18A8.375 8.375 0 1018.375 10 8.384 8.384 0 0010 1.625z"></path></svg> ${
-						("" + Math.floor(left/3600)).padStart(2, "0")}:${("" + Math.floor((left / 60)) % 60).padStart(2, "0")}:${("" + left % 60).padStart(2, "0")}` // They are connected + still connected but in cooldown
-				: await translate("placeTile") // They are connected + still connected + after cooldown
-		: await translate("connecting") // They are yet to connect
+// Cooldown handling
+/**@type {number|null}*/let cooldownEndDate = null;
+/**@type {Timer|null}*/let cooldownInterval = null;
+/**@type {boolean}*/let onCooldown = false;
+/**@type {number|Null}*/let currentResolution = null;
+async function updatePlaceButton() {
+	const now = Date.now();
+	const endDate = cooldownEndDate ?? 0;
+	const left = endDate - now;
+	const leftS = Math.floor(left / 1000);
 
-	if ((cooldownEndDate||0) > Date.now() && !onCooldown) {
-		onCooldown = true;
+	let innerHTML;
+	if (!initialConnect) {
+		innerHTML = await translate("connecting");
+	
 	}
-	if ((cooldownEndDate||0) < Date.now() && onCooldown) {
-		onCooldown = false;
-		if (!document.hasFocus()) {
-			runAudio(AUDIOS.cooldownEnd)
+	else if (cooldownEndDate === null) {
+		innerHTML = `<span style="color:#f50; white-space: nowrap;">${await translate("connectingFail")}</span>`;
+		clearCooldownInterval();
+	}
+	else if (left > 0) {
+		if (leftS >= 1) {
+			const h = String(Math.floor(leftS / 3600)).padStart(2, "0");
+			const m = String(Math.floor((leftS / 60) % 60)).padStart(2, "0");
+			const s = String(leftS % 60).padStart(2, "0");
+			innerHTML = `
+				<svg xmlns="http://www.w3.org/2000/svg" data-name="icons final" viewBox="0 0 20 20" style="height: 1.1rem; vertical-align: top;">
+					<path d="M13.558 14.442l-4.183-4.183V4h1.25v5.741l3.817 3.817-.884.884z"></path>
+					<path d="M10 19.625A9.625 9.625 0 1119.625 10 9.636 9.636 0 0110 19.625zm0-18A8.375 8.375 0 1018.375 10 8.384 8.384 0 0010 1.625z"></path>
+				</svg> ${h}:${m}:${s}`;
+			startCooldownInterval(500);
+		}
+		else {
+			innerHTML = `<span style="color:#f50;">${left}ms</span>`;
+			startCooldownInterval(100);
 		}
 	}
-}, 200)
+	else {
+		innerHTML = await translate("placeTile");
+		clearCooldownInterval();
+	}
+
+	placeButton.innerHTML = innerHTML;
+
+	if (endDate > now && !onCooldown) {
+		onCooldown = true;
+	}
+	if (endDate < now && onCooldown) {
+		onCooldown = false;
+		if (!document.hasFocus()) {
+			runAudio(AUDIOS.cooldownEnd);
+		}
+	}
+}
+/**
+ * @param {number|null} endDate 
+ */
+function updateCooldown(endDate) {
+	cooldownEndDate = endDate;
+	updatePlaceButton();
+}
+/**
+ * @param {number} resolution 
+ */
+function startCooldownInterval(resolution) {
+	if (cooldownInterval && currentResolution === resolution) {
+		return;
+	}
+	clearCooldownInterval();
+	currentResolution = resolution;
+	cooldownInterval = setInterval(updatePlaceButton, resolution);
+}
+function clearCooldownInterval() {
+	if (cooldownInterval) {
+		clearInterval(cooldownInterval);
+		cooldownInterval = null;
+		currentResolution = null;
+	}
+}
+
 
 function showPalette() {
 	palette.style.transform = "";
 	runAudio(AUDIOS.highlight);
 }
 
-export function generatePalette() {
+function generatePalette() {
 	colours.innerHTML = ""
 	for (let i = PALETTE_USABLE_REGION.start; i < PALETTE_USABLE_REGION.end; i++) {
 		const colour = PALETTE[i] || 0
@@ -1418,7 +1586,12 @@ export function generatePalette() {
 		colours.appendChild(colourEl)
 	}
 }
-generatePalette()
+if (document.readyState !== "loading") {
+	generatePalette();
+}
+else {
+	window.addEventListener("DOMContentLoaded", generatePalette);
+}
 
 colours.onclick = (/**@type {MouseEvent}*/e) => {
 	const clickedColour = /**@type {HTMLElement}*/(e.target);
@@ -1560,17 +1733,18 @@ export function seti(i, b) {
 	}
 
 	BOARD[i] = b
-	xa[0] = PALETTE[b]
+	u32Colour[0] = PALETTE[b]
 	if (canvasCtx) {
-		canvasCtx.fillStyle = "#" + (xb[0] < 16 ? "0" : "") + xb[0].toString(16) + (xb[1] < 16 ? "0" : "") + xb[1].toString(16) + (xb[2] < 16 ? "0" : "") + xb[2].toString(16) + (xb[3] < 16 ? "0" : "") + xb[3].toString(16)
+		canvasCtx.fillStyle = "#" + (u8ArrColour[0] < 16 ? "0" : "") + u8ArrColour[0].toString(16) + (u8ArrColour[1] < 16 ? "0" : "") + u8ArrColour[1].toString(16) + (u8ArrColour[2] < 16 ? "0" : "") + u8ArrColour[2].toString(16) + (u8ArrColour[3] < 16 ? "0" : "") + u8ArrColour[3].toString(16)
 		canvasCtx.fillRect(i % WIDTH, Math.floor(i / WIDTH), 1, 1)
 	}
 }
 
+// TODO: A CSS class on colours could handle this
 function hideIndicators() {
 	for (let c = 0; c < colours.children.length; c++) {
-		const indicator = /**@type {HTMLElement}*/(colours.children[c]?.firstChild);
-		if (indicator) {
+		const indicator = /**@type {HTMLElement}*/(colours.children[c]?.firstElementChild);
+		if (indicator?.style.visibility !== "hidden") {
 			indicator.style.visibility = "hidden";
 		}
 	}
@@ -1797,17 +1971,7 @@ export function handleLiveChatCommand(command, message) {
 			break;
 		}
 		case "whoplaced": {
-			const id = intIdPositions.get(Math.floor(x) + Math.floor(y) * WIDTH);
-			if (id === undefined) {
-				alert("Could not find details of who placed pixel at current location...");
-				return;
-			}
-			let name = intIdNames.get(id);
-			alert(`Details of who placed at ${
-				Math.floor(x)}, ${
-				Math.floor(y)}:\nName: ${
-				name || 'anon'}\nUser ID: #${
-				id}`);
+			showPlacerInfo(x, y);
 			break;
 		}
 		case "help": {
@@ -2899,8 +3063,9 @@ checkVerifiedAppStatus().then(status => {
 
 // Cancel context menu
 window.addEventListener("contextmenu", function(e) {
-	e.preventDefault()
-})
+	e.preventDefault();
+});
+
 
 // Cancel touchpad page zooming that interferes with canvas zooming
 if (!mobile) {
@@ -2962,7 +3127,7 @@ window.addEventListener("message", handleIpcMessage);
 const fingerprintJS = await FingerprintJS.load();
 const result = await fingerprintJS.get();
 sendIpcMessage(wsCapsule, "connect", {
-	fingerprint: result.visitorId,
+	device: result.visitorId,
 	server: localStorage.server || DEFAULT_SERVER,
 	vip: localStorage.vip
 });

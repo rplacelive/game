@@ -5,7 +5,6 @@
 	<link rel="stylesheet" href="/styles.css">
 	<link rel="stylesheet" href="/shared.css">
 	<script type="text/javascript" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2508999262953411" crossorigin="anonymous" async></script>
-	<script type="text/javascript" src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 	<script type="module" src="/src/defaults.js"></script>
 	<script type="module" src="/src/shared.js"></script>
 	<script type="module" src="/src/account.js"></script>
@@ -52,11 +51,6 @@
 				<!--Special background effects or features can be rendered within here-->
 			</div>
 			<r-position-indicator id="positionIndicator"></r-position-indicator>
-			<div id="placeContext" class="context-menu" style="display:none">
-				<ul>
-					<li>Report here</li>
-				</ul>
-			</div>
 			<div id="overlayMenuOld" noselect class="toast-menu">
 				<div style="display: flex;">
 					<h2 title="Make use of a canvas overlay image in order to help yourself better position your pixels" style="display: inline;flex-grow: 1;">Overlay:</h2>
@@ -226,6 +220,13 @@
 					<span translate="placedBy">Placed by:</span>
 					<span><!--placer name||id--></span>
 				</placechat>
+			</div>
+
+			<div id="placeContext" class="context-menu" style="display:none">
+				<ul>
+					<li><button type="button" id="placeContextReportButton" disabled>Report here</button></li>
+					<li><button type="button" id="placeContextInfoButton">Show pixel placer info</button></li>
+				</ul>
 			</div>
 
 			<canvas id="viewportCanvas"></canvas>

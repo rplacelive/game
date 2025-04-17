@@ -228,6 +228,15 @@ dialog {
 	background: var(--ui-panel-hover);
 	border-radius: 4px;
 }
+.context-menu > ul > li > button {
+	box-shadow: none;
+    padding: 0;
+    margin: 0;
+    display: block;
+    text-align: left;
+    height: min-content;
+    background: transparent;	
+}
 
 /* Layout buttons */
 .layout {
