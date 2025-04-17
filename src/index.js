@@ -751,16 +751,15 @@ mainContent.addEventListener("touchend", function(/** @type {TouchEvent} */ e) {
 	}
 	e.preventDefault();
 });
-mainContent.addEventListener("mousedown", function(/** @type {{ button: number; }} */ e) {
+mainContent.addEventListener("mousedown", function(/**@type {{ button: number; }}*/ e) {
 	moved = 3;
 	mouseDown = e.button + 1;
 
 	if (placeContext.style.display == "block") {
 		placeContext.style.display = "none";
 	}
-})
-
-mainContent.addEventListener("mouseup", function(/** @type {{ target: any; clientX: any; clientY: any; }} */ e) {
+});
+mainContent.addEventListener("mouseup", function(/**@type {MouseEvent}*/ e) {
 	if (e.target != mainContent && !canvParent2.contains(e.target)) {
 		return (moved = 3, mouseDown = 0);
 	}
@@ -771,11 +770,11 @@ mainContent.addEventListener("mouseup", function(/** @type {{ target: any; clien
 
 	moved = 3;
 	mouseDown = 0;
-})
+});
+
 const placeContext = /**@type {HTMLElement}*/($("#placeContext"));
-placeContext.addEventListener("click", function(e) {
+placeContext.addEventListener("mousedown", function(e) {
 	e.stopPropagation();
-	e.preventDefault();
 });
 const placeContextReportButton = /**@type {HTMLButtonElement}*/($("#placeContextReportButton"));
 placeContextReportButton.addEventListener("click", function(e) {
@@ -2003,7 +2002,7 @@ To create a separator, create a blank line (Shift + Enter on keyboard) and inser
 
 # Chat commands:
 \`\`\`
-:vip        :name       :lookup
+:vip        :name
 :getid      :whoplaced
 \`\`\`
 

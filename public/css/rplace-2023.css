@@ -33,6 +33,12 @@ button, input[type="button"], textarea {
 	height: 36px;
 }
 
+button[disabled]:disabled, input[type="button"]:disabled, textarea:disabled {
+	cursor: default;
+	color: #0000009c;
+	pointer-events: none;
+}
+
 button:hover, input[type="button"]:hover {
 	background-color: lightgray;
 }
@@ -97,6 +103,17 @@ body {
 }
 .context-menu > ul > li:hover {
 	background: lightgrey;
+}
+.context-menu > ul > li > button {
+	margin: 0;
+	padding: 0;
+	border: none;
+	width: 100%;
+	background-color: transparent;
+	text-align: left;
+	color: black;
+	height: min-content;
+	font-size: 16px;
 }
 
 /* Buttons */
@@ -291,6 +308,7 @@ r-close-icon {
 	height: max(38px, var(--message-input-height));
 	display: flex;
 	padding-top: 8px;
+	padding-right: 58px;
 }
 #messageTypePanel {
 	height: calc(var(--message-input-height) + 72px);

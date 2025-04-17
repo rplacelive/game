@@ -1241,6 +1241,7 @@ kbd {
 	position: absolute;
 	transform: translateX(5px);
 	padding: 5px;
+	user-select: none;
 	transition: transform .1s;
 	z-index: 2;
 }

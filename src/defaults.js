@@ -137,7 +137,6 @@ export const COMMANDS = new Map([
 	["help", "<kbd>Help information for live chat</kbd>"],
 	["name", "<kbd>Change your username</kbd>"],
 	["vip", "<kbd>Apply a VIP code</kbd>"],
-	["lookup", "<kbd>Get the IDs of all players with the given name</kbd>"],
 	["getid", "<kbd>View your own User Id, or provide a name to view a list of online player User Ids</kbd>"],
 	["whoplaced", "<kbd>View details of who placed the current pixel being hovered</kbd>"]
 ])
