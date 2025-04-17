@@ -1245,7 +1245,7 @@ kbd {
 	transition: transform .1s;
 	z-index: 2;
 }
-.context-menu ul {
+.context-menu > menu {
 	padding: 0px;
 	margin: 0px;
 	min-width: 150px;
@@ -1255,10 +1255,10 @@ kbd {
 	display: flex;
 	flex-direction: column;
 }
-.context-menu > ul > li {
+.context-menu > menu > li {
 	padding: 5px;
 }
-.context-menu > ul > li > a {
+.context-menu > menu > li > a {
 	text-decoration: none;
 	color: black;
 	display: block;
@@ -1275,10 +1275,10 @@ kbd {
 	top: 30px;
 	display: none;
 }
-#channelDrop > ul > li {
+#channelDropMenu > li {
 	display: flex;
 }
-#channelDrop > ul > li > span {
+#channelDropMenu > li > span {
 	flex-grow: 1;
 	text-align: left;
 }

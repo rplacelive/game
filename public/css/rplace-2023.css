@@ -101,10 +101,10 @@ body {
 	border: var(--pixel-border);
 	background-color: white;
 }
-.context-menu > ul > li:hover {
+.context-menu > menu > li:hover {
 	background: lightgrey;
 }
-.context-menu > ul > li > button {
+.context-menu > menu > li > button {
 	margin: 0;
 	padding: 0;
 	border: none;

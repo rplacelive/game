@@ -224,11 +224,11 @@ dialog {
 	border-radius: 5px;
 	box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.5);
 }
-.context-menu > ul > li:hover {
+.context-menu > menu > li:hover {
 	background: var(--ui-panel-hover);
 	border-radius: 4px;
 }
-.context-menu > ul > li > button {
+.context-menu > menu > li > button {
 	box-shadow: none;
 	padding: 0;
 	margin: 0;

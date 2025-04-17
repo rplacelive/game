@@ -106,6 +106,7 @@ const placeOkButton = /**@type {HTMLButtonElement}*/($("#pok"));
 const placeCancelButton = /**@type {HTMLButtonElement}*/($("#pcancel"));
 const palette = /**@type {HTMLElement}*/($("#palette"));
 const channelDrop = /**@type {HTMLElement}*/($("#channelDrop"));
+const channelDropMenu = /**@type {HTMLElement}*/($("#channelDropMenu"));
 const channelDropParent = /**@type {HTMLElement}*/($("#channelDropParent"));
 const channelEn = /**@type {HTMLElement}*/($("#channelEn"));
 const channelMine = /**@type {HTMLElement}*/($("#channelMine"));
@@ -1783,11 +1784,10 @@ export function generateIndicators(keybinds) {
 generateIndicators(localStorage.paletteKeys || DEFAULT_PALETTE_KEYS)
 
 // Live chat channels
-
 function initChannelDrop() {
 	let containsMy = false;
 
-	channelDrop.children[0].innerHTML = "";
+	channelDropMenu.innerHTML = "";
 	for (const [code, info] of LANG_INFOS) {
 		if (code == lang) {
 			containsMy = true;
@@ -1795,21 +1795,20 @@ function initChannelDrop() {
 		const el = document.createElement("li");
 		el.innerHTML = `<span>${info.name}</span> <img src="${info.flag}" style="height: 24px;">`;
 		el.dataset.lang = code;
-		channelDrop.children[0].appendChild(el);
+		channelDropMenu.appendChild(el);
 	}
 
 	if (!containsMy) {
 		const el = document.createElement("li");
 		el.innerHTML = `<span>${lang}</span>`;
 		el.dataset.lang = lang;
-		channelDrop.children[0].appendChild(el);
+		channelDropMenu.appendChild(el);
 	}
 }
 
-const channelList = channelDrop.firstElementChild
-channelList?.addEventListener("click", function(e) {
+channelDropMenu.addEventListener("click", function(e) {
 	let target = e.target
-	while (target instanceof HTMLElement && target != channelList) {
+	while (target instanceof HTMLElement && target != channelDropMenu) {
 		if (target.nodeName != "LI") {
 			target = target.parentElement;
 			continue;

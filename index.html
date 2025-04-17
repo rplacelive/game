@@ -223,10 +223,10 @@
 			</div>
 
 			<div id="placeContext" class="context-menu" style="display:none">
-				<ul>
+				<menu>
 					<li><button type="button" id="placeContextReportButton" disabled>Report here</button></li>
 					<li><button type="button" id="placeContextInfoButton">Show pixel placer info</button></li>
-				</ul>
+				</menu>
 			</div>
 
 			<canvas id="viewportCanvas"></canvas>
@@ -331,7 +331,7 @@
 							<path d="M480-345 240-585l43-43 197 198 197-197 43 43-240 239Z"></path>
 						</svg>
 						<div id="themeDrop" style="top: 40px;" class="context-menu" ontouchstart="event.stopPropagation()">
-							<ul>
+							<menu>
 								<li theme="r/place 2022" variant=""><span>r/place 2022 (Classic)</span></li>
 								<li theme="r/place 2022" variant="dark"><span>r/place 2022 (Dark)</span></li>
 								<li theme="r/place 2023" variant=""><span>r/place 2023 (Classic)</span></li>
@@ -340,7 +340,7 @@
 								<li theme="r/place 2022" variant="" effects="winter"><span>snowplace.live (December 2023)</span></li>
 								<li theme="r/place 2022" variant="merry" effects="winter"><span>merryplace.live (December 2024)</span></li>
 								<!--<li theme="goldplace" variant=""><span>goldplace.live (August 21st 2025)</span></li>-->
-							</ul>
+							</menu>
 						</div>
 					</div>
 					<button id="placeChatButton" class="modal-footer-button" title="Enable canvas chat">
@@ -429,7 +429,7 @@
 							</svg>	
 						</button>
 						<div id="channelDrop" class="context-menu" ontouchstart="event.stopPropagation()">
-							<ul><!--Language channel options--></ul>
+							<menu id="channelDropMenu"><!--Language channel options--></menu>
 						</div>
 					</span>
 					<button id="channelMineButton" class="channel-button">
@@ -454,7 +454,7 @@
 				</div>
 			</div>
 			<div id="chatContext" class="context-menu" style="display:none">
-				<ul>
+				<menu>
 					<li style="font-size: 8px; display: none;" id="userNote"></li>
 					<li><button type="button" id="mentionUserButton" translate="mention">Mention user</button></li>
 					<li><button type="button" id="replyUserButton" translate="replyTo">Reply to user</button></li>
@@ -464,7 +464,7 @@
 							<em translate="changeMyName">Change my name</em>
 						</button>
 					</li>
-				</ul>
+				</menu>
 			</div>
 			<r-emoji-panel id="chatReactionsPanel" onclose="this.removeAttribute('open')"></r-emoji-panel>
 			<!-- If google ad hidden by extension, fall back to standard chat ad -->
