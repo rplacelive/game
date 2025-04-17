@@ -318,8 +318,20 @@ r-close-icon {
 }
 .message-input-actions {
 	top: 1px;
-    right: 1px;
+	right: 1px;
 }
+
+#messageCancelReplyButton {
+	padding: 0;
+	margin: 0;
+	width: 32px;
+	height: 32px;
+	display: flex;
+	position: absolute;
+	right: -2px;
+	top: -2px;
+}
+
 .message-emojis-suggestion:hover {
 	background: lightgrey;
 }
@@ -346,7 +358,7 @@ r-close-icon {
 	padding: 8px;
 	background: #f7f7f7;
 	padding: 4px;
-    opacity: 0.8;
+	opacity: 0.8;
 }
 
 #modMessagePreview {

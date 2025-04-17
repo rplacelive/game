@@ -230,12 +230,12 @@ dialog {
 }
 .context-menu > ul > li > button {
 	box-shadow: none;
-    padding: 0;
-    margin: 0;
-    display: block;
-    text-align: left;
-    height: min-content;
-    background: transparent;	
+	padding: 0;
+	margin: 0;
+	display: block;
+	text-align: left;
+	height: min-content;
+	background: transparent;	
 }
 
 /* Layout buttons */
@@ -318,6 +318,14 @@ dialog {
 }
 .message-input-actions > button:hover {
 	opacity: 1;
+}
+
+#messageCancelReplyButton {
+	box-shadow: none;
+	padding: 0;
+	margin: 0;
+	width: min-content;
+	height: min-content;
 }
 
 .message-emojis-suggestion {

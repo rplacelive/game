@@ -122,6 +122,7 @@ const messageTypePanel = /**@type {HTMLElement}*/($("#messageTypePanel"));
 const messageInputGifPanel = /**@type {HTMLElement}*/($("#messageInputGifPanel"));
 const messageReplyPanel = /**@type {HTMLElement}*/($("#messageReplyPanel"));
 const messageReplyLabel = /**@type {HTMLElement}*/($("#messageReplyLabel"));
+const messageCancelReplyButton = /**@type {HTMLButtonElement}*/($("#messageCancelReplyButton"));
 const punishmentNote = /** @type {HTMLElement}*/($("#punishmentNote"));
 const punishmentUserId = /** @type {HTMLElement}*/($("#punishmentUserId"));
 const punishmentStartDate = /** @type {HTMLElement}*/($("#punishmentStartDate"));
@@ -161,10 +162,10 @@ const tlPlayDir = /**@type {HTMLInputElement}*/($("#tlPlayDir"));
 const overlayInput = /**@type {HTMLInputElement}*/($("#overlayInput"));
 const chatContext = /**@type {HTMLElement}*/($("#chatContext"));
 const userNote = /**@type {HTMLElement}*/($("#userNote"));
-const mentionUser = /**@type {HTMLElement}*/($("#mentionUser"));
-const replyUser = /**@type {HTMLElement}*/($("#replyUser"));
-const blockUser = /**@type {HTMLElement}*/($("#blockUser"));
-const changeMyName = /**@type {HTMLElement}*/($("#changeMyName"));
+const mentionUserButton = /**@type {HTMLButtonElement}*/($("#mentionUserButton"));
+const replyUserButton = /**@type {HTMLButtonElement}*/($("#replyUserButton"));
+const blockUserButton = /**@type {HTMLButtonElement}*/($("#blockUserButton"));
+const changeMyNameButton = /**@type {HTMLElement}*/($("#changeMyNameButton"));
 const connProblems = /**@type {HTMLElement}*/($("#connproblems"));
 const chatAd = /**@type {HTMLAnchorElement}*/($("#chatAd"));
 const chatCloseButton = /**@type {HTMLButtonElement}*/($("#chatCloseButton"));
@@ -307,7 +308,6 @@ addIpcMessageHandler("setOnline", setOnline);
 function handlePlacerInfoRegion({ position, width, height, region }) {
 	let i = position;
 	let regionI = 0;
-	console.log(region)
 	while (regionI < region.byteLength) {
 		for (let xi = i; xi < i + width; xi++) {
 			const placerIntId = region.getUint32(regionI);
@@ -886,6 +886,7 @@ window.addEventListener("beforeinstallprompt", function(e) {
 	modalInstall.disabled = false
 })
 modalInstall.addEventListener("click", () => {
+	// @ts-expect-error PWAPrompter.prompt is still an experimental javascript feature for some reason
 	pwaPrompter?.prompt();
 });
 
@@ -2267,6 +2268,10 @@ export function chatCancelReplies() {
 	messageReplyPanel.setAttribute('closed', 'true')
 }
 
+messageCancelReplyButton.addEventListener("click", function(e) {
+	chatCancelReplies();
+});
+
 // Moderation UI
 /**
  * @typedef {"kick" | "mute" | "ban" | "captcha" | "delete"} ModAction
@@ -2911,9 +2916,10 @@ overlayOpacity.addEventListener("change", function() {
 	templateImage.style.opacity = String(overlayInfo.opacity);
 });
 
+// Chat management
 let blockedUsers = localStorage.blocked?.split(",") || []
-let targetedIntId = null
-let targetedMsgId = null
+/**@type {number|null}*/let targetedIntId = null
+/**@type {number|null}*/let targetedMsgId = null
 export let currentReply = null
 let openedChat = false
 
@@ -2997,28 +3003,59 @@ export async function onChatContext(e, senderId, msgId) {
 		targetedMsgId = msgId;
 		targetedIntId = senderId;
 		chatContext.style.display = "block";
-		mentionUser.children[0].textContent = `${await translate("mention")} ${identifier}`;
-		replyUser.children[0].textContent = `${await translate("replyTo")} ${identifier}`;
-		blockUser.children[0].textContent =
+		mentionUserButton.textContent = `${await translate("mention")} ${identifier}`;
+		replyUserButton.textContent = `${await translate("replyTo")} ${identifier}`;
+		blockUserButton.textContent =
 			`${await translate(blockedUsers.includes(senderId) ? "unblock" : "block")} ${identifier}`;
 
-		// TODO: Do this in CSS instead
-		const blockUserText = /**@type {HTMLElement}*/(blockUser.children[0]);
 		if (senderId == intId) {
-			blockUser.style.pointerEvents = "none";
-			blockUserText.style.color = "grey";
-			changeMyName.style.display = "";
+			blockUserButton.disabled = true;
+			changeMyNameButton.style.display = "";
 		}
 		else  {
-			blockUser.style.pointerEvents = "all";
-			blockUserText.style.color = "black";
-			changeMyName.style.display = "none";
+			blockUserButton.disabled = false;
+			changeMyNameButton.style.display = "none";
 		}
 
 		chatContext.style.left = e.pageX - chatPanel.offsetLeft + "px"
 		chatContext.style.top = e.pageY - chatPanel.offsetTop + "px"
 	}
 }
+mentionUserButton.addEventListener("click", function(e) {
+	if (!targetedIntId) {
+		return;
+	}
+
+	chatMentionUser(targetedIntId);
+	chatContext.style.display = "none";
+});
+replyUserButton.addEventListener("click", function(e) {
+	if (!targetedIntId) {
+		return;
+	}
+
+	chatReply(targetedMsgId, targetedIntId);
+	chatContext.style.display = "none";
+})
+blockUserButton.addEventListener("click", function(e) {
+	if (blockedUsers.includes(targetedIntId)) {
+		blockedUsers.splice(blockedUsers.indexOf(targetedIntId), 1);
+	}
+	else if (targetedIntId != intId) {
+		blockedUsers.push(targetedIntId);
+	}
+	localStorage.blocked = blockedUsers;
+	chatContext.style.display = "none";
+});
+changeMyNameButton.addEventListener("click", function(e) {
+	if (!intId) {
+		return;
+	}
+
+	namePanel.style.visibility = "visible";
+	nameInput.value = intIdNames.get(intId) || "";
+	chatContext.style.display = "none";
+});
 
 const verifiedAppHash = "f255e4c294a5413cce887407b91062ac162faec4cb1e6e21cdd6e4492fb270f8"
 async function checkVerifiedAppStatus() {
