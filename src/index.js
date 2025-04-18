@@ -1,15 +1,21 @@
-import { ADS, AUDIOS, CHAT_COLOURS, COMMANDS, CUSTOM_EMOJIS, DEFAULT_HEIGHT, DEFAULT_PALETTE_KEYS, DEFAULT_THEMES, DEFAULT_WIDTH, EMOJIS, LANG_INFOS, MAX_CHANNEL_MESSAGES, PUNISHMENT_STATE, DEFAULT_PALETTE_USABLE_REGION, DEFAULT_PALETTE, DEFAULT_COOLDOWN } from "./defaults.js"
-import { DEFAULT_BOARD, DEFAULT_SERVER, lang, PublicPromise, translate, translateAll, hash, $, $$, stringToHtml, addMessageHandler } from "./shared.js"
-import { showLoadingScreen, hideLoadingScreen } from "./loading-screen.js"
-import { enableDarkplace, disableDarkplace } from "./darkplace.js"
-import { enableWinter, disableWinter } from "./snowplace.js"
-import { clearCaptchaCanvas, updateImgCaptchaCanvas, updateImgCaptchaCanvasFallback } from "./captcha-canvas.js"
+import { DEFAULT_BOARD, DEFAULT_SERVER, ADS, CHAT_COLOURS, COMMANDS, CUSTOM_EMOJIS, DEFAULT_HEIGHT, DEFAULT_PALETTE_KEYS, DEFAULT_THEMES, DEFAULT_WIDTH, EMOJIS, LANG_INFOS, MAX_CHANNEL_MESSAGES, PUNISHMENT_STATE, DEFAULT_PALETTE_USABLE_REGION, DEFAULT_PALETTE, DEFAULT_COOLDOWN } from "./defaults.js";
+import { lang, PublicPromise, translate, translateAll, hash, $, stringToHtml, blobToBase64, base64ToBlob }  from "./shared.js";
+import { showLoadingScreen, hideLoadingScreen } from "./loading-screen.js";
+import { enableDarkplace, disableDarkplace } from "./darkplace.js";
+import { enableWinter, disableWinter } from "./snowplace.js";
+import { clearCaptchaCanvas, updateImgCaptchaCanvas, updateImgCaptchaCanvasFallback } from "./captcha-canvas.js";
+import { BoardRenderer } from "./board-renderer.js";
+import { muted, placeChat } from "./game-settings.js";
+import { enableNewOverlayMenu, enableWebglCanvas } from "./secret-settings.js";
+import { AUDIOS } from "./game-defaults.js";
+import { addIpcMessageHandler, handleIpcMessage, sendIpcMessage, makeIpcRequest } from "shared-ipc";
+import FingerprintJS from "@fingerprintjs/fingerprintjs";
+import { openOverlayMenu } from "./overlay-menu.js";
 
 // Ws Capsule
 if(!("subtle" in (window.crypto || {}))) {
 	location.protocol = "https:"
 }
-const automated = navigator.webdriver
 
 // Types
 /**
@@ -74,13 +80,6 @@ if (boardParam && serverParam) {
 	}
 }
 
-// Register PWA Service worker
-if ("serviceWorker" in navigator) {
-	navigator.serviceWorker.register("./sw.js", {
-		type: "module",
-	});
-}
-
 // HTML Elements
 const postsFrame = /**@type {HTMLIFrameElement}*/($("#postsFrame"));
 const more = /**@type {HTMLElement}*/$("#more");
@@ -90,26 +89,24 @@ const canvParent1 = /**@type {HTMLElement}*/($("#canvparent1"));
 const canvParent2 = /**@type {HTMLElement}*/($("#canvparent2"));
 const canvSelect = /**@type {HTMLElement}*/($("#canvselect"));
 const canvas = /**@type {HTMLCanvasElement}*/($("#canvas"));
+const viewportCanvas = /**@type {HTMLCanvasElement}*/($("#viewportCanvas"));
 const colours = /**@type {HTMLElement}*/($("#colours"));
 const modal = /**@type {HTMLDialogElement}*/($("#modal"));
 const modalInstall = /**@type {HTMLButtonElement}*/($("#modalInstall"));
 const templateImage = /**@type {HTMLImageElement}*/($("#templateImage"));
-const overlayMenu = /**@type {HTMLElement}*/($("#overlayMenu"));
-const posEl = /**@type {HTMLElement}*/($("#posel"));
+const overlayMenuOld = /**@type {HTMLElement}*/($("#overlayMenuOld"));
+const positionIndicator = /**@type {import("./game-elements.js").PositionIndicator}*/($("#positionIndicator"));
 const idPosition = /**@type {HTMLElement}*/($("#idPosition"));
 const onlineCounter = /**@type {HTMLElement}*/($("#onlineCounter"));
 const canvasLock = /**@type {HTMLElement}*/($("#canvasLock"));
 const namePanel = /**@type {HTMLElement}*/($("#namePanel"));
 const nameInput = /**@type {HTMLInputElement}*/(document.getElementById("nameInput"));
-const muteButton = /**@type {HTMLButtonElement}*/($("#muteButton"));
-const muteButtonImage = /**@type {HTMLImageElement}*/($("#muteButtonImage"));
-const placeChatButton = /**@type {HTMLButtonElement}*/($("#placeChatButton"));
-const placeChatButtonImage = /**@type {HTMLImageElement}*/($("#placeChatButtonImage"));
-const placeButton = /**@type {HTMLButtonElement}*/($("#place")); 
+const placeButton = /**@type {HTMLButtonElement}*/($("#place"));
 const placeOkButton = /**@type {HTMLButtonElement}*/($("#pok"));
 const placeCancelButton = /**@type {HTMLButtonElement}*/($("#pcancel"));
 const palette = /**@type {HTMLElement}*/($("#palette"));
 const channelDrop = /**@type {HTMLElement}*/($("#channelDrop"));
+const channelDropMenu = /**@type {HTMLElement}*/($("#channelDropMenu"));
 const channelDropParent = /**@type {HTMLElement}*/($("#channelDropParent"));
 const channelEn = /**@type {HTMLElement}*/($("#channelEn"));
 const channelMine = /**@type {HTMLElement}*/($("#channelMine"));
@@ -126,6 +123,7 @@ const messageTypePanel = /**@type {HTMLElement}*/($("#messageTypePanel"));
 const messageInputGifPanel = /**@type {HTMLElement}*/($("#messageInputGifPanel"));
 const messageReplyPanel = /**@type {HTMLElement}*/($("#messageReplyPanel"));
 const messageReplyLabel = /**@type {HTMLElement}*/($("#messageReplyLabel"));
+const messageCancelReplyButton = /**@type {HTMLButtonElement}*/($("#messageCancelReplyButton"));
 const punishmentNote = /** @type {HTMLElement}*/($("#punishmentNote"));
 const punishmentUserId = /** @type {HTMLElement}*/($("#punishmentUserId"));
 const punishmentStartDate = /** @type {HTMLElement}*/($("#punishmentStartDate"));
@@ -165,10 +163,10 @@ const tlPlayDir = /**@type {HTMLInputElement}*/($("#tlPlayDir"));
 const overlayInput = /**@type {HTMLInputElement}*/($("#overlayInput"));
 const chatContext = /**@type {HTMLElement}*/($("#chatContext"));
 const userNote = /**@type {HTMLElement}*/($("#userNote"));
-const mentionUser = /**@type {HTMLElement}*/($("#mentionUser"));
-const replyUser = /**@type {HTMLElement}*/($("#replyUser"));
-const blockUser = /**@type {HTMLElement}*/($("#blockUser"));
-const changeMyName = /**@type {HTMLElement}*/($("#changeMyName"));
+const mentionUserButton = /**@type {HTMLButtonElement}*/($("#mentionUserButton"));
+const replyUserButton = /**@type {HTMLButtonElement}*/($("#replyUserButton"));
+const blockUserButton = /**@type {HTMLButtonElement}*/($("#blockUserButton"));
+const changeMyNameButton = /**@type {HTMLElement}*/($("#changeMyNameButton"));
 const connProblems = /**@type {HTMLElement}*/($("#connproblems"));
 const chatAd = /**@type {HTMLAnchorElement}*/($("#chatAd"));
 const chatCloseButton = /**@type {HTMLButtonElement}*/($("#chatCloseButton"));
@@ -185,10 +183,8 @@ const themeDropParent = /**@type {HTMLElement}*/($("#themeDropParent"));
 /**@type {any|null}*/ let account = null;
 /**@type {number|null}*/ let intId = null;
 /**@type {string|null}*/ let chatName = null;
-/**@type {boolean}*/ let vasLocked = false; // Server will tell us this
 /**@type {boolean}*/ let includesPlacer = false; // Server will tell us this
 /**@type {boolean}*/ let initialConnect = false;
-/**@type {number|null}*/ let cooldownEndDate = null;
 /**@type {number}*/ let online = 1;
 /**@type {boolean}*/ let canvasLocked = false;
 
@@ -199,704 +195,456 @@ let WIDTH = DEFAULT_WIDTH;
 let HEIGHT = DEFAULT_HEIGHT;
 let COOLDOWN = DEFAULT_COOLDOWN;
 
-// TODO: Consider moving this to a completely separate worker / similar system for FULL logic separation
-class WsCapsule {
-	/**
-	 * @param {Function} send 
-	 * @param {Function} addEventListener 
-	 * @param {Function} call 
-	 */
-	constructor(send, addEventListener, call) {
-		// wscapsule logic
-		let svUri = localStorage.server || DEFAULT_SERVER;
-		if (localStorage.vip) {
-			if (!svUri.endsWith("/")) svUri += "/";
-			svUri += localStorage.vip;
-		}
-		const ws = new WebSocket(svUri);
-		Object.defineProperty(window, 'WebSocket', {
-			configurable: false,
-			writable: false,
-			value: class {
-				constructor() {
-					window.location.reload();
-				}
-			}
-		});
+// WsCapsule logic & wscapsule message handlers
+const automated = navigator.webdriver;
 
-		/**
-		 * @param {number} messageId
-		 * @param {any} senderId
-		 */
-		function _chatReport(messageId, senderId) {
-			const reason = prompt("Enter the reason for why you are reporting this message (max 280 chars)\n\n" +
-				`Additional info:\nMessage ID: ${messageId}\nSender ID: ${senderId}\n`);
-			if (!reason || !reason.trim()) {
-				return;
-			}
-			const reportBuffer = encoder.encode("XXXXX" + reason);
-			reportBuffer[0] = 14;
-			reportBuffer[1] = messageId >> 24;
-			reportBuffer[2] = messageId >> 16;
-			reportBuffer[3] = messageId >> 8;
-			reportBuffer[4] = messageId & 255;
-			call(send, ws, reportBuffer);
-			alert("Report sent!\nIn the meantime you can block this user by 'right clicking / press hold on the message' > 'block'");
-		}
-		this.chatReport = _chatReport;
+const httpServerUrl = (localStorage.server || DEFAULT_SERVER)
+	.replace("wss://", "https://").replace("ws://", "http://");
+const res = await fetch(`${httpServerUrl}/public/game-worker.js`);
+const code = await res.text();
+const blob = new Blob([code], { type: "application/javascript" });
+const url = URL.createObjectURL(blob);
+const wsCapsule = new Worker(url, {
+	type: "module"
+});
+wsCapsule.addEventListener("message", handleIpcMessage);
+const injectedCjs = document.createElement("script");
+injectedCjs.innerHTML = `
+	delete WebSocket;
+	delete Worker;
+	Object.defineProperty(window, "eval", {
+		value: function() { throw new Error() },
+		writable: false,
+		configurable: false
+	});
+`;
+document.body.appendChild(injectedCjs);
 
-		/**
-		 * @param {number} messageId
-		 * @param {string} reactKey
-		 */
-		function _chatReact(messageId, reactKey) {
-			const reactBuffer = encoder.encode("XXXXX" + reactKey);
-			reactBuffer[0] = 18;
-			reactBuffer[1] = messageId >> 24;
-			reactBuffer[2] = messageId >> 16;
-			reactBuffer[3] = messageId >> 8;
-			reactBuffer[4] = messageId & 255;
-			call(send, ws, reactBuffer);
-		}
-		this.chatReact = _chatReact;
-
-		/**
-		 * @param {string} answer
-		 */
-		function sendCaptchaResult(answer) {
-			call(send, ws, encoder.encode("\x10" + answer));
-		}
-
-		/**
-		 * @param {DataView<ArrayBuffer>} data
-		 * @returns {ChatPacket}
-		 */
-		function parseChatPacket(data) {
-			const decoder = new TextDecoder();
-			let i = 1; // Skip opcode
-
-			const msgType = data.getUint8(i); i++;
-			const messageId = data.getUint32(i); i += 4;
-			const txtLength = data.getUint16(i); i += 2;
-			let txt = decoder.decode(data.buffer.slice(i, (i += txtLength)));
-			const senderIntId = data.getUint32(i); i += 4;
-			const name = intIdNames.get(senderIntId) || 'Unknown';
-
-			if (msgType === 0) { // Live chat
-				const sendDate = data.getUint32(i); i += 4;
-				/**@type {Map<string, Set<number>>}*/ const reactions = new Map();
-				const reactionsL = data.getUint8(i); i++;
-				for (let j = 0; j < reactionsL; j++) {
-					const reactionKeyL = data.getUint8(i); i++;
-					const reactionKey = decoder.decode(data.buffer.slice(i, (i += reactionKeyL)));
-					/** @type {Set<number>} */
-					const reactors = new Set();
-					const reactorsL = data.getUint32(i); i += 4;
-					for (let k = 0; k < reactorsL; k++) {
-						const reactor = data.getUint32(i); i += 4;
-						reactors.add(reactor);
-					}
-					reactions.set(reactionKey, reactors);
-				}
-				const channelL = data.getUint8(i); i++;
-				const channel = decoder.decode(data.buffer.slice(i, (i += channelL)));
-
-				/**@type {number|null}*/ let repliesTo = null;
-				if (data.byteLength - i >= 4) {
-					repliesTo = data.getUint32(i);
-				}
-
-				return {
-					type: "live",
-					message: {
-						messageId,
-						txt,
-						senderIntId,
-						name,
-						sendDate,
-						reactions,
-						channel,
-						repliesTo
-					},
-					channel
-				};
-			}
-			else { // Place chat
-				const msgPos = data.getUint32(i);
-				txt = txt.substring(0, 56);
-				return {
-					type: "place",
-					message: {
-						msgPos,
-						txt,
-						senderIntId,
-						name
-					}
-				};
-			}
-		}
-
-		/**
-		 * @param {DataView<ArrayBuffer>} data
-		 * @returns {LiveChatHistoryPacket}
-		 */
-		function parseLiveChatHistoryPacket(data) {
-			const decoder = new TextDecoder();
-			let i = 1; // Skip opcode
-			const fromMessageId = data.getUint32(i); i += 4;
-			const countByte = data.getUint8(i);
-			const count = countByte & 0x7F;
-			const before = (countByte >> 7) !== 0; i++;
-			const channelLen = data.getUint8(i++);
-			const channel = decoder.decode(data.buffer.slice(i, i += channelLen));
-
-			/**@type {LiveChatMessage[]}*/ const messages = [];
-			while (i < data.byteLength) {
-				const startOffset = i;
-				const messageLength = data.getUint16(i); i += 2;
-				const messageId = data.getUint32(i); i += 4;
-				const txtLen = data.getUint16(i); i += 2;
-				const txt = decoder.decode(data.buffer.slice(i, i += txtLen));
-				const intId = data.getUint32(i); i += 4;
-				const sendDate = data.getUint32(i); i += 4;
-
-				// Parse reactions
-				const reactions = new Map();
-				const reactionsL = data.getUint8(i++);
-				for (let j = 0; j < reactionsL; j++) {
-					const reactionKeyLen = data.getUint8(i++);
-					const reactionKey = decoder.decode(data.buffer.slice(i, i += reactionKeyLen));
-					const reactors = new Set();
-					const reactorsL = data.getUint32(i); i += 4;
-					for (let k = 0; k < reactorsL; k++) {
-						const reactor = data.getUint32(i, false); // Big-endian
-						i += 4;
-						reactors.add(reactor);
-					}
-					reactions.set(reactionKey, reactors);
-				}
-
-				// Parse message's channel
-				const messageChannelLen = data.getUint8(i++);
-				const messageChannel = decoder.decode(data.buffer.slice(i, i += messageChannelLen));
-
-				// Check for repliesTo
-				let repliesTo = null;
-				const bytesConsumed = i - startOffset;
-				if (messageLength - (bytesConsumed - 2) === 4) {
-					repliesTo = data.getUint32(i); i += 4;
-				}
-
-				messages.push(/**@type {LiveChatMessage}*/ {
-					messageId,
-					txt,
-					senderIntId: intId,
-					sendDate,
-					reactions,
-					channel: messageChannel,
-					repliesTo,
-					name: ""
-				});
-			}
-
-			return { fromMessageId, count, before, channel, messages };
-		}
-
-		/**
-		 * @param {DataView<ArrayBuffer>} data
-		 * @returns {ModerationPacket}
-		 */
-		function parseModerationPacket(data) {
-			const decoder = new TextDecoder();
-			let i = 1; // Skip opcode
-
-			const state = data.getUint8(i++);
-			const startDate = data.getUint32(i) * 1000; i += 4;
-			const endDate = data.getUint32(i) * 1000; i += 4;
-
-			const reasonLen = data.getUint8(i++);
-			const reason = decoder.decode(data.buffer.slice(i, i + reasonLen)); i += reasonLen;
-
-			const appealLen = data.getUint8(i++);
-			const appeal = decoder.decode(data.buffer.slice(i, i + appealLen)); i += appealLen;
-
-			return { state, startDate, endDate, reason, appeal };
-		}
-
-		ws.onopen = function (e) {
-			initialConnect = true;
-			if (automated) {
-				console.error("Unsupported environment. Connection can not be guarenteed");
-				function reportUsage() {
-					const activityBuffer = encoder.encode(`\x1eWindow outer width: ${window.outerWidth}\nWindow inner width: ${window.innerWidth}\n` +
-						`Window outer height: ${window.outerHeight}\nWindow inner height: ${window.innerHeight}\nLast mouse move: ${new Date(lastMouseMove).toISOString()}\n` +
-						`Mouse X (mx): ${mx}\nMouse Y (my): ${my}\nLocal storage: ${JSON.stringify(localStorage, null, 4)}`);
-					call(send, ws, activityBuffer);
-				}
-				setInterval(reportUsage, 3e5); // 5 mins
-				reportUsage();
-			}
+/**
+ * 
+ */
+function handleConnect() {
+	initialConnect = true;
+	if (automated) {
+		const activityObj = {
+			windowOuterWidth: window.outerWidth,
+			windowInnerWidth: window.innerWidth,
+			windowOuterHeight: window.outerHeight,
+			windowInnerHeight: window.innerHeight,
+			lastMouseMove: new Date(lastMouseMove).toISOString(),
+			mouseX: mx,
+			mouseY: my,
+			localStorage: { ...localStorage }
 		};
-		ws.onmessage = async function ({ data }) {
-			delete sessionStorage.err;
-			data = new DataView(await data.arrayBuffer());
-
-			switch (data.getUint8(0)) {
-				case 0: {
-					let pi = 1;
-					const paletteLength = data.getUint8(pi++);
-					PALETTE = [...new Uint32Array(data.buffer.slice(pi, pi += paletteLength * 4))];
-					PALETTE_USABLE_REGION.start = data.getUint8(pi++);
-					PALETTE_USABLE_REGION.end = data.getUint8(pi++);
-					generatePalette();
-					const binds = (localStorage.paletteKeys || DEFAULT_PALETTE_KEYS);
-					generateIndicators(binds);
-					// Board might have already been drawn with old palette so we need to draw it again
-					if (boardAlreadyRendered === true) {
-						renderAll();
-					}
-					break;
-				}
-				case 1: {
-					cooldownEndDate = data.getUint32(1) * 1000; // Current cooldown
-					COOLDOWN = data.getUint32(5);
-
-					// New server packs canvas width and height in code 1, making it 17
-					if (data.byteLength == 17) {
-						const width = data.getUint32(9);
-						const height = data.getUint32(13);
-						WIDTH = width;
-						HEIGHT = height;
-						setSize(width, height);
-						const board = await preloadedBoard;
-						if (board) {
-							runLengthDecodeBoard(board, width * height);
-							hideLoadingScreen();
-						}
-						// TODO: Handle else condition
-					}
-					break;
-				}
-				case 2: {
-					// Old server "changes" packet - preloadedBoard = http board, data = changes
-					const board = await preloadedBoard
-					if (board) {
-						runLengthChanges(data, board);
-						hideLoadingScreen();
-					}
-					break;
-				}
-				case 3: { // Online
-					online = data.getUint16(1);
-					setOnline(online);
-					break;
-				}
-				case 5: { // Pixel with included placer
-					let i = 1;
-					while (i < data.byteLength) {
-						let position = data.getUint32(i); i += 4;
-						seti(position, data.getUint8(i)); i += 1;
-						intIdPositions.set(position, data.getUint32(i)); i += 4;
-					}
-					break;
-				}
-				case 6: { // Pixel without included placer
-					let i = 0;
-					while (i < data.byteLength - 2) {
-						seti(data.getUint32(i += 1), data.getUint8(i += 4));
-					}
-					break;
-				}
-				case 7: { // Rejected pixel
-					cooldownEndDate = data.getUint32(1) * 1000;
-					seti(data.getUint32(5), data.getUint8(9));
-					break;
-				}
-				case 8: { // Canvas restriction
-					canvasLocked = !!data.getUint8(1);
-					const reason = decoder.decode(data.buffer.slice(2));
-					setCanvasLocked(canvasLocked, reason);
-					break;
-				}
-				case 9: { // Placer info region
-					let i = data.getUint32(1);
-					const regionWidth = data.getUint8(5);
-					const regionHeight = data.getUint8(6);
-
-					let dataI = 7;
-					while (dataI < data.byteLength) {
-						for (let xi = i; xi < i + regionWidth; xi++) {
-							const placerIntId = data.getUint32(dataI);
-							if (placerIntId !== 0xFFFFFFFF) {
-								intIdPositions.set(xi, placerIntId);
-							}
-							dataI += 4;
-						}
-						i += WIDTH;
-					}
-					break;
-				}
-				case 11: { // Player int ID
-					// TODO: Integrate into packet 1
-					intId = data.getUint32(1);
-					break;
-				}
-				case 12: { // Name info
-					for (let i = 1; i < data.byteLength;) {
-						let pIntId = data.getUint32(i); i += 4;
-						let pNameLen = data.getUint8(i); i++;
-						let pName = decoder.decode(data.buffer.slice(i, (i += pNameLen)));
-
-						intIdNames.set(pIntId, pName);
-						// Occurs either if server has sent us name it has remembered from a previous session,
-						// or we have just sent server packet 12 name update, and it is sending us back our name
-						if (pIntId == intId) {
-							chatName = pName;
-							setChatName(chatName);
-						}
-					}
-					break;
-				}
-				case 13: { // Live chat history
-					const packetData = parseLiveChatHistoryPacket(data);
-					if (packetData.channel !== currentChannel) {
-						return;
-					}
-					addChatMessages(packetData.messages, packetData.before);
-					break;
-				}
-				case 14: { // Moderation
-					const packetData = parseModerationPacket(data);
-					if (packetData.state === PUNISHMENT_STATE.ban) {
-						canvasLocked = true;
-					}
-					applyPunishment(packetData, intId || 0);
-					break;
-				}
-				case 15: { // Chat
-					const packetData = parseChatPacket(data);
-					if (packetData.type === "live") {
-						addLiveChatMessage(
-						/**@type {LiveChatMessage}*/(packetData.message),
-							/**@type {string}*/(packetData.channel));
-					}
-					else {
-						addPlaceChatMessage(
-						/**@type {PlaceChatMessage}*/(packetData.message));
-					}
-					break;
-				}
-				case 16: { // Captcha success
-					handleCaptchaSuccess();
-					break;
-				}
-				case 17: { // Live chat delete
-					const messageId = data.getUint32(1);
-					for (const channel of cMessages.values()) {
-						for (const messageEl of channel) {
-							if (messageEl.messageId !== messageId) continue;
-							channel.splice(channel.indexOf(messageEl), 1);
-							messageEl.remove();
-						}
-					}
-					break;
-				}
-				case 18: { // Live chat reaction
-					const messageId = data.getUint32(1);
-					const reactorId = data.getUint32(5);
-					const reactionKey = decoder.decode(data.buffer.slice(9));
-					for (const channel of cMessages.values()) {
-						for (const messageEl of channel) {
-							if (messageEl.messageId !== messageId) {
-								continue;
-							}
-
-							const currentReactions = messageEl.reactions;
-							const reactors = currentReactions?.get(reactionKey) || new Set();
-							if (!reactors.has(reactorId)) {
-								const newReactions = currentReactions ? new Map(currentReactions) : new Map();
-								reactors.add(reactorId);
-								newReactions.set(reactionKey, reactors);
-								messageEl.reactions = newReactions;
-							}
-						}
-					}
-					break;
-				}
-				case 20: { // Text capcha
-					const textsSize = data.getUint8(1);
-					const texts = decoder.decode(new Uint8Array(data.buffer).slice(2, textsSize + 2)).split("\n");
-					const imageData = new Uint8Array(data.buffer).slice(2 + textsSize);
-					handleTextCaptcha(texts, imageData, sendCaptchaResult);
-					break;
-				}
-				case 21: { // Math captcha
-					console.error("Math captcha not yet supported. Ignoring.");
-					break;
-				}
-				case 22: { // Emoji captcha
-					const emojisSize = data.getUint8(1);
-					const emojis = decoder.decode(new Uint8Array(data.buffer).slice(2, emojisSize + 2)).split("\n");
-					const imageData = new Uint8Array(data.buffer).slice(2 + emojisSize);
-					handleEmojiCaptcha(emojis, imageData, sendCaptchaResult);
-					break;
-				}
-				case 23: { // Challenge
-					let a = data.getUint32(1), b = 5 + a, c = data.buffer.slice(5, 5 + a), f = new Uint8Array(9), u = new DataView(f.buffer); window.challengeData = new Uint8Array(data.buffer.slice(b)); let d = await Object.getPrototypeOf(async function () { }).constructor(atob(decoder.decode(c)))(); delete window.challengeData; u.setUint8(0, 23); u.setBigInt64(1, d); call(send, ws, u.buffer);
-					break;
-				}
-				case 24: { // Turnstile
-					const siteKey = decoder.decode(data.buffer.slice(1));
-					handleTurnstile(siteKey, (/**@type {string}*/ token) => {
-						call(send, ws, encoder.encode("\x18" + token));
-					});
-					break;
-				}
-				case 25: { // Turnstile success
-					handleTurnstileSuccess();
-					break;
-				}
-				case 110: {
-					const requestsLength = linkKeyRequests.length;
-					if (!requestsLength) {
-						console.error("Could not resolve link key, no existing link key requests could be found");
-						break;
-					}
-					const instanceId = data.getUint32(1);
-					const linkKey = decoder.decode(data.buffer.slice(5));
-					linkKeyRequests[requestsLength - 1].resolve({ linkKey, instanceId });
-					break;
-				}
-			}
-		};
-		ws.onclose = async function (e) {
-			console.error(e);
-			cooldownEndDate = null;
-			if (e.code == 1006 && !sessionStorage.err) {
-				sessionStorage.err = "1";
-				window.location.reload();
-			}
-			showLoadingScreen("disconnected", e.reason);
-		};
-
-		/**
-		 * @type {any[]}
-		 */
-		let linkKeyRequests = [];
-		async function _fetchLinkKey() {
-			const linkKeyRequest = new PublicPromise();
-			linkKeyRequests.push(linkKeyRequest);
-			call(send, ws, new Uint8Array([110]));
-			const linkInfo = await linkKeyRequest.promise;
-			return linkInfo;
-		}
-		this.fetchLinkKey = _fetchLinkKey;
-
-		/**
-		 * @param {string | any[]} uname
-		 */
-		function _setName(uname) {
-			if (uname.length > 16) return;
-			uname ||= "anon";
-
-			const nameBuf = encoder.encode("\x0C" + uname);
-			call(send, ws, nameBuf);
-		}
-		this.setName = _setName;
-
-		// Requests all the pixel placers for a given region from the server to be loaded into
-		/**
-		 * @param {number} x
-		 * @param {number} y
-		 * @param {number} width
-		 * @param {number} height
-		 */
-		function _requestPixelPlacers(x, y, width, height) {
-			if (ws.readyState !== ws.OPEN) {
-				return;
-			}
-			const placerInfoBuf = new DataView(new Uint8Array(7).buffer);
-			placerInfoBuf.setUint8(0, 9);
-			placerInfoBuf.setUint32(1, x + y * WIDTH);
-			placerInfoBuf.setUint8(5, width);
-			placerInfoBuf.setUint8(6, height);
-			call(send, ws, placerInfoBuf);
-		}
-		this.requestPixelPlacers = _requestPixelPlacers;
-
-		/**
-		 * @param {Event} e
-		 * @param {number} x
-		 * @param {number} y
-		 * @param {number} colour
-		 */
-		function _tryPutPixel(e, x, y, colour) {
-			if (!e.isTrusted) {
-				return false;
-			}
-
-			const pixelView = new DataView(new Uint8Array(6).buffer);
-			pixelView.setUint8(0, 4);
-			pixelView.setUint32(1, Math.floor(x) + Math.floor(y) * WIDTH);
-			pixelView.setUint8(5, colour);
-			call(send, ws, pixelView);
-			cooldownEndDate = Date.now() + (localStorage.vip ? (localStorage.vip[0] == '!' ? 0 : COOLDOWN / 2) : COOLDOWN);
-			return true;
-		}
-		this.tryPutPixel = _tryPutPixel;
-
-		/**
-		 * @param {string} message
-		 */
-		function _sendLiveChatMsg(message) {
-			// Execute live chat commands
-			for (const [command] of COMMANDS) {
-				if (message.startsWith(":" + command)) {
-					handleLiveChatCommand(command, message);
-					return;
-				}
-			}
-
-			// VIP key leak detection
-			if (localStorage.vip && message.includes(localStorage.vip)) {
-				alert("Can't send VIP key in chat. Use ':vip yourvipkeyhere' to apply a VIP key");
-				return;
-			}
-
-			const encodedChannel = encoder.encode(currentChannel);
-			const encodedMsg = encoder.encode(message);
-
-			let msgArray = new Uint8Array(1 + 1 + 2 + encodedMsg.byteLength + 1
-				+ encodedChannel.byteLength + (currentReply ? 4 : 0));
-			let msgView = new DataView(msgArray.buffer);
-
-			let offset = 0;
-			msgView.setUint8(offset++, 15);
-			msgView.setUint8(offset++, 0); // type
-			msgView.setUint16(offset, encodedMsg.byteLength); // msg length
-			offset += 2;
-			msgArray.set(encodedMsg, offset);
-			offset += encodedMsg.byteLength;
-			msgView.setUint8(offset, encodedChannel.byteLength);
-			offset += 1;
-			msgArray.set(encodedChannel, offset);
-			offset += encodedChannel.byteLength;
-			if (currentReply != null) {
-				msgView.setUint32(offset, currentReply);
-			}
-
-			chatCancelReplies();
-			call(send, ws, msgView);
-		}
-		this.sendLiveChatMsg = _sendLiveChatMsg;
-
-		/**
-		 * @param {string} message
-		 */
-		function _sendPlaceChatMsg(message) {
-			const encodedMsg = encoder.encode(message);
-
-			let msgArray = new Uint8Array(1 + 1 + 2 + encodedMsg.byteLength + 4);
-			let msgView = new DataView(msgArray.buffer);
-			let offset = 0;
-			msgView.setUint8(offset++, 15);
-			msgView.setUint8(offset++, 1); // type
-			msgView.setUint16(offset, encodedMsg.byteLength);
-			offset += 2;
-			msgArray.set(encodedMsg, offset);
-			offset += encodedMsg.byteLength;
-			msgView.setUint32(offset, Math.floor(y) * WIDTH + Math.floor(x));
-
-			call(send, ws, msgView);
-		}
-		this.sendPlaceChatMsg = _sendPlaceChatMsg;
-
-		function _requestLoadChannelPrevious(anchorMsgId = 0, msgCount = 64) {
-			const encChannel = encoder.encode(currentChannel);
-			let view = new DataView(new Uint8Array(6 + encChannel.byteLength).buffer);
-			view.setUint8(0, 13);
-			view.setUint32(1, anchorMsgId);
-			view.setUint8(5, msgCount | 128); // 128 = before (most significant bit)
-			for (let i = 0; i < encChannel.byteLength; i++) {
-				view.setUint8(6 + i, encChannel[i]);
-			}
-			call(send, ws, view.buffer);
-		}
-		this.requestLoadChannelPrevious = _requestLoadChannelPrevious;
-
-		/**
-		 * Sends a mod action over WebSocket
-		 * @param {ModOptions} options
-		 */
-		function _sendModAction(options) {
-			const encReason = encoder.encode(options.reason)
-			/**@type {DataView|null}*/let view = null
-			let statusMsg = ""
-			let offset = 2
-
-			switch (options.action) {
-				case "kick":
-					view = new DataView(new Uint8Array(2 + 4 + encReason.byteLength).buffer)
-					view.setUint8(0, 98)
-					view.setUint8(1, 0)
-					view.setUint32(2, options.memberId)
-					offset = 6
-					statusMsg = `Kicked player ${options.memberId} with reason '${options.reason}'`
-					break
-				case "mute":
-				case "ban": {
-					const type = options.action === "mute" ? 1 : 2
-					view = new DataView(new Uint8Array(2 + 8 + encReason.byteLength).buffer)
-					view.setUint8(0, 98)
-					view.setUint8(1, type)
-					view.setUint32(2, options.memberId)
-					view.setUint32(6, options.duration)
-					offset = 10
-					statusMsg = `${["Muted", "Banned"][type - 1]} player ${options.memberId} for ${Math.floor(options.duration / 3600)} hours, ${Math.floor(options.duration % 3600 / 60)} minutes, and ${options.duration % 60} seconds with reason '${options.reason}'`
-					break
-				}
-				case "captcha":
-					view = new DataView(new Uint8Array(2 + 4 + encReason.byteLength).buffer)
-					view.setUint8(0, 98)
-					view.setUint8(1, 3)
-					view.setUint32(2, options.affectsAll ? 0 : options.memberId)
-					offset = 6
-					statusMsg = `Forced captcha for ${options.affectsAll ? "all users" : "user " + options.memberId} with reason '${options.reason}'`
-					break
-				case "delete":
-					view = new DataView(new Uint8Array(2 + 4 + encReason.byteLength).buffer)
-					view.setUint8(0, 98)
-					view.setUint8(1, 4)
-					view.setUint32(2, options.messageId)
-					offset = 6
-					statusMsg = `Deleted message ${options.messageId} with reason '${options.reason}'`
-					break
-			}
-			if (!view) {
-				return;
-			}
-
-			for (let i = 0; i < encReason.byteLength; i++) {
-				view.setUint8(offset + i, encReason[i])
-			}
-			call(send, ws, view.buffer)
-			alert(statusMsg)
-		}
-		this.sendModAction = _sendModAction;
-
-		const injectedCjs = document.createElement("script");
-		injectedCjs.innerHTML = `
-			WebSocket.prototype.send = function() { this.close() };
-			delete WebSocket;
-			Object.defineProperty(window, "eval", {
-				value: function() { throw new Error() },
-				writable: false,
-				configurable: false
-			});
-		`;
-		document.body.appendChild(injectedCjs);
+		sendIpcMessage(wsCapsule, "informAutomatedActivity", activityObj);
 	}
 }
+addIpcMessageHandler("handleConnect", handleConnect);
+/**
+ * 
+ * @param {{ palette: number[], paletteUsableRegion: { start: number, end: number } }} param 
+ */
+function handlePalette({ palette, paletteUsableRegion }) {
+	PALETTE = palette;
+	PALETTE_USABLE_REGION.start = paletteUsableRegion.start;
+	PALETTE_USABLE_REGION.end = paletteUsableRegion.end;
+
+	generatePalette();
+	const binds = (localStorage.paletteKeys || DEFAULT_PALETTE_KEYS);
+	generateIndicators(binds);
+	// Board might have already been drawn with old palette so we need to draw it again
+	if (boardAlreadyRendered === true) {
+		renderAll();
+	}
+}
+addIpcMessageHandler("handlePalette", handlePalette);
+/**
+ * Used by both legacy & RplaceServer
+ * @param {{ endDate: number, cooldown: number }} param 
+ */
+function handleCooldownInfo({ endDate, cooldown }) {
+	updateCooldown(endDate);
+	COOLDOWN = cooldown;
+}
+addIpcMessageHandler("handleCooldownInfo", handleCooldownInfo);
+/**
+ * Used by RplaceServer
+ * @param {{ width: number, height: number }} param 
+ */
+async function handleCanvasInfo({ width, height }) {
+	WIDTH = width;
+	HEIGHT = height;
+	setSize(width, height);
+	const board = await preloadedBoard;
+	if (board) {
+		runLengthDecodeBoard(board, width * height);
+		hideLoadingScreen();
+	}
+}
+addIpcMessageHandler("handleCanvasInfo", handleCanvasInfo);
+/**
+ * Used by legacy server
+ * @param {DataView<ArrayBuffer>} changes 
+ */
+async function handleChanges(changes) {
+	const board = await preloadedBoard
+	if (board) {
+		runLengthChanges(changes, board);
+		hideLoadingScreen();
+	}
+}
+addIpcMessageHandler("handleChanges", handleChanges);
+/**
+ * @param {number} count 
+ */
+function setOnline(count) {
+	online = count;
+	onlineCounter.textContent = String(count);
+	sendIpcMessage(postsFrame, "onlineCounter", count);
+}
+addIpcMessageHandler("setOnline", setOnline);
+/**
+ * @param {{ position: number, width: number, height: number, region: DataView<ArrayBuffer> }} param
+ */
+function handlePlacerInfoRegion({ position, width, height, region }) {
+	let i = position;
+	let regionI = 0;
+	while (regionI < region.byteLength) {
+		for (let xi = i; xi < i + width; xi++) {
+			const placerIntId = region.getUint32(regionI);
+			if (placerIntId !== 0xFFFFFFFF) {
+				intIdPositions.set(xi, placerIntId);
+			}
+			regionI += 4;
+		}
+		i += WIDTH;
+	}
+}
+addIpcMessageHandler("handlePlacerInfoRegion", handlePlacerInfoRegion);
+/**
+ * @param {number} newIntId 
+ */
+function handleSetIntId(newIntId) {
+	intId = newIntId;
+}
+addIpcMessageHandler("handleSetIntId", handleSetIntId);
+/**
+ * @param {{ locked: boolean, reason: string|null }} params 
+ */
+function setCanvasLocked({ locked, reason }) {
+	canvasLocked = locked;
+	canvasLock.style.display = locked ? "flex" : "none";
+	// TODO: Find a more elegant solution
+	if (reason) {
+		alert(reason);
+	}
+}
+addIpcMessageHandler("setCanvasLocked", setCanvasLocked);
+/**
+ * @param {{ position: number, colour: number, placer:number|undefined }[]} pixels 
+ */
+function handlePixels(pixels) {
+	for (const pixel of pixels) {
+		seti(pixel.position, pixel.colour);
+		if (pixel.placer) {
+			intIdPositions.set(pixel.position, pixel.placer)
+		}
+	}
+}
+addIpcMessageHandler("handlePixels", handlePixels);
+/**
+ * @param {{ endDate: number, position: number, colour: number }} param 
+ */
+function handleRejectedPixel({ endDate, position, colour }) {
+	updateCooldown(endDate);
+	seti(position, colour);
+}
+addIpcMessageHandler("handleRejectedPixel", handleRejectedPixel);
+/**
+ * @param {{ endDate: number }} param0 
+ */
+function handleCooldown({ endDate }) {
+	updateCooldown(endDate);
+}
+addIpcMessageHandler("handleCooldown", handleCooldown);
+/**
+ * @param {string} name 
+ */
+function setChatName(name) {
+	chatName = name;
+	namePanel.style.visibility = "hidden";
+}
+addIpcMessageHandler("setChatName", setChatName);
+/**
+ * @param {{ message: LiveChatMessage, channel: string }} param
+ */
+function addLiveChatMessage({ message, channel }) {
+	if (!cMessages.has(channel)) {
+		cMessages.set(channel, []);
+	}
+
+	const newMessage = createLiveChatMessage(
+		message.messageId,
+		message.txt,
+		message.senderIntId,
+		message.name,
+		message.sendDate,
+		message.repliesTo,
+		message.reactions
+	);
+
+	// Apply user blocking
+	if (message.senderIntId !== 0 && blockedUsers.includes(message.senderIntId)) {
+		newMessage.style.color = "transparent";
+		newMessage.style.textShadow = "0px 0px 6px black";
+	}
+
+	// Handle mentions
+	if (message.txt.includes("@" + chatName) ||
+		message.txt.includes("@#" + intId) ||
+		message.txt.includes("@everyone")) {
+		newMessage.setAttribute("mention", "true");
+		if (channel === currentChannel) {
+			runAudio(AUDIOS.closePalette);
+		}
+	}
+
+	const atScrollBottom = chatMessages.scrollTop + chatMessages.offsetHeight + 64 >= chatMessages.scrollHeight;
+
+	// Update message storage
+	const channelMessages = cMessages.get(channel);
+	if (channelMessages) {
+		channelMessages.push(newMessage);
+		if (channelMessages.length > MAX_CHANNEL_MESSAGES) {
+			channelMessages.shift();
+		}
+	}
+
+	// Update UI if current channel
+	if (channel === currentChannel) {
+		if (chatMessages.children.length > MAX_CHANNEL_MESSAGES) {
+			chatMessages.children[0].remove();
+		}
+		chatMessages.insertAdjacentElement("beforeend", newMessage);
+		newMessage.updateComplete.then(() => {
+			if (atScrollBottom) {
+				chatMessages.scrollTo(0, chatMessages.scrollHeight);
+			}
+		});
+	}
+}
+addIpcMessageHandler("addLiveChatMessage", addLiveChatMessage);
+/**
+ * @param {PlaceChatMessage} message
+ */
+function addPlaceChatMessage(message) {
+	if (!placeChat) {
+		return
+	}
+
+	// Create message
+	const placeMessage = document.createElement("placechat")
+	placeMessage.innerHTML = `<span title="${(new Date()).toLocaleString()}" style="color: ${CHAT_COLOURS[hash("" + message.senderIntId) & 7]};">[${message.name}]</span><span>${message.txt}</span>`
+	placeMessage.style.left = (message.msgPos % WIDTH) + "px"
+	placeMessage.style.top = (Math.floor(message.msgPos / WIDTH) + 0.5) + "px"
+	canvParent2.appendChild(placeMessage)
+
+	//Remove message after given time
+	setTimeout(() => {
+		placeMessage.remove();
+	}, localStorage.placeChatTime || 7e3)
+}
+addIpcMessageHandler("addPlaceChatMessage", addPlaceChatMessage);
+/**
+ * @param {number} messageId 
+ */
+function handleLiveChatDelete(messageId) {
+	for (const channel of cMessages.values()) {
+		for (const messageEl of channel) {
+			if (messageEl.messageId !== messageId) {
+				continue;
+			}
+			channel.splice(channel.indexOf(messageEl), 1);
+			messageEl.remove();
+		}
+	}
+}
+addIpcMessageHandler("handleLiveChatDelete", handleLiveChatDelete);
+/**
+ * @param {{ messageId: number, reactorId: number, reactionKey: string }} params
+ */
+function handleLiveChatReaction({ messageId, reactorId, reactionKey }) {
+	for (const channel of cMessages.values()) {
+		for (const messageEl of channel) {
+			if (messageEl.messageId !== messageId) {
+				continue;
+			}
+
+			const currentReactions = messageEl.reactions;
+			const reactors = currentReactions?.get(reactionKey) || new Set();
+			if (!reactors.has(reactorId)) {
+				const newReactions = currentReactions ? new Map(currentReactions) : new Map();
+				reactors.add(reactorId);
+				newReactions.set(reactionKey, reactors);
+				messageEl.reactions = newReactions;
+			}
+		}
+	}
+}
+addIpcMessageHandler("handleLiveChatReaction", handleLiveChatReaction);
+/**
+ * @param {{ options: string[], imageData: Uint8Array, answerCallback:(answer:string) => void }} param
+ */
+function handleTextCaptcha({ options, imageData, answerCallback }) {
+	captchaOptions.innerHTML = ""
+
+	let captchaSubmitted = false
+	for (const text of options) {
+		const button = document.createElement("button")
+		button.textContent = text
+		captchaOptions.appendChild(button)
+
+		button.addEventListener("click", (event) => {
+			if (captchaSubmitted || !text) {
+				return console.error("Could not send captcha response. No text?")
+			}
+			captchaSubmitted = true;
+			answerCallback(text);
+			captchaOptions.style.pointerEvents = "none";
+		})
+	}
+	captchaPopup.style.display = "flex";
+	captchaOptions.style.pointerEvents = "all";
+
+	const imageBlob = new Blob([imageData], { type: "image/png" });
+	if (webGLSupported) {
+		updateImgCaptchaCanvas(imageBlob)
+	}
+	else {
+		updateImgCaptchaCanvasFallback(imageBlob)
+	}
+}
+addIpcMessageHandler("handleTextCaptcha", handleTextCaptcha);
+/**
+ * @param {{ options: string[], imageData: Uint8Array, answerCallback:(answer:string) => void }} param
+ */
+function handleEmojiCaptcha({ options, imageData, answerCallback }) {
+	captchaOptions.innerHTML = ""
+
+	let captchaSubmitted = false
+	for (const emoji of options) {
+		let buttonParent = document.createElement("button")
+		buttonParent.classList.add("captcha-options-button")
+		buttonParent.setAttribute("value", emoji)
+		let emojiImg = document.createElement("img")
+		emojiImg.src = `./tweemoji/${emoji.codePointAt(0)?.toString(16)}.png`
+		emojiImg.alt = emoji
+		emojiImg.title = emoji
+		emojiImg.fetchPriority = "high"
+		emojiImg.addEventListener("load", (event) => {
+			buttonParent.classList.add("loaded")
+		})
+		buttonParent.appendChild(emojiImg)
+		captchaOptions.appendChild(buttonParent)
+
+		function submitCaptcha() {
+			if (captchaSubmitted || !emoji) {
+				return console.error("Could not send captcha response. No emoji?")
+			}
+			captchaSubmitted = true
+			answerCallback(emoji)
+			captchaOptions.style.pointerEvents = "none";
+			clearCaptchaCanvas();
+		}
+		buttonParent.addEventListener("click", submitCaptcha)
+		emojiImg.addEventListener("click", submitCaptcha)
+		buttonParent.addEventListener("touchend", submitCaptcha)
+		emojiImg.addEventListener("touchend", submitCaptcha)
+	}
+
+	captchaPopup.style.display = "flex"
+	captchaOptions.style.pointerEvents = "all"
+	const imageBlob = new Blob([imageData], { type: "image/png" })
+	if (webGLSupported) {
+		updateImgCaptchaCanvas(imageBlob)
+	}
+	else {
+		updateImgCaptchaCanvasFallback(imageBlob)
+	}
+}
+addIpcMessageHandler("handleEmojiCaptcha", handleEmojiCaptcha);
+/**
+ * @param {{ siteKey:string, turnstileCallback: (token: string) => void }} param
+ */
+function handleTurnstile({ siteKey, turnstileCallback }) {
+	const siteVariant = document.documentElement.dataset.variant
+	const turnstileTheme = siteVariant === "dark" ? "dark" : "light"
+
+	turnstileMenu.setAttribute("open", "true")
+
+	if (window.turnstile) {
+		window.turnstile.ready(function () {
+			window.turnstile.render("#turnstileContainer", {
+				sitekey: siteKey,
+				theme: turnstileTheme,
+				language: lang,
+				callback: turnstileCallback
+			})
+		})
+	}
+}
+addIpcMessageHandler("handleTurnstile", handleTurnstile);
+export function handleTurnstileSuccess() {
+	turnstileMenu.removeAttribute("open")
+}
+addIpcMessageHandler("handleTurnstileSuccess", handleTurnstileSuccess);
+/**
+ * @param {ModerationPacket} packet
+ */
+function applyPunishment(packet) {
+	messageInput.disabled = true;
+	if (packet.state === PUNISHMENT_STATE.mute) {
+		punishmentNote.innerHTML = "You have been <strong>muted</strong>, you cannot send messages in live chat.";
+	}
+	else if (packet.state === PUNISHMENT_STATE.ban) {
+		canvasLocked = true;
+		canvasLock.style.display = "flex";
+		punishmentNote.innerHTML = "You have been <strong>banned</strong> from placing on the canvas or sending messages in live chat.";
+	}
+
+	punishmentUserId.textContent = `Your User ID: #${intId}`;
+	punishmentStartDate.textContent = `Started on: ${new Date(packet.startDate).toLocaleString()}`;
+	punishmentEndDate.textContent = `Ending on: ${new Date(packet.endDate).toLocaleString()}`;
+	punishmentReason.textContent = `Reason: ${packet.reason}`;
+	punishmentAppeal.textContent = `Appeal status: ${(packet.appeal && packet.appeal !== "null") ? packet.appeal : 'Unappealable'}`;
+	punishmentMenu.setAttribute("open", "true");
+}
+addIpcMessageHandler("applyPunishment", applyPunishment);
+/**
+ * @param {{code: number, reason: string }} param 
+ */
+function handleDisconnect({ code, reason }) {
+	if (code === 1006 && !sessionStorage.err) {
+		sessionStorage.err = "1";
+		window.location.reload();
+	}
+	updateCooldown(null);
+	showLoadingScreen("disconnected", reason);
+}
+addIpcMessageHandler("handleDisconnect", handleDisconnect);
+function handleCaptchaSuccess() {
+	captchaPopup.style.display = "none";
+}
+addIpcMessageHandler("handleCaptchaSuccess", handleCaptchaSuccess);
+/**
+ * @param {{ source: string, input: string }} param0 
+ */
+async function handleChallenge({ source, input }) {
+	const result = await Object.getPrototypeOf(async function () { })
+		.constructor(source)(input);
+	sendIpcMessage(wsCapsule, "sendChallengeResult", result);
+}
+addIpcMessageHandler("handleChallenge", handleChallenge);
 
 // Touch & mouse canvas event handling
 let moved = 3
@@ -916,43 +664,28 @@ function resizePostsFrame() {
 }
 postsFrame.addEventListener("load", resizePostsFrame);
 
-function openOverlayMenu() {
-	overlayMenu.setAttribute("opened", "true")
+function openOverlayMenuOld() {
+	if (enableNewOverlayMenu === true) {
+		openOverlayMenu();
+	}
+	else {
+		overlayMenuOld.setAttribute("open", "true");
+	}
 }
 function scrollToPosts() {
 	postsFrame.scrollIntoView({ behavior: "smooth", block: "start", inline: "start" })
-}
-let postsFrameReqId = 0
-let postsFrameReqs = new Map()
-/**
- * @param {any} messageCall
- */
-async function makePostsFrameRequest(messageCall, args = undefined) {
-	const handle = postsFrameReqId++
-	const promise = new PublicPromise()
-	const postCall = { call: messageCall, data: args, handle: handle }
-	postsFrameReqs.set(handle, promise)
-	postsFrame.contentWindow?.postMessage(postCall)
-	return await promise.promise
-}
-/**
- * @param {string} messageCall
- * @param {any} args
- */
-function sendPostsFrameMessage(messageCall, args = undefined) {
-	postsFrame.contentWindow?.postMessage({ call: messageCall, data: args })
 }
 
 // Load more posts on scroll down
 more.addEventListener("scroll", function(/**@type {any}*/ e) {
 	const moreMaxScroll = more.scrollHeight - more.clientHeight
 	if (moreMaxScroll - more.scrollTop < 256) {
-		sendPostsFrameMessage("tryLoadBottomPosts")
+		sendIpcMessage(postsFrame, "tryLoadBottomPosts");
 	}
 	// Dialog positioning is messed up as it only sees iframe window, this is cursed but it works
 	const dialogTopHeight = Math.max(more.scrollTop - spaceFiller.offsetHeight + window.innerHeight / 2,
 		spaceFiller.offsetHeight / 2)
-	sendPostsFrameMessage("updateDialogTop", dialogTopHeight)
+		sendIpcMessage(postsFrame, "updateDialogTop", dialogTopHeight);
 }, { passive: true })
 
 // Game input handling && overrides
@@ -1019,27 +752,89 @@ mainContent.addEventListener("touchend", function(/** @type {TouchEvent} */ e) {
 	}
 	e.preventDefault();
 });
-mainContent.addEventListener("mousedown", function(/** @type {{ button: number; }} */ e) {
-	moved = 3
-	mouseDown = e.button + 1
-})
+mainContent.addEventListener("mousedown", function(/**@type {{ button: number; }}*/ e) {
+	moved = 3;
+	mouseDown = e.button + 1;
 
-mainContent.addEventListener("mouseup", function(/** @type {{ target: any; clientX: any; clientY: any; }} */ e) {
+	if (placeContext.style.display == "block") {
+		placeContext.style.display = "none";
+	}
+});
+mainContent.addEventListener("mouseup", function(/**@type {MouseEvent}*/ e) {
 	if (e.target != mainContent && !canvParent2.contains(e.target)) {
-		return (moved = 3, mouseDown = 0)
+		return (moved = 3, mouseDown = 0);
 	}
 
 	if (moved > 0 && canvParent2.contains(e.target)) {
-		clicked(e.clientX, e.clientY)
+		clicked(e.clientX, e.clientY);
 	}
 
-	moved = 3
-	mouseDown = 0
-})
+	moved = 3;
+	mouseDown = 0;
+});
 
+const placeContext = /**@type {HTMLElement}*/($("#placeContext"));
+placeContext.addEventListener("mousedown", function(e) {
+	e.stopPropagation();
+});
+const placeContextReportButton = /**@type {HTMLButtonElement}*/($("#placeContextReportButton"));
+placeContextReportButton.addEventListener("click", function(e) {
+	
+});
+const placeContextInfoButton = /**@type {HTMLButtonElement}*/($("#placeContextInfoButton"));
+placeContextInfoButton.addEventListener("click", function(e) {
+	const px = Number(placeContext.dataset.x);
+	const py = Number(placeContext.dataset.y);
+	showPlacerInfo(px, py);
+});
+mainContent.addEventListener("contextmenu", function(e) {
+	placeContext.style.display = "block";
+	const canvasPos = screenToCanvas(e.clientX, e.clientY);
+	placeContext.dataset.x = String(canvasPos.x);
+	placeContext.dataset.y = String(canvasPos.y);
+	setPlaceContextPosition(canvasPos.x, canvasPos.y, z);
+});
+/**
+ * @param {number} x 
+ * @param {number} y 
+ * @returns 
+ */
+async function showPlacerInfo(x, y) {
+	const id = intIdPositions.get(Math.floor(x) + Math.floor(y) * WIDTH);
+	if (id === undefined) {
+		alert("Could not find details of who placed pixel at current location...");
+		return;
+	}
+	let name = intIdNames.get(id);
+	if (name === undefined) {
+		// Query server
+		const httpServerUrl = (localStorage.server || DEFAULT_SERVER)
+			.replace("wss://", "https://").replace("ws://", "http://");
+		try {
+			const res = await fetch(`${httpServerUrl}/users/${id}`);
+			if (!res.ok) {
+				throw new Error(`Could not fetch user info: ${res.status} ${res.statusText}`)
+			}
+			const user = await res.json();
+			if (!user) {
+				throw new Error("User was null")
+			}
+			name = user.chatName;
+		}
+		catch(e) {
+			alert("Could not find details of who placed pixel at current location...");
+			console.error("Couldn't show placer info:", e);
+		}
+	}
+	alert(`Details of who placed at ${
+		Math.floor(x)}, ${
+		Math.floor(y)}:\nName: ${
+		name || 'anon'}\nUser ID: #${
+		id}`);
+}
 
-let selX = 0
-let selY = 0
+let selX = 0;
+let selY = 0;
 const canvasCtx = canvas.getContext("2d");
 function transform() {
 	const scale = z * 50;
@@ -1057,12 +852,29 @@ function transform() {
 	canvas.style.imageRendering = z < 1 / 50 / devicePixelRatio ? "initial" : "";
 }
 
+/**
+ * @param {number} clientX
+ * @param {number} clientY
+ * @returns {{ x: number, y: number }}
+ */
+function screenToCanvas(clientX, clientY) {
+	const scale = z * 50;
+	const translateX = x * z * -50;
+	const translateY = y * z * -50;
+
+	const canvasX = (clientX - innerWidth / 2 - translateX) / scale;
+	const canvasY = (clientY - mainContent.offsetHeight / 2 - translateY) / scale;
+
+	return { x: canvasX, y: canvasY };
+}
+
+
 // Essential game variable definitions
 export let x = 0;
 export let y = 0;
 export let z = 0;
 let minZoom = 0;
-/**@type {Uint8Array|null}*/let board = null;
+/**@type {Uint8Array|null}*/let BOARD = null;
 
 
 // Prompt user if they want to install site as PWA if they press the modal button
@@ -1075,6 +887,7 @@ window.addEventListener("beforeinstallprompt", function(e) {
 	modalInstall.disabled = false
 })
 modalInstall.addEventListener("click", () => {
+	// @ts-expect-error PWAPrompter.prompt is still an experimental javascript feature for some reason
 	pwaPrompter?.prompt();
 });
 
@@ -1089,7 +902,7 @@ document.body.addEventListener("keydown", function(/**@type {KeyboardEvent}*/e) 
 		//"Shift+O" to open overlay menu
 		if (e.key === "O" && e.shiftKey) {
 			e.preventDefault();
-			overlayMenu.toggleAttribute("opened");
+			overlayMenuOld.toggleAttribute("open");
 		}
 		else if (e.key === "/") {
 			e.preventDefault();
@@ -1121,27 +934,29 @@ document.body.addEventListener("keydown", function(/**@type {KeyboardEvent}*/e) 
 		};
 		let repeatFunc = setInterval(function() {
 			// We use 55 because: 10/55+9/55+8/55+7/55+6/55+5/55+4/55+3/55+2/55+1/55 = 1
-			switch (e.keyCode) {
-			case 37:
-				x -= moveEaseI / 55
-				arrowkeyDown.right = true
-				break //right
-			case 38:
-				y -= moveEaseI / 55
-				arrowkeyDown.up = true
-				break //up
-			case 39:
-				x += moveEaseI / 55
-				arrowkeyDown.left = true
-				break //left
-			case 40:
-				y += moveEaseI / 55
-				arrowkeyDown.down = true
-				break //down
+			switch (e.code) {
+			case "ArrowLeft":
+				x -= moveEaseI / 55;
+				arrowkeyDown.right = true;
+				break;
+			case "ArrowUp":
+				y -= moveEaseI / 55;
+				arrowkeyDown.up = true;
+				break;
+			case "ArrowRight":
+				x += moveEaseI / 55;
+				arrowkeyDown.left = true;
+				break;
+			case "ArrowDown":
+				y += moveEaseI / 55;
+				arrowkeyDown.down = true;
+				break;
 			}
-			pos()
-			moveEaseI--
-			if (moveEaseI <= 0) clearInterval(repeatFunc)
+			pos();
+			moveEaseI--;
+			if (moveEaseI <= 0) {
+				clearInterval(repeatFunc);
+			}
 		}, 16);
 	}
 
@@ -1200,8 +1015,8 @@ export function setSize(w, h = w) {
 	canvParent1.style.height = h + "px";
 	canvParent2.style.width = w + "px";
 	canvParent2.style.height = h + "px";
-	board = new Uint8Array(w * h).fill(255);
-	let i = board.length;
+	BOARD = new Uint8Array(w * h).fill(255);
+	let i = BOARD.length;
 	x = +localStorage.x || w / 2;
 	y = +localStorage.y || h / 2;
 	z = +localStorage.z || 0.2;
@@ -1226,14 +1041,9 @@ export function setSize(w, h = w) {
 				break;
 			}
 			case "overlay":
-				overlayInfo = JSON.parse(atob(value));
-				const decoded = atob(overlayInfo.data);
-				const data = new Uint8Array(new ArrayBuffer(decoded.length));
-				for (let i = 0; i < decoded.length; i++) {
-					data[i] = decoded.charCodeAt(i);
-				}
-
-				templateImage.src = URL.createObjectURL(new Blob([data], { type: overlayInfo.type }));
+				overlayInfo = JSON.parse(value);
+				const imageData = base64ToBlob(overlayInfo.data, overlayInfo.type);
+				templateImage.src = URL.createObjectURL(imageData);
 				overlayInfo.x = overlayInfo.x || 0;
 				overlayInfo.y = overlayInfo.y || 0;
 				templateImage.style.transform = `translate(${overlayInfo.x}px, ${overlayInfo.y}px)`;
@@ -1242,8 +1052,7 @@ export function setSize(w, h = w) {
 				y = overlayInfo.y;
 				z = Math.min(Math.max(z, minZoom), 1);
 				pos();
-
-				overlayMenu.setAttribute('opened', 'true');;
+				openOverlayMenuOld();
 				break;
 		}
 	}
@@ -1262,22 +1071,22 @@ export let mx = 0
 export let my = 0
 
 mainContent.addEventListener("mousemove", function(/** @type {{ target: any; clientX: number; clientY: number; }} */ e) {
-	lastMouseMove = Date.now()
+	lastMouseMove = Date.now();
 	if (e.target != mainContent && !canvParent2.contains(e.target)) {
-		return
+		return;
 	}
-	moved--
-	let dx = -(mx - (mx = e.clientX - innerWidth / 2))
-	let dy = -(my - (my = e.clientY - mainContent.offsetHeight / 2))
+	moved--;
+	let dx = -(mx - (mx = e.clientX - innerWidth / 2));
+	let dy = -(my - (my = e.clientY - mainContent.offsetHeight / 2));
 	if (dx != dx || dy != dy) {
-		return
+		return;
 	}
 	if (mouseDown) {
-		x -= dx / (z * 50)
-		y -= dy / (z * 50)
-		pos()
+		x -= dx / (z * 50);
+		y -= dy / (z * 50);
+		pos();
 		if (anim) {
-			clearInterval(anim)
+			clearInterval(anim);
 		}
 	}
 })
@@ -1286,73 +1095,113 @@ mainContent.addEventListener("wheel", function(/** @type {{ target: any; deltaY:
 	if (e.target != mainContent && !canvParent2.contains(e.target)) {
 		return
 	}
-	let d = Math.max(minZoom / z, Math.min(3 ** Math.max(-0.5, Math.min(0.5, e.deltaY * -0.01)), 1 / z))
-	z *= d
-	x += mx * (d - 1) / z / 50
-	y += my * (d - 1) / z / 50
-	pos()
+	const d = Math.max(minZoom / z, Math.min(3 ** Math.max(-0.5, Math.min(0.5, e.deltaY * -0.01)), 1 / z));
+	z *= d;
+	x += mx * (d - 1) / z / 50;
+	y += my * (d - 1) / z / 50;
+	pos();
 })
 
-let idPositionDebounce = false
-/**@type {Timer|null}*/let idPositionTimeout = null
-let lastIntX = Math.floor(x)
-let lastIntY = Math.floor(y)
+let idPositionDebounce = false;
+/**@type {Timer|null}*/let idPositionTimeout = null;
+let lastIntX = Math.floor(x);
+let lastIntY = Math.floor(y);
 
+/**
+ * @param {number} px 
+ * @param {number} py 
+ * @param {number} z 
+ */
+function setPlaceContextPosition(px, py, z) {
+	if (placeContext.style.display === "block") {
+		const scale = z * 50;
+		const translateX = x * z * -50;
+		const translateY = y * z * -50;
+		const screenX = (px * scale) + translateX + innerWidth / 2;
+		const screenY = (py * scale) + translateY + mainContent.offsetHeight / 2;
+		placeContext.style.left = `${screenX}px`;
+		placeContext.style.top = `${screenY}px`;
+	}
+}
 
 export function pos(newX=x, newY=y, newZ=z) {
-	newX = x = Math.max(Math.min(newX, WIDTH - 1), 0)
-	newY = y = Math.max(Math.min(newY, HEIGHT - 1), 0)
-	newZ = z = Math.min(Math.max(newZ, minZoom), 1)
+	newX = x = Math.max(Math.min(newX, WIDTH - 1), 0);
+	newY = y = Math.max(Math.min(newY, HEIGHT - 1), 0);
+	newZ = z = Math.min(Math.max(newZ, minZoom), 1);
 
-	const right = newX - canvas.width + 0.01
-	const left = newX
-	const up = newY - canvas.height + 0.01
-	const down = newY
+	const right = newX - canvas.width + 0.01;
+	const left = newX;
+	const up = newY - canvas.height + 0.01;
+	const down = newY;
 
-	if (right >= left) newX = 0
-	else if (right > 0) newX -= right
-	else if (left < 0) newX -= left
-	if (up >= down) newY = 0
-	else if (up > 0) newY -= up
-	else if (down < 0) newY -= down
-	posEl.textContent = `(${Math.floor(newX)},${Math.floor(newY)}) ${newZ > 0.02 ? Math.round(newZ*50)/10 : Math.ceil(newZ*500)/100}x`
-	localStorage.x = Math.floor(newX) + 0.5
-	localStorage.y = Math.floor(newY) + 0.5
-	localStorage.z = newZ
-	transform()
-
-	const intX = Math.floor(newX), intY = Math.floor(newY)
+	if (right >= left) newX = 0;
+	else if (right > 0) newX -= right;
+	else if (left < 0) newX -= left;
+	if (up >= down) newY = 0;
+	else if (up > 0) newY -= up;
+	else if (down < 0) newY -= down;
+	localStorage.x = Math.floor(newX) + 0.5;
+	localStorage.y = Math.floor(newY) + 0.5;
+	localStorage.z = newZ;
+	transform();
+	const px = Number(placeContext.dataset.x);
+	const py = Number(placeContext.dataset.y);
+	setPlaceContextPosition(px, py, z);
+	boardRenderer?.setPosition(x, y, z);
+	if (positionIndicator.setPosition) {
+		positionIndicator.setPosition(x, y, z);
+	}
+	
+	const intX = Math.floor(newX), intY = Math.floor(newY);
 	if (intX != lastIntX || intY != lastIntY) {
 		if(idPositionTimeout) {
-			clearTimeout(idPositionTimeout)
+			clearTimeout(idPositionTimeout);
 		}
-		idPosition.style.display = "none"
-		idPositionDebounce = false
+		idPosition.style.display = "none";
+		idPositionDebounce = false;
 	}
-	lastIntX = intX
-	lastIntY = intY
+	lastIntX = intX;
+	lastIntY = intY;
 
 	if (!idPositionDebounce) {
-		idPositionDebounce = true
+		idPositionDebounce = true;
 
 		idPositionTimeout = setTimeout(() => {
-			idPositionDebounce = false
-			let id = intIdPositions.get(intX + intY * WIDTH)
+			idPositionDebounce = false;
+			let id = intIdPositions.get(intX + intY * WIDTH);
 			if (id === undefined || id === null) {
 				// Request 16x16 region of pixel placers from server (fine tune if necessary)
-				const placersRadius = 16
-				instance.requestPixelPlacers(Math.max(intX - placersRadius / 2, 0), Math.max(intY - placersRadius / 2),
-					Math.min(placersRadius, WIDTH - intX), Math.min(placersRadius, HEIGHT - intY))
-				return
+				const placersRadius = 16;
+				const centreX = Math.floor(Math.max(intX - placersRadius / 2, 0));
+				const centreY = Math.floor(Math.max(intY - placersRadius / 2));
+				const width = Math.min(placersRadius, WIDTH - intX);
+				const height = Math.min(placersRadius, HEIGHT - intY);
+				const position = centreX + centreY * WIDTH;
+
+				if (initialConnect) {
+					sendIpcMessage(wsCapsule, "requestPixelPlacers", { position, width, height });
+				}
+				return;
 			}
-			idPosition.style.display = "flex"
-			idPosition.style.left = intX + "px"
-			idPosition.style.top = intY + "px"
+			idPosition.style.display = "flex";
+			idPosition.style.left = intX + "px";
+			idPosition.style.top = intY + "px";
 			if (idPosition.children[1]) {
-				/** @type {HTMLElement} */(idPosition.children[1]).style.color = CHAT_COLOURS[hash("" + id) & 7]
-				idPosition.children[1].textContent = intIdNames.get(id) || ("#" + id)	
+				/** @type {HTMLElement} */(idPosition.children[1]).style.color = CHAT_COLOURS[hash("" + id) & 7];
+				idPosition.children[1].textContent = intIdNames.get(id) || ("#" + id);
 			}
 		}, 1000)
+	}
+}
+
+/**@type {BoardRenderer|null}*/let boardRenderer = null;
+if (enableWebglCanvas) { // localStorage.useLegacyRenderer !== "true"
+	try {
+		boardRenderer = new BoardRenderer(viewportCanvas);
+		canvas.style.opacity = "0";			
+	}
+	catch(e) {
+		console.error(e);
 	}
 }
 
@@ -1360,38 +1209,24 @@ export let boardAlreadyRendered = false
 export function renderAll() {
 	const img = new ImageData(canvas.width, canvas.height)
 	const data = new Uint32Array(img.data.buffer)
-	if (board) {
-		for (let i = 0; i < board.length; i++) {
-			data[i] = PALETTE[board[i]]
-		}	
+	if (BOARD) {
+		for (let i = 0; i < BOARD.length; i++) {
+			data[i] = PALETTE[BOARD[i]]
+		}
+
+		boardRenderer?.setSources(BOARD, new Uint32Array(PALETTE), WIDTH, HEIGHT);
 	}
 	if (canvasCtx) {
-		canvasCtx.putImageData(img, 0, 0)
+		canvasCtx.putImageData(img, 0, 0);
 		// HACK: Workaround for blank-canvas bug on chrome on M1 chips
-		canvasCtx.getImageData(0, 0, 1, 1)
-		boardAlreadyRendered = true	
+		canvasCtx.getImageData(0, 0, 1, 1);
+		boardAlreadyRendered = true;
 	}
 }
 
-export function setOnline(/**@type {Number}*/count) {
-	onlineCounter.textContent = String(count);
-	sendPostsFrameMessage("onlineCounter", count);
-}
 
-export function setCanvasLocked(/**@type {boolean}*/locked, /**@type {string|null}*/reason=null) {
-	canvasLock.style.display = locked ? "flex" : "none";
-	if (reason) {
-		// TODO: Find a more elegant solution
-		alert(reason);
-	}
-}
-
-export function setChatName(/**@type {string}*/name) {
-	namePanel.style.visibility = "hidden";
-}
-
-/**@type {Uint32Array}*/let xa = new Uint32Array(1)
-/**@type {Uint8Array}*/let xb = new Uint8Array(xa.buffer)
+/**@type {Uint32Array}*/const u32Colour = new Uint32Array(1);
+/**@type {Uint8Array}*/const u8ArrColour = new Uint8Array(u32Colour.buffer);
 
 /**
  * @param {number} x
@@ -1399,15 +1234,15 @@ export function setChatName(/**@type {string}*/name) {
  * @param { number} colour
  */
 export function set(x, y, colour) {
-	if (!board) {
+	if (!BOARD) {
 		return;
 	}
-	board[x % canvas.width + (y % canvas.height) * canvas.width] = colour
-	xa[0] = PALETTE[colour]
+	BOARD[x % canvas.width + (y % canvas.height) * canvas.width] = colour
+	u32Colour[0] = PALETTE[colour]
 	if (canvasCtx) {
-		canvasCtx.fillStyle = "#" + (xb[0] < 16 ? "0" : "") + xb[0].toString(16) + (xb[1] < 16 ? "0" : "") + xb[1].toString(16) + (xb[2] < 16 ? "0" : "") + xb[2].toString(16) + (xb[3] < 16 ? "0" : "") + xb[3].toString(16)
-		canvasCtx.clearRect(x, y, 1, 1)
-		canvasCtx.fillRect(x, y, 1, 1)	
+		canvasCtx.fillStyle = "#" + (u8ArrColour[0] < 16 ? "0" : "") + u8ArrColour[0].toString(16) + (u8ArrColour[1] < 16 ? "0" : "") + u8ArrColour[1].toString(16) + (u8ArrColour[2] < 16 ? "0" : "") + u8ArrColour[2].toString(16) + (u8ArrColour[3] < 16 ? "0" : "") + u8ArrColour[3].toString(16);
+		canvasCtx.clearRect(x, y, 1, 1);
+		canvasCtx.fillRect(x, y, 1, 1);
 	}
 }
 
@@ -1473,30 +1308,33 @@ mainContent.addEventListener("touchmove", function(/**@type {TouchEvent}*/ e) {
  */
 function clicked(clientX, clientY) {
 	if (anim) {
-		clearInterval(anim)
+		clearInterval(anim);
 	}
 
-	clientX = Math.floor(x + (clientX - innerWidth / 2) / z / 50) + 0.5
-	clientY = Math.floor(y + (clientY - mainContent.offsetHeight / 2) / z / 50) + 0.5
+	clientX = Math.floor(x + (clientX - innerWidth / 2) / z / 50) + 0.5;
+	clientY = Math.floor(y + (clientY - mainContent.offsetHeight / 2) / z / 50) + 0.5;
 	if (clientX == Math.floor(x) + 0.5 && clientY == Math.floor(y) + 0.5) {
 		clientX -= 0.5;
-		clientY -= 0.5
+		clientY -= 0.5;
 		if ((cooldownEndDate||0) < Date.now()) {
-			zoomIn()
-			showPalette()
+			zoomIn();
+			showPalette();
 		}
 		else {
-			runAudio(AUDIOS.invalid)
+			runAudio(AUDIOS.invalid);
 		}
-		return
+		return;
 	}
-	runAudio((cooldownEndDate||0) > Date.now() ? AUDIOS.invalid : AUDIOS.highlight)
+	runAudio((cooldownEndDate||0) > Date.now() ? AUDIOS.invalid : AUDIOS.highlight);
 	anim = setInterval(function() {
-		x += (clientX - x) / 10
-		y += (clientY - y) / 10
-		pos()
-		if (Math.abs(clientX - x) + Math.abs(clientY - y) < 0.1) clearInterval(anim)
-	}, 15)
+		x += (clientX - x) / 10;
+		y += (clientY - y) / 10;
+		pos();
+
+		if (anim && Math.abs(clientX - x) + Math.abs(clientY - y) < 0.1) {
+			clearInterval(anim);
+		}
+	}, 15);
 }
 
 function zoomIn() {
@@ -1515,32 +1353,8 @@ function zoomIn() {
 	}, 15)
 }
 
-// Modal settings (mute, place chat)
-if (localStorage.muted !== "true") { // Prefer false
-	localStorage.muted = "false";
-}
-if (localStorage.placeChat !== "false") { // Prefer true
-	localStorage.placeChat = "true";
-}
-let muted = localStorage.muted === "true";
-let placeChat = localStorage.placeChat === "true";
-window.addEventListener("DOMContentLoaded", function() {
-	muteButtonImage.src = muted ? "/svg/muted.svg" : "/svg/unmuted.svg";
-	placeChatButtonImage.style.opacity = placeChat ? "1" : "0.6";
-});
-muteButton.addEventListener("click", function() {
-	muted = !muted;
-	localStorage.muted = +muted;
-	muteButtonImage.src = muted ? "/svg/muted.svg" : "/svg/unmuted.svg";
-});
-placeChatButton.addEventListener("click", function() {
-	placeChat = !placeChat
-	localStorage.placeChat = String(placeChat)
-	placeChatButtonImage.style.opacity = placeChat ? "1" : "0.6"
-});
-
 /**
- * @param {HTMLAudioElement} audio 
+ * @param {HTMLAudioElement} audio
  */
 export async function runAudio(audio) {
 	if (muted) {
@@ -1551,20 +1365,36 @@ export async function runAudio(audio) {
 }
 
 // Client state
-let onCooldown = false;
 let PEN = -1;
-
 let focused = true;
+
+/**
+ * @param {boolean} state 
+ */
+function setFocused(state) {
+	if (focused !== state) {
+		focused = state;
+		// TODO: Disable pixel place UI, suspend clientside cooldown
+	}
+}
 window.addEventListener("blur", () => {
-	focused = false
+	setFocused(false);
 });
 window.addEventListener("focus", () => {
-	focused = true
+	setFocused(true);
+});
+document.addEventListener("visibilitychange", () => {
+	if (document.visibilityState === "visible") {
+		setFocused(true);
+	}
+	else {
+		setFocused(false);
+	}
 });
 
 /**
- * @param {Event} e 
- * @returns 
+ * @param {Event} e
+ * @returns
  */
 function handlePixelPlace(e) {
 	if (!(e instanceof Event) || !e.isTrusted) {
@@ -1575,19 +1405,22 @@ function handlePixelPlace(e) {
 	if (!focused || !initialConnect
 		|| (cooldownEndDate === null && initialConnect)
 		|| (cooldownEndDate && cooldownEndDate > Date.now())) {
-		return
+		return;
 	}
 	if (!placeOkButton.classList.contains("enabled")) {
-		return
-	}
-	if (!instance.tryPutPixel(e, x, y, PEN)) {
-		console.error("Failed to place pixel at", x, y, "with colour", PEN)
-		return
+		return;
 	}
 
-	// Place success - apply on clientside
-	hideIndicators();
+	// Send place to websocket
+	const position = Math.floor(x) + Math.floor(y) * WIDTH;
+	sendIpcMessage(wsCapsule, "putPixel", { position, colour: PEN });
+
+	// We predict our cooldown end date and that the pixel went through - server will (in)validate after
+	cooldownEndDate = Date.now() + (localStorage.vip ? (localStorage.vip[0] === "!" ? 0 : COOLDOWN / 2) : COOLDOWN);
 	set(Math.floor(x), Math.floor(y), PEN)
+	
+	// Apply on client-side
+	hideIndicators();
 	placeOkButton.classList.remove("enabled")
 	canvSelect.style.background = ""
 	canvSelect.children[0].style.display = "block"
@@ -1616,7 +1449,7 @@ function handlePlaceButtonClicked(e) {
 	if (initialConnect && cooldownEndDate < Date.now()) {
 		zoomIn()
 		showPalette()
-	
+
 		// Persistent colours on mobile platforms
 		if (PEN != -1) {
 			placeOkButton.classList.add("enabled")
@@ -1634,48 +1467,107 @@ placeButton.addEventListener("touchstart", handlePlaceButtonClicked);
 placeButton.addEventListener("click", handlePlaceButtonClicked);
 
 placeCancelButton.addEventListener("click", function(e) {
-	runAudio(AUDIOS.closePalette)
-	canvSelect.style.background = ''
-	palette.style.transform = 'translateY(100%)'
+	runAudio(AUDIOS.closePalette);
+	canvSelect.style.background = "";
+	palette.style.transform = "translateY(100%)";
 	if (PEN != -1) {
-		colours.children[PEN].classList.remove('sel')
-		PEN = -1
+		colours.children[PEN].classList.remove("sel");
+		PEN = -1;
 	}
-	placeOkButton.classList.remove('enabled')
-	canvSelect.children[0].style.display = 'block'
-	canvSelect.style.outline = ''
-	canvSelect.style.boxShadow = ''
-	hideIndicators()
+	placeOkButton.classList.remove("enabled");
+	canvSelect.children[0].style.display = "block";
+	canvSelect.style.outline = "";
+	canvSelect.style.boxShadow = "";
+	hideIndicators();
 })
 
-setInterval(async () => {
-	const left = Math.floor(((cooldownEndDate||0) - Date.now()) / 1000);
-	placeButton.innerHTML = initialConnect
-		? cooldownEndDate === null // They have made initial connect
-			? `<span style="color:#f50; white-space: nowrap;">${await translate("connectingFail")}</span>` // They connected but now have disconnected
-			: left > 0
-				? `<svg xmlns="http://www.w3.org/2000/svg" data-name="icons final" viewBox="0 0 20 20" style="height: 1.1rem;vertical-align:top"><path d="M13.558 14.442l-4.183-4.183V4h1.25v5.741l3.817 3.817-.884.884z"></path><path d="M10 19.625A9.625 9.625 0 1119.625 10 9.636 9.636 0 0110 19.625zm0-18A8.375 8.375 0 1018.375 10 8.384 8.384 0 0010 1.625z"></path></svg> ${
-						("" + Math.floor(left/3600)).padStart(2, "0")}:${("" + Math.floor((left / 60)) % 60).padStart(2, "0")}:${("" + left % 60).padStart(2, "0")}` // They are connected + still connected but in cooldown
-				: await translate("placeTile") // They are connected + still connected + after cooldown
-		: await translate("connecting") // They are yet to connect
+// Cooldown handling
+/**@type {number|null}*/let cooldownEndDate = null;
+/**@type {Timer|null}*/let cooldownInterval = null;
+/**@type {boolean}*/let onCooldown = false;
+/**@type {number|Null}*/let currentResolution = null;
+async function updatePlaceButton() {
+	const now = Date.now();
+	const endDate = cooldownEndDate ?? 0;
+	const left = endDate - now;
+	const leftS = Math.floor(left / 1000);
 
-	if ((cooldownEndDate||0) > Date.now() && !onCooldown) {
-		onCooldown = true;
+	let innerHTML;
+	if (!initialConnect) {
+		innerHTML = await translate("connecting");
+	
 	}
-	if ((cooldownEndDate||0) < Date.now() && onCooldown) {
-		onCooldown = false;
-		if (!document.hasFocus()) {
-			runAudio(AUDIOS.cooldownEnd)
+	else if (cooldownEndDate === null) {
+		innerHTML = `<span style="color:#f50; white-space: nowrap;">${await translate("connectingFail")}</span>`;
+		clearCooldownInterval();
+	}
+	else if (left > 0) {
+		if (leftS >= 1) {
+			const h = String(Math.floor(leftS / 3600)).padStart(2, "0");
+			const m = String(Math.floor((leftS / 60) % 60)).padStart(2, "0");
+			const s = String(leftS % 60).padStart(2, "0");
+			innerHTML = `
+				<svg xmlns="http://www.w3.org/2000/svg" data-name="icons final" viewBox="0 0 20 20" style="height: 1.1rem; vertical-align: top;">
+					<path d="M13.558 14.442l-4.183-4.183V4h1.25v5.741l3.817 3.817-.884.884z"></path>
+					<path d="M10 19.625A9.625 9.625 0 1119.625 10 9.636 9.636 0 0110 19.625zm0-18A8.375 8.375 0 1018.375 10 8.384 8.384 0 0010 1.625z"></path>
+				</svg> ${h}:${m}:${s}`;
+			startCooldownInterval(500);
+		}
+		else {
+			innerHTML = `<span style="color:#f50;">${left}ms</span>`;
+			startCooldownInterval(100);
 		}
 	}
-}, 200)
+	else {
+		innerHTML = await translate("placeTile");
+		clearCooldownInterval();
+	}
+
+	placeButton.innerHTML = innerHTML;
+
+	if (endDate > now && !onCooldown) {
+		onCooldown = true;
+	}
+	if (endDate < now && onCooldown) {
+		onCooldown = false;
+		if (!document.hasFocus()) {
+			runAudio(AUDIOS.cooldownEnd);
+		}
+	}
+}
+/**
+ * @param {number|null} endDate 
+ */
+function updateCooldown(endDate) {
+	cooldownEndDate = endDate;
+	updatePlaceButton();
+}
+/**
+ * @param {number} resolution 
+ */
+function startCooldownInterval(resolution) {
+	if (cooldownInterval && currentResolution === resolution) {
+		return;
+	}
+	clearCooldownInterval();
+	currentResolution = resolution;
+	cooldownInterval = setInterval(updatePlaceButton, resolution);
+}
+function clearCooldownInterval() {
+	if (cooldownInterval) {
+		clearInterval(cooldownInterval);
+		cooldownInterval = null;
+		currentResolution = null;
+	}
+}
+
 
 function showPalette() {
 	palette.style.transform = "";
 	runAudio(AUDIOS.highlight);
 }
 
-export function generatePalette() {
+function generatePalette() {
 	colours.innerHTML = ""
 	for (let i = PALETTE_USABLE_REGION.start; i < PALETTE_USABLE_REGION.end; i++) {
 		const colour = PALETTE[i] || 0
@@ -1695,7 +1587,12 @@ export function generatePalette() {
 		colours.appendChild(colourEl)
 	}
 }
-generatePalette()
+if (document.readyState !== "loading") {
+	generatePalette();
+}
+else {
+	window.addEventListener("DOMContentLoaded", generatePalette);
+}
 
 colours.onclick = (/**@type {MouseEvent}*/e) => {
 	const clickedColour = /**@type {HTMLElement}*/(e.target);
@@ -1722,18 +1619,18 @@ colours.onclick = (/**@type {MouseEvent}*/e) => {
 }
 
 /**
- * @param {DataView<ArrayBuffer>} data
- * @param {any} buffer
+ * @param {DataView<ArrayBuffer>} data - Canges packet data
+ * @param {any} buffer - Fetched board from git server
  */
 export function runLengthChanges(data, buffer) {
 	let i = 9;
 	let boardI = 0;
-	let w = data.getUint32(1);
-	let h = data.getUint32(5);
+	const w = data.getUint32(1);
+	const h = data.getUint32(5);
 	if (w != WIDTH || h != HEIGHT) {
 		setSize(w, h);
 	}
-	board = new Uint8Array(buffer);
+	BOARD = new Uint8Array(buffer);
 	while (i < data.byteLength) {
 		let cell = data.getUint8(i++);
 		let c = cell >> 6;
@@ -1741,7 +1638,7 @@ export function runLengthChanges(data, buffer) {
 		else if (c == 2) c = data.getUint16(i++), i++;
 		else if (c == 3) c = data.getUint32(i++), i += 3;
 		boardI += c;
-		board[boardI++] = cell & 63;
+		BOARD[boardI++] = cell & 63;
 	}
 	renderAll();
 }
@@ -1753,7 +1650,7 @@ export function runLengthChanges(data, buffer) {
  */
 export function runLengthDecodeBoard(data, length) {
 	const dataArr = new Uint8Array(data)
-	board = new Uint8Array(length)
+	BOARD = new Uint8Array(length)
 	let boardI = 0
 	let colour = 0
 
@@ -1766,7 +1663,7 @@ export function runLengthDecodeBoard(data, length) {
 		// After colour, loop until we unpack all repeats, byte can only hold max 255,
 		// so we add one to repeated data[i], and treat it as if 0 = 1 (+1)
 		for (let j = 0; j < dataArr[i] + 1; j++) {
-			board[boardI] = colour
+			BOARD[boardI] = colour
 			boardI++
 		}
 	}
@@ -1788,7 +1685,7 @@ if (!webGLSupported) {
 const mobile = window.matchMedia("(orientation: portrait)").matches
 
 let extraLanguage = (lang == "en" ? "tr" : lang);
-/** @type {Map<string, import("./live-chat-elements.js").LiveChatMessage[]>} */export const cMessages = new Map([
+/** @type {Map<string, import("./game-elements.js").LiveChatMessage[]>} */export const cMessages = new Map([
 	[extraLanguage, []],
 	["en", []]
 ]);
@@ -1832,22 +1729,23 @@ async function fetchBoard() {
  * @param {number} b
  */
 export function seti(i, b) {
-	if (!board) {
+	if (!BOARD) {
 		return;
 	}
 
-	board[i] = b
-	xa[0] = PALETTE[b]
+	BOARD[i] = b
+	u32Colour[0] = PALETTE[b]
 	if (canvasCtx) {
-		canvasCtx.fillStyle = "#" + (xb[0] < 16 ? "0" : "") + xb[0].toString(16) + (xb[1] < 16 ? "0" : "") + xb[1].toString(16) + (xb[2] < 16 ? "0" : "") + xb[2].toString(16) + (xb[3] < 16 ? "0" : "") + xb[3].toString(16)
-		canvasCtx.fillRect(i % WIDTH, Math.floor(i / WIDTH), 1, 1)	
+		canvasCtx.fillStyle = "#" + (u8ArrColour[0] < 16 ? "0" : "") + u8ArrColour[0].toString(16) + (u8ArrColour[1] < 16 ? "0" : "") + u8ArrColour[1].toString(16) + (u8ArrColour[2] < 16 ? "0" : "") + u8ArrColour[2].toString(16) + (u8ArrColour[3] < 16 ? "0" : "") + u8ArrColour[3].toString(16)
+		canvasCtx.fillRect(i % WIDTH, Math.floor(i / WIDTH), 1, 1)
 	}
 }
 
+// TODO: A CSS class on colours could handle this
 function hideIndicators() {
 	for (let c = 0; c < colours.children.length; c++) {
-		const indicator = /**@type {HTMLElement}*/(colours.children[c]?.firstChild);
-		if (indicator) {
+		const indicator = /**@type {HTMLElement}*/(colours.children[c]?.firstElementChild);
+		if (indicator?.style.visibility !== "hidden") {
 			indicator.style.visibility = "hidden";
 		}
 	}
@@ -1866,7 +1764,7 @@ function rebindIndicator(e, i) {
 	indicator.blur()
 
 	let binds = (localStorage.paletteKeys || DEFAULT_PALETTE_KEYS).split("")
-	let preExisting = binds.indexOf(e.key)
+	const preExisting = binds.indexOf(e.key)
 	if (preExisting != -1) {
 		binds[preExisting] = "​"
 	}
@@ -1886,31 +1784,31 @@ export function generateIndicators(keybinds) {
 generateIndicators(localStorage.paletteKeys || DEFAULT_PALETTE_KEYS)
 
 // Live chat channels
-
 function initChannelDrop() {
-	let containsMy = false
+	let containsMy = false;
 
-	channelDrop.children[0].innerHTML = ""
-	for (let [code, info] of LANG_INFOS) {
-		if (code == lang) containsMy = true
-		let el = document.createElement("li")
-		el.innerHTML = `<span>${info.name}</span> <img src="${info.flag}" style="height: 24px;">`
-		el.dataset.lang = code
-		channelDrop.children[0].appendChild(el)
+	channelDropMenu.innerHTML = "";
+	for (const [code, info] of LANG_INFOS) {
+		if (code == lang) {
+			containsMy = true;
+		}
+		const el = document.createElement("li");
+		el.innerHTML = `<span>${info.name}</span> <img src="${info.flag}" style="height: 24px;">`;
+		el.dataset.lang = code;
+		channelDropMenu.appendChild(el);
 	}
 
 	if (!containsMy) {
-		let el = document.createElement("li")
-		el.innerHTML = `<span>${lang}</span>`
-		el.dataset.lang = lang
-		channelDrop.children[0].appendChild(el)
+		const el = document.createElement("li");
+		el.innerHTML = `<span>${lang}</span>`;
+		el.dataset.lang = lang;
+		channelDropMenu.appendChild(el);
 	}
 }
 
-const channelList = channelDrop.firstElementChild
-channelList?.addEventListener("click", function(e) {
+channelDropMenu.addEventListener("click", function(e) {
 	let target = e.target
-	while (target instanceof HTMLElement && target != channelList) {
+	while (target instanceof HTMLElement && target != channelDropMenu) {
 		if (target.nodeName != "LI") {
 			target = target.parentElement;
 			continue;
@@ -1930,7 +1828,7 @@ channelList?.addEventListener("click", function(e) {
 	}
 });
 
-channelMineButton.addEventListener("click", function(e) {	
+channelMineButton.addEventListener("click", function(e) {
 	switchLanguageChannel(extraLanguage);
 });
 
@@ -1942,8 +1840,8 @@ channelEnButton.addEventListener("click", function(e) {
  * @param {string} code
  */
 function extraChannel(code) {
-	let info = LANG_INFOS.get(code)
-	channelMineName.innerText = code.toUpperCase()
+	let info = LANG_INFOS.get(code);
+	channelMineName.innerText = code.toUpperCase();
 	channelMineImg.src = info?.flag || "/svg/flag-unknown.svg";
 	//channelMineImg.style.display = ((info?.flag) ? "inline" : "none")
 	extraLanguage = code
@@ -1977,18 +1875,21 @@ function switchLanguageChannel(selected) {
 
 	if (cMessages.get(selected)?.length) {
 		for (const messageEl of cMessages.get(selected) ?? []) {
-			messageRenderPromises.push(messageEl.updateComplete)
-			chatMessages.appendChild(messageEl)
+			messageRenderPromises.push(messageEl.updateComplete);
+			chatMessages.appendChild(messageEl);
 		}
 		Promise.all(messageRenderPromises).then(() => {
-			chatMessages.scrollTo(0, chatMessages.scrollHeight)
+			chatMessages.scrollTo(0, chatMessages.scrollHeight);
 		})
 	}
-	else if (instance) {
-		// If we don't have any cached messages for this channel, try pre-populate with a few
-		const oldestMessage = /**@type {import("./live-chat-elements.js").LiveChatMessage|null}*/(chatMessages.children[0])
-		instance.requestLoadChannelPrevious(oldestMessage?.messageId || 0, 32)
-	}
+
+	// If we don't have any cached messages for this channel, try pre-populate with a few
+	const oldestMessage = /**@type {import("./game-elements.js").LiveChatMessage|null}*/(chatMessages.children[0]);
+	sendIpcMessage(wsCapsule, "requestLoadChannelPrevious", {
+		channel: currentChannel,
+		anchorMsgId: oldestMessage?.messageId || 0,
+		msgCount: 32
+	});
 }
 
 /**
@@ -1999,10 +1900,10 @@ function switchLanguageChannel(selected) {
  * @param {number} sendDate
  * @param {number|null} repliesTo
  * @param {Map<string, Set<number>>|null} reactions
- * @returns {import("./live-chat-elements.js").LiveChatMessage}
+ * @returns {import("./game-elements.js").LiveChatMessage}
  */
 export function createLiveChatMessage(messageId, txt, senderId, name, sendDate, repliesTo = null, reactions = null) {
-	const message = /**@type {import("./live-chat-elements.js").LiveChatMessage}*/(document.createElement("r-live-chat-message"));
+	const message = /**@type {import("./game-elements.js").LiveChatMessage}*/(document.createElement("r-live-chat-message"));
 	message.messageId = messageId;
 	message.content = txt;
 	message.senderId = senderId;
@@ -2016,13 +1917,13 @@ export function createLiveChatMessage(messageId, txt, senderId, name, sendDate, 
 nameInput.addEventListener("keydown", function(e) {
 	if (e.key == "Enter") {
 		nameInput.blur();
-		instance.setName(nameInput.value);
+		sendIpcMessage(wsCapsule, "setName", nameInput.value);
 	}
 	else if (e.key == "Escape") {
-		namePanel.style.visibility = "hidden"
+		namePanel.style.visibility = "hidden";
 	}
 	else if (e.key == "Backspace" && nameInput.value.length == 0) {
-		namePanel.style.visibility = "hidden"
+		namePanel.style.visibility = "hidden";
 	}
 });
 nameInput.addEventListener("input", function() {
@@ -2031,12 +1932,12 @@ nameInput.addEventListener("input", function() {
 const nameButton = /**@type {HTMLButtonElement}*/($("#nameButton"));
 nameButton.addEventListener("click", function() {
 	nameInput.blur();
-	instance.setName(nameInput.value);
+	sendIpcMessage(wsCapsule, "setName", nameInput.value);
 });
 
 /**
- * @param {string} command 
- * @param {string} message 
+ * @param {string} command
+ * @param {string} message
  */
 export function handleLiveChatCommand(command, message) {
 	switch (command) {
@@ -2069,17 +1970,7 @@ export function handleLiveChatCommand(command, message) {
 			break;
 		}
 		case "whoplaced": {
-			const id = intIdPositions.get(Math.floor(x) + Math.floor(y) * WIDTH);
-			if (id === undefined) {
-				alert("Could not find details of who placed pixel at current location...");
-				return;
-			}
-			let name = intIdNames.get(id);
-			alert(`Details of who placed at ${
-				Math.floor(x)}, ${
-				Math.floor(y)}:\nName: ${
-				name || 'anon'}\nUser ID: #${
-				id}`);
+			showPlacerInfo(x, y);
 			break;
 		}
 		case "help": {
@@ -2089,12 +1980,12 @@ Text in rplace chat can be styled using a simplified version of markdown:
 **bold**, *italic*, ||spoilers||, __underline__, \`code\` & ~strikethrough~.
 
 ## Text Formatting:
-- \`**bold me**\` → **"I didn't skip leg day"**
-- \`*italize me*\` → *"whispering sweet nothings"*  
-- \`__underline me__\` → __"the terms no one read"__  
-- \`~strike me out~\` → ~~pineapple pizza is actually ok~~  
-- \`||spoil the plot||\` → ||"Bruce Willis was dead the whole time"||  
-- \`sudo rm -fr /\` → "Remove french translations for a faster PC"  
+- \`**bold me**\` → **I didn't skip leg day**
+- \`*italize me*\` → *whispering sweet nothings*
+- \`__underline me__\` → __the terms no-one read__
+- \`~strike me out~\` → ~~pineapple pizza is actually ok~~
+- \`||spoil the plot||\` → ||Bruce Willis was dead the whole time||
+- \`sudo rm -fr /\` → Remove french translations for a faster PC
 
 ### Headers:
 Use # for a large header, ## for medium, and ### for small. Don’t forget to add a space between the leading heading character and your text!
@@ -2104,14 +1995,14 @@ To create a separator, create a blank line (Shift + Enter on keyboard) and inser
 
 ### Extras:
 1. You can make a list by placing a dash (\`-\`) or star (\`*\`) before what you want to say.
-2. > "Block quotes (\`>\`) solve arguments"  
+2. > "Block quotes (\`>\`) solve arguments"
 >> \\- Confucius, probably (\`>>\`)
 
 ---
 
 # Chat commands:
 \`\`\`
-:vip        :name       :lookup
+:vip        :name
 :getid      :whoplaced
 \`\`\`
 
@@ -2132,22 +2023,23 @@ To create a separator, create a blank line (Shift + Enter on keyboard) and inser
 }
 
 /**
- * Adds chat messages to the UI
- * @param {LiveChatMessage[]} messages 
- * @param {boolean} before 
+ * @param {LiveChatHistoryPacket} params - The parameters for adding chat messages.
  */
-export function addChatMessages(messages, before) {
-	/** @type {HTMLElement|null} */
-	const chatMessages = document.getElementById('chatMessages');
+function addChatMessages({ channel, messages, before }) {
+	if (channel !== currentChannel) {
+		return;
+	}
+
+	/** @type {HTMLElement|null} */const chatMessages = document.getElementById('chatMessages');
 	if (!chatMessages) throw new Error('Chat messages container not found');
-	
+
 	const newChatScroll = chatMessages.scrollTop;
 	/** @type {Promise<void>[]} */
 	const messageRenderPromises = [];
 
 	messages.forEach(msgData => {
 		const name = intIdNames.get(msgData.senderIntId) || 'Unknown';
-		/** @type {import("./live-chat-elements.js").LiveChatMessage}*/
+		/** @type {import("./game-elements.js").LiveChatMessage}*/
 		const newMessage = createLiveChatMessage(
 			msgData.messageId,
 			msgData.txt,
@@ -2181,11 +2073,16 @@ export function addChatMessages(messages, before) {
 		chatPreviousLoadDebounce = false;
 	});
 }
+addIpcMessageHandler("addChatMessages", addChatMessages);
+
 chatMessages.addEventListener("scroll", () => {
 	if (chatMessages.scrollTop < 64) {
 		if (chatPreviousAutoLoad === true && chatPreviousLoadDebounce === false) {
-			const oldestMessage = /**@type {import("./live-chat-elements.js").LiveChatMessage|null}*/(chatMessages.children[0]);
-			instance.requestLoadChannelPrevious(oldestMessage?.messageId || 0);
+			const oldestMessage = /**@type {import("./game-elements.js").LiveChatMessage|null}*/(chatMessages.children[0]);
+			sendIpcMessage(wsCapsule, "requestLoadChannelPrevious", {
+				channel: currentChannel,
+				anchorMsgId: oldestMessage?.messageId || 0
+			});
 			chatPreviousLoadDebounce = true;
 		}
 		else {
@@ -2197,212 +2094,15 @@ chatMessages.addEventListener("scroll", () => {
 	}
 })
 chatPreviousButton.addEventListener("click", () => {
-	const oldestMessage = /**@type {import("./live-chat-elements.js").LiveChatMessage|null}*/(chatMessages.children[0]);
-	instance.requestLoadChannelPrevious(oldestMessage?.messageId || 0);
+	const oldestMessage = /**@type {import("./game-elements.js").LiveChatMessage|null}*/(chatMessages.children[0]);
+	sendIpcMessage(wsCapsule, "requestLoadChannelPrevious", {
+		channel: currentChannel,
+		anchorMsgId: oldestMessage?.messageId || 0
+	});
 	chatPreviousLoadDebounce = true;
 	// Keep loading previous for this channel as they scroll up
 	chatPreviousAutoLoad = true	;
 })
-
-/**
- * @param {LiveChatMessage} message 
- * @param {string} channel 
- */
-export function addLiveChatMessage(message, channel) {
-	if (!cMessages.has(channel)) {
-		cMessages.set(channel, []);
-	}
-
-	const newMessage = createLiveChatMessage(
-		message.messageId,
-		message.txt,
-		message.senderIntId,
-		message.name,
-		message.sendDate,
-		message.repliesTo,
-		message.reactions
-	);
-
-	// Apply user blocking
-	if (message.senderIntId !== 0 && blockedUsers.includes(message.senderIntId)) {
-		newMessage.style.color = "transparent";
-		newMessage.style.textShadow = "0px 0px 6px black";
-	}
-
-	// Handle mentions
-	if (message.txt.includes("@" + chatName) || 
-		message.txt.includes("@#" + intId) || 
-		message.txt.includes("@everyone")) {
-		newMessage.setAttribute("mention", "true");
-		if (channel === currentChannel) {
-			runAudio(AUDIOS.closePalette);
-		}
-	}
-
-	const atScrollBottom = chatMessages.scrollTop + chatMessages.offsetHeight + 64 >= chatMessages.scrollHeight;
-
-	// Update message storage
-	const channelMessages = cMessages.get(channel);
-	if (channelMessages) {
-		channelMessages.push(newMessage);
-		if (channelMessages.length > MAX_CHANNEL_MESSAGES) {
-			channelMessages.shift();
-		}	
-	}
-
-	// Update UI if current channel
-	if (channel === currentChannel) {
-		if (chatMessages.children.length > MAX_CHANNEL_MESSAGES) {
-			chatMessages.children[0].remove();
-		}
-		chatMessages.insertAdjacentElement("beforeend", newMessage);
-		newMessage.updateComplete.then(() => {
-			if (atScrollBottom) {
-				chatMessages.scrollTo(0, chatMessages.scrollHeight);
-			}
-		});
-	}
-}
-
-/**
- * @param {PlaceChatMessage} message
- */
-export function addPlaceChatMessage(message) {
-	if (!placeChat) {
-		return
-	}
-
-	console.log(message)
-
-	// Create message
-	const placeMessage = document.createElement("placechat")
-	placeMessage.innerHTML = `<span title="${(new Date()).toLocaleString()}" style="color: ${CHAT_COLOURS[hash("" + message.senderIntId) & 7]};">[${message.name}]</span><span>${message.txt}</span>`
-	placeMessage.style.left = (message.msgPos % WIDTH) + "px"
-	placeMessage.style.top = (Math.floor(message.msgPos / WIDTH) + 0.5) + "px"
-	canvParent2.appendChild(placeMessage)
-
-	//Remove message after given time
-	setTimeout(() => {
-		placeMessage.remove();
-	}, localStorage.placeChatTime || 7e3)
-}
-
-
-/**
- * 
- * @param {string[]} options 
- * @param {Uint8Array} imageData 
- * @param {(answer:string) => void} answerCallback
- */
-export function handleTextCaptcha(options, imageData, answerCallback) {
-	captchaOptions.innerHTML = ""
-
-	let captchaSubmitted = false
-	for (const text of options) {
-		const button = document.createElement("button")
-		button.textContent = text
-		captchaOptions.appendChild(button)
-
-		button.addEventListener("click", (event) => {
-			if (captchaSubmitted || !text) {
-				return console.error("Could not send captcha response. No text?")
-			}
-			captchaSubmitted = true
-			answerCallback(text);
-			captchaOptions.style.pointerEvents = "none";	
-		})
-	}
-	captchaPopup.style.display = "flex";
-	captchaOptions.style.pointerEvents = "all";
-
-	const imageBlob = new Blob([imageData], { type: "image/png" });
-	if (webGLSupported) {
-		updateImgCaptchaCanvas(imageBlob)
-	}
-	else {
-		updateImgCaptchaCanvasFallback(imageBlob)
-	}
-}
-
-/**
- * @param {string[]} options 
- * @param {Uint8Array} imageData 
- * @param {(answer:string) => void} answerCallback
- */
-export function handleEmojiCaptcha(options, imageData, answerCallback) {
-	captchaOptions.innerHTML = ""
-
-	let captchaSubmitted = false
-	for (const emoji of options) {
-		let buttonParent = document.createElement("button")
-		buttonParent.classList.add("captcha-options-button")
-		buttonParent.setAttribute("value", emoji)
-		let emojiImg = document.createElement("img")
-		emojiImg.src = `./tweemoji/${emoji.codePointAt(0)?.toString(16)}.png`
-		emojiImg.alt = emoji
-		emojiImg.title = emoji
-		emojiImg.fetchPriority = "high"
-		emojiImg.addEventListener("load", (event) => {
-			buttonParent.classList.add("loaded")
-		})
-		buttonParent.appendChild(emojiImg)
-		captchaOptions.appendChild(buttonParent)
-
-		function submitCaptcha() {
-			if (captchaSubmitted || !emoji) {
-				return console.error("Could not send captcha response. No emoji?")
-			}
-			captchaSubmitted = true
-			answerCallback(emoji)
-			captchaOptions.style.pointerEvents = "none";	
-			clearCaptchaCanvas();
-		}
-		buttonParent.addEventListener("click", submitCaptcha)
-		emojiImg.addEventListener("click", submitCaptcha)
-		buttonParent.addEventListener("touchend", submitCaptcha)
-		emojiImg.addEventListener("touchend", submitCaptcha)
-	}
-
-	captchaPopup.style.display = "flex"
-	captchaOptions.style.pointerEvents = "all"
-	const imageBlob = new Blob([imageData], { type: "image/png" })
-	if (webGLSupported) {
-		updateImgCaptchaCanvas(imageBlob)
-	}
-	else {
-		updateImgCaptchaCanvasFallback(imageBlob)
-	}
-}
-
-
-/**
- * @param {string} siteKey
- * @param {(token: string) => void} turnstileCallback
- */
-export function handleTurnstile(siteKey, turnstileCallback) {
-	const siteVariant = document.documentElement.dataset.variant
-	const turnstileTheme = siteVariant === "dark" ? "dark" : "light"
-
-	turnstileMenu.setAttribute("opened", "true")
-	
-	// @ts-expect-error
-	if (window.turnstile) {
-		// @ts-expect-error
-		window.turnstile.ready(function () {
-			// @ts-expect-error
-			window.turnstile.render("#turnstileContainer", {
-				sitekey: siteKey,
-				theme: turnstileTheme,
-				language: lang,
-				callback: turnstileCallback
-			})
-		})	
-	}
-}
-
-export function handleTurnstileSuccess() {
-	turnstileMenu.removeAttribute("opened")
-}
 
 messageInput.addEventListener("keydown", function(/**@type {KeyboardEvent}*/ e) {
 	if (!e.isTrusted) {
@@ -2413,10 +2113,10 @@ messageInput.addEventListener("keydown", function(/**@type {KeyboardEvent}*/ e) 
 	if (e.key == "Enter" && !e.shiftKey) {
 		// ctrl + enter send as place chat, enter send as normal live chat
 		if (e.ctrlKey) {
-			instance.sendPlaceChatMsg(messageInput.value)
+			sendPlaceChatMsg(messageInput.value)
 		}
 		else {
-			instance.sendLiveChatMsg(messageInput.value)
+			sendLiveChatMsg(messageInput.value)
 		}
 		e.preventDefault()
 		messageInput.value = ""
@@ -2454,7 +2154,7 @@ messageTypePanel.children[0].addEventListener("click", function (/**@type {Event
 		return;
 	}
 
-	instance.sendPlaceChatMsg(messageInput.value);
+	sendPlaceChatMsg(messageInput.value);
 	messageInput.value = "";
 });
 messageTypePanel.children[1].addEventListener("click", function(/**@type {Event}*/e) {
@@ -2462,8 +2162,8 @@ messageTypePanel.children[1].addEventListener("click", function(/**@type {Event}
 		return;
 	}
 
-	instance.sendLiveChatMsg(messageInput.value);
-	messageInput.value = "";	
+	sendLiveChatMsg(messageInput.value);
+	messageInput.value = "";
 });
 
 // @ts-expect-error
@@ -2473,9 +2173,43 @@ messageInputGifPanel.addEventListener("gifselection", function(/**@type {CustomE
 		return;
 	}
 	messageInputGifPanel.removeAttribute("open")
-	instance.sendLiveChatMsg(`[gif:${gif.id}:tenor]`);
+	sendLiveChatMsg(`[gif:${gif.id}:tenor]`); // TODO: Put gif URL in ()
 });
 
+/**
+ * 
+ * @param {string} message 
+ */
+function sendPlaceChatMsg(message) {
+	const position = Math.floor(y) * WIDTH + Math.floor(x);
+	sendIpcMessage(wsCapsule, "sendPlaceChatMsg", { message, position });
+}
+
+/**
+ * 
+ * @param {string} message 
+ * @param {string} channel 
+ * @param {number|null} replyId 
+ * @returns 
+ */
+function sendLiveChatMsg(message, channel=currentChannel, replyId=currentReply) {
+	// Execute live chat commands
+	for (const [command] of COMMANDS) {
+		if (message.startsWith(":" + command)) {
+			handleLiveChatCommand(command, message);
+			return;
+		}
+	}
+
+	// VIP key leak detection
+	if (localStorage.vip && message.includes(localStorage.vip)) {
+		alert("Can't send VIP key in chat. Use ':vip yourvipkeyhere' to apply a VIP key");
+		return;
+	}
+
+	sendIpcMessage(wsCapsule, "sendLiveChatMsg", { message, channel, replyId });
+	chatCancelReplies();
+}
 
 /**
  * @param {any} messageId
@@ -2500,6 +2234,28 @@ export async function chatReply(messageId, senderId) {
 	}
 }
 
+/**
+ * @param {number} messageId 
+ * @param {number} senderId 
+ */
+export function chatReport(messageId, senderId) {
+	const reason = prompt("Enter the reason for why you are reporting this message (max 280 chars)\n\n" +
+		`Additional info:\nMessage ID: ${messageId}\nSender ID: ${senderId}\n`)?.trim();
+	if (reason === null) {
+		return;
+	}
+	sendIpcMessage(wsCapsule, "chatReport", { messageId, reason });
+	alert("Report sent!\nIn the meantime you can block this user by 'right clicking / press hold on the message' > 'block'");
+}
+
+/**
+ * @param {number} messageId 
+ * @param {string} reactKey 
+ */
+export function chatReact(messageId, reactKey) {
+	sendIpcMessage(wsCapsule, "chatReact", { messageId, reactKey });
+}
+
 export function chatCancelReplies() {
 	for (const messageEl of cMessages.get(currentChannel) || []) {
 		messageEl.removeAttribute("reply")
@@ -2511,27 +2267,9 @@ export function chatCancelReplies() {
 	messageReplyPanel.setAttribute('closed', 'true')
 }
 
-/**
- * @param {ModerationPacket} packet 
- * @param {number} intId
- */
-export function applyPunishment(packet, intId) {
-	messageInput.disabled = true;
-	if (packet.state === PUNISHMENT_STATE.mute) {
-		punishmentNote.innerHTML = "You have been <strong>muted</strong>, you cannot send messages in live chat.";
-	} 
-	else if (packet.state === PUNISHMENT_STATE.ban) {
-		canvasLock.style.display = "flex";
-		punishmentNote.innerHTML = "You have been <strong>banned</strong> from placing on the canvas or sending messages in live chat.";
-	}
-
-	punishmentUserId.textContent = `Your User ID: #${intId}`;
-	punishmentStartDate.textContent = `Started on: ${new Date(packet.startDate).toLocaleString()}`;
-	punishmentEndDate.textContent = `Ending on: ${new Date(packet.endDate).toLocaleString()}`;
-	punishmentReason.textContent = `Reason: ${packet.reason}`;
-	punishmentAppeal.textContent = `Appeal status: ${(packet.appeal && packet.appeal !== "null") ? packet.appeal : 'Unappealable'}`;
-	punishmentMenu.setAttribute("opened", "true");
-}
+messageCancelReplyButton.addEventListener("click", function(e) {
+	chatCancelReplies();
+});
 
 // Moderation UI
 /**
@@ -2541,21 +2279,22 @@ export function applyPunishment(packet, intId) {
  * @typedef {Object} ModOptions
  * @property {ModAction} action
  * @property {string} reason
- * @property {number} [memberId]
- * @property {number} [messageId]
- * @property {boolean} [affectsAll]
- * @property {number} [duration] // In seconds
+ * @property {number|undefined} memberId
+ * @property {number|undefined} messageId
+ * @property {boolean|undefined} affectsAll
+ * @property {number} duration - Seconds
  */
 const modOptionsButton = /**@type {HTMLButtonElement}*/($("#modOptionsButton"));
-modOptionsButton.addEventListener("click", function (e) {
+modOptionsButton.addEventListener("click", async function(e) {
 	const options = getModOptions();
 	if (!options) {
 		return;
 	}
-	instance.sendModAction(options);
+	const statusMsg = await makeIpcRequest(wsCapsule, "sendModAction", options);
+	alert(statusMsg);
 	clearChatModerate();
 })
-modMessageId.addEventListener("input", async function (e) {
+modMessageId.addEventListener("input", async function(e) {
 	// Show loading state immediately
 	modMessagePreview.textContent = "Loading message...";
 
@@ -2588,11 +2327,11 @@ modMessageId.addEventListener("input", async function (e) {
 			if (data.messages && data.messages.length > 0) {
 				const message = data.messages[0];
 				const chatName = data.users[message.senderIntId].chatName || "Unknown";
-				
+
 				// Use createLiveChatMessage to build the HTML element
 				const messageElement = createLiveChatMessage(message.id, message.message, message.senderIntId,
 					chatName, message.date * 1000, message.repliesTo, null);
-				
+
 				modMessagePreview.innerHTML = "";
 				modMessagePreview.appendChild(messageElement);
 			}
@@ -2662,20 +2401,16 @@ function closeChatModerate() {
 modCloseButton.addEventListener("click", closeChatModerate);
 modCancelButtonn.addEventListener("click", closeChatModerate);
 
-export function handleCaptchaSuccess() {
-	captchaPopup.style.display = "none";
-}
-
 /**
  * @param {"delete"|"kick"|"mute"|"ban"|"captcha"} mode
  * @param {number|null} senderId
- * @param {import("./live-chat-elements.js").LiveChatMessage|null} messageElement
+ * @param {import("./game-elements.js").LiveChatMessage|null} messageElement
  */
 export function chatModerate(mode, senderId, messageId = null, messageElement = null) {
 	clearChatModerate()
 	modMemberId.value = String(senderId)
 	modMessageId.value = String(messageId)
-	moderationMenu.setAttribute("opened", "true")
+	moderationMenu.setAttribute("open", "true")
 	moderationMenu.setAttribute("mode", mode)
 	modMessagePreview.innerHTML = messageElement?.innerHTML || ""
 
@@ -2714,9 +2449,12 @@ function updateMessageInputHeight() {
 	const diffHeight = messageInputHeight - oldHeight
 	chatMessages.scrollBy(0, diffHeight)
 }
-window.addEventListener("DOMContentLoaded", function (e) {
+if (document.readyState !== "loading") {
 	updateMessageInputHeight();
-})
+}
+else {
+	window.addEventListener("DOMContentLoaded", updateMessageInputHeight);
+}
 
 messageInput.oninput = (/** @type {{ isTrusted: any; }} */ e) => {
 	if (!e.isTrusted) return
@@ -2885,7 +2623,7 @@ function server(serverAddress, boardAddress, vip = "", storage = localStorage) {
 /**
  * @param {string} forceTheme
  * @param {string|null} forceVariant
- * @param {string|null} forceEffects 
+ * @param {string|null} forceEffects
  */
 export async function forceTheme(forceTheme, forceVariant = null , forceEffects = null) {
 	const currentThemeSet = document.documentElement.dataset.theme
@@ -2902,13 +2640,14 @@ export async function forceTheme(forceTheme, forceVariant = null , forceEffects 
 /**
  * @param {import("./defaults.js").ThemeInfo} themeSet
  * @param {string|null} variant
- * @param {string|null} effects 
+ * @param {string|null} effects
  */
 async function theme(themeSet, variant = null, effects = null) {
 	variant ??= "";
 
 	// Effects
-	disableDarkplace();
+	// TODO: Fix dodgy module load race condition concerning forceTheme func
+	/*disableDarkplace();
 	disableWinter();
 	switch (effects) {
 		case "darkplace":
@@ -2917,7 +2656,7 @@ async function theme(themeSet, variant = null, effects = null) {
 		case "winter":
 			enableWinter();
 			break;
-	}
+	}*/
 
 	if (currentTheme !== themeSet) {
 		// Intermediate stylesheet handles giving a nice transition animation during theme change
@@ -2965,21 +2704,27 @@ async function theme(themeSet, variant = null, effects = null) {
 	}
 	document.documentElement.dataset.variant = variant
 }
-window.addEventListener("DOMContentLoaded", function(e) {
+function initTheme() {
 	let startupThemeSet = DEFAULT_THEMES.get(localStorage.theme || "r/place 2022");
 	if (!startupThemeSet) {
 		startupThemeSet = DEFAULT_THEMES.get("r/place 2022");
 	}
 	if (startupThemeSet) {
 		theme(startupThemeSet, localStorage.variant, localStorage.effects);
-		themeDropName.textContent = "🖌️ " + (localStorage.theme || "r/place 2022");		
+		themeDropName.textContent = "🖌️ " + (localStorage.theme || "r/place 2022");
 	}
 	else {
 		const errorMessage = "Error: Can't find startup theme set, site may appear broken!";
 		console.error(errorMessage, { availableThemes: DEFAULT_THEMES, savedTheme: localStorage.theme });
 		alert(errorMessage);
 	}
-});
+}
+if (document.readyState !== "loading") {
+	initTheme();
+}
+else {
+	window.addEventListener("DOMContentLoaded", initTheme);
+}
 
 const themeDropList = themeDrop.firstElementChild;
 themeDropList?.addEventListener("click", function(e) {
@@ -3113,17 +2858,67 @@ overlayInput.onchange = function() {
 }
 async function generateOverlayUrl() {
 	if (!overlayInput.files) {
+		return null;
+	}
+
+	const file = overlayInput.files[0];
+
+	overlayInfo.type = file.type;
+	overlayInfo.data = await blobToBase64(file);
+
+	return `${location.origin}/?server=${localStorage.server || DEFAULT_SERVER}&board=${localStorage.board || DEFAULT_BOARD}&overlay=${JSON.stringify(overlayInfo)}`;
+}
+/**@type {Timer|null}*/let overlayFailTimeout = null;
+const overlayCopyButton = /**@type {HTMLButtonElement}*/($("#overlayCopyButton"));
+overlayCopyButton.addEventListener("click", async function(e) {
+	const uriString = await generateOverlayUrl();
+	if (!uriString) {
 		return;
 	}
 
-	overlayInfo["type"] = overlayInput.files[0].type
-	overlayInfo["data"] = btoa(String.fromCharCode(...new Uint8Array(await overlayInput.files[0].arrayBuffer())))
-	return `${location.origin}/?server=${localStorage.server || DEFAULT_SERVER}&board=${localStorage.board || DEFAULT_BOARD}&overlay=${btoa(JSON.stringify(overlayInfo))}`
-}
+	console.log(uriString);
 
+	if (uriString.length < 2000) {
+		navigator.clipboard.writeText(uriString)
+		overlayCopyButton.children[2].animate([
+			{ opacity: 1 },
+			{ scale: 1.1 }
+		], { duration: 1000, iterations: 1 });
+	}
+	else {
+		overlayCopyButton.children[2].textContent = "Failed: Overlay is too big!";
+		overlayCopyButton.children[2].animate([
+			{ opacity: 1 },
+			{ color: 'red' }
+		], { duration: 1000, iterations: 1 });
+		if (overlayFailTimeout) {
+			clearTimeout(overlayFailTimeout);
+		}
+		overlayFailTimeout = setTimeout(() => {
+			overlayCopyButton.children[2].textContent = "Copied to clipboard!";
+		}, 1000)
+	}
+});
+const overlayXInput = /**@type {HTMLInputElement}*/($("#overlayXInput"));
+overlayXInput.addEventListener("change", function() {
+	overlayInfo.x = Number(overlayXInput.value);
+	templateImage.style.transform = `translate(${overlayInfo.x}px, ${overlayInfo.y}px)`;
+});
+const overlayYInput = /**@type {HTMLInputElement}*/($("#overlayYInput"));
+overlayYInput.addEventListener("change", function() {
+	overlayInfo.y = Number(overlayYInput.value);
+	templateImage.style.transform = `translate(${overlayInfo.x}px, ${overlayInfo.y}px)`
+});
+const overlayOpacity = /**@type {HTMLInputElement}*/($("#overlayOpacity"));
+overlayOpacity.addEventListener("change", function() {
+	overlayInfo.opacity = (+this.value || 80) / 100;
+	templateImage.style.opacity = String(overlayInfo.opacity);
+});
+
+// Chat management
 let blockedUsers = localStorage.blocked?.split(",") || []
-let targetedIntId = null
-let targetedMsgId = null
+/**@type {number|null}*/let targetedIntId = null
+/**@type {number|null}*/let targetedMsgId = null
 export let currentReply = null
 let openedChat = false
 
@@ -3207,28 +3002,59 @@ export async function onChatContext(e, senderId, msgId) {
 		targetedMsgId = msgId;
 		targetedIntId = senderId;
 		chatContext.style.display = "block";
-		mentionUser.children[0].textContent = `${await translate("mention")} ${identifier}`;
-		replyUser.children[0].textContent = `${await translate("replyTo")} ${identifier}`;
-		blockUser.children[0].textContent =
+		mentionUserButton.textContent = `${await translate("mention")} ${identifier}`;
+		replyUserButton.textContent = `${await translate("replyTo")} ${identifier}`;
+		blockUserButton.textContent =
 			`${await translate(blockedUsers.includes(senderId) ? "unblock" : "block")} ${identifier}`;
 
-		// TODO: Do this in CSS instead
-		const blockUserText = /**@type {HTMLElement}*/(blockUser.children[0]);
 		if (senderId == intId) {
-			blockUser.style.pointerEvents = "none";
-			blockUserText.style.color = "grey";
-			changeMyName.style.display = "";
+			blockUserButton.disabled = true;
+			changeMyNameButton.style.display = "";
 		}
 		else  {
-			blockUser.style.pointerEvents = "all";
-			blockUserText.style.color = "black";
-			changeMyName.style.display = "none";
+			blockUserButton.disabled = false;
+			changeMyNameButton.style.display = "none";
 		}
 
 		chatContext.style.left = e.pageX - chatPanel.offsetLeft + "px"
 		chatContext.style.top = e.pageY - chatPanel.offsetTop + "px"
 	}
 }
+mentionUserButton.addEventListener("click", function(e) {
+	if (!targetedIntId) {
+		return;
+	}
+
+	chatMentionUser(targetedIntId);
+	chatContext.style.display = "none";
+});
+replyUserButton.addEventListener("click", function(e) {
+	if (!targetedIntId) {
+		return;
+	}
+
+	chatReply(targetedMsgId, targetedIntId);
+	chatContext.style.display = "none";
+})
+blockUserButton.addEventListener("click", function(e) {
+	if (blockedUsers.includes(targetedIntId)) {
+		blockedUsers.splice(blockedUsers.indexOf(targetedIntId), 1);
+	}
+	else if (targetedIntId != intId) {
+		blockedUsers.push(targetedIntId);
+	}
+	localStorage.blocked = blockedUsers;
+	chatContext.style.display = "none";
+});
+changeMyNameButton.addEventListener("click", function(e) {
+	if (!intId) {
+		return;
+	}
+
+	namePanel.style.visibility = "visible";
+	nameInput.value = intIdNames.get(intId) || "";
+	chatContext.style.display = "none";
+});
 
 const verifiedAppHash = "f255e4c294a5413cce887407b91062ac162faec4cb1e6e21cdd6e4492fb270f8"
 async function checkVerifiedAppStatus() {
@@ -3255,26 +3081,26 @@ checkVerifiedAppStatus().then(status => {
 	if (status === "valid") {
 		console.log("Successfully verified rplace.live app");
 	}
-	else {
-		if (window.location !== window.parent.location
-				|| typeof window.Android !== "undefined"
-				|| typeof window.Kodular !== "undefined"
-				|| status == "invalid") {
-			window.location.replace("fakeapp.html")
+	else if (import.meta.env.MODE !== "development" && (
+		window.location !== window.parent.location
+			|| typeof window.Android !== "undefined"
+			|| typeof window.Kodular !== "undefined"
+			|| status === "invalid")) {
+		window.location.replace("fakeapp.html")
 
-			// Block interaction if page redirect was overidden
-			document.body.style.opacity = "0.6"
-			document.body.style.pointerEvents = "none"
-			alert("Error: App failed verification - game is being accessed via an unofficial or unauthorised site or app\n" +
-				"Please report to developers or visit the game online at https://rplace.live")
-		}
+		// Block interaction if page redirect was overidden
+		document.body.style.opacity = "0.6"
+		document.body.style.pointerEvents = "none"
+		alert("Error: App failed verification - game is being accessed via an unofficial or unauthorised site or app\n" +
+			"Please report to developers or visit the game online at https://rplace.live")
 	}
 })
 
 // Cancel context menu
 window.addEventListener("contextmenu", function(e) {
-	e.preventDefault()
-})
+	e.preventDefault();
+});
+
 
 // Cancel touchpad page zooming that interferes with canvas zooming
 if (!mobile) {
@@ -3309,38 +3135,38 @@ if (localStorage.noad && Date.now() - localStorage.noad < 1.21e9) { // 14 days
 else {
 	let adI = Math.floor(Math.random() * ADS.length)
 	function cycleAd() {
-		const currentAd = ADS[adI % ADS.length]
+		const currentAd = ADS[adI % ADS.length];
 		const langBanners = /**@type {Record<string, string>}*/(currentAd.banners);
-		chatAd.style.setProperty("--adurl", `url(${langBanners[lang] || langBanners["en"]})`)
-		chatAd.href = currentAd.url
-		adI++
+		chatAd.style.setProperty("--adurl", `url(${langBanners[lang] || langBanners["en"]})`);
+		chatAd.href = currentAd.url;
+		adI++;
 	}
-	setInterval(cycleAd, 12e4) // 2 mins
-	cycleAd()
+	setInterval(cycleAd, 12e4); // 2 mins
+	cycleAd();
 }
 
 // Final initialisation
 translateAll();
 showLoadingScreen();
-// WsCapsule logic
-/**@type {WsCapsule}*/var instance = new WsCapsule(
-	WebSocket.prototype.send,
-	addEventListener,
-	Function.prototype.call.bind(Function.prototype.call)	
-);
-/**@type {(messageId:number, senderId:number)=>void}*/export let chatReport = (/**@type {number}*/messageId, /**@type {number}*/senderId) => instance.chatReport(messageId, senderId);
-/**@type {(messageId:number, reaction:string)=>void}*/export let chatReact = (/**@type {number}*/ messageId, /**@type {string}*/reaction) => instance.chatReact(messageId, reaction);
+
 // Hook up cross frame / parent window IPC request handlers
-addMessageHandler("fetchLinkKey", instance.fetchLinkKey);
-addMessageHandler("openChatPanel", openChatPanel);
-addMessageHandler("scrollToPosts", scrollToPosts);
-addMessageHandler("defaultServer", defaultServer);
-addMessageHandler("openOverlayMenu", openOverlayMenu);
-addMessageHandler("resizePostsFrame", resizePostsFrame);
+addIpcMessageHandler("fetchLinkKey", () => makeIpcRequest(wsCapsule, "fetchLinkKey"));
+addIpcMessageHandler("openChatPanel", openChatPanel);
+addIpcMessageHandler("scrollToPosts", scrollToPosts);
+addIpcMessageHandler("defaultServer", defaultServer);
+addIpcMessageHandler("openOverlayMenu", openOverlayMenuOld);
+addIpcMessageHandler("resizePostsFrame", resizePostsFrame);
+window.addEventListener("message", handleIpcMessage);
+
+// Tell wsCapsule to start initialising websocket connection
+const fingerprintJS = await FingerprintJS.load();
+const result = await fingerprintJS.get();
+sendIpcMessage(wsCapsule, "connect", {
+	device: result.visitorId,
+	server: localStorage.server || DEFAULT_SERVER,
+	vip: localStorage.vip
+});
 
 // Blank default render and canvas size init before we have loaded board
 setSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
 renderAll();
-if (chatName) {
-	namePanel.style.visibility = "hidden"
-}

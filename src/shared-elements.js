@@ -1,20 +1,22 @@
 import { LitElement, html } from "lit-element"
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { EMOJIS, CUSTOM_EMOJIS } from "./defaults.js";
-import { DEFAULT_SERVER, translate } from "./shared.js";
+import { DEFAULT_SERVER, EMOJIS, CUSTOM_EMOJIS } from "./defaults.js";
+import { translate } from "./shared.js";
 
 class Spoiler extends HTMLElement {
 	constructor() {
-		super()
+		super();
 		this.addEventListener("click", () => {
-			this.show()
+			this.show();
 		})
 	}
+
 	show() {
-		this.removeAttribute("hidden")
+		this.removeAttribute("hidden");
 	}
+
 	static get observedAttributes() {
-		return ["hidden"]
+		return ["hidden"];
 	}
 }
 customElements.define("r-spoiler", Spoiler)
@@ -92,7 +94,7 @@ class Gif extends LitElement {
 
 customElements.define("r-gif", Gif);
   
-class PostCopy extends HTMLElement {
+class ClipboardCopy extends HTMLElement {
 	constructor() {
 		super()
 	}
@@ -132,7 +134,7 @@ class PostCopy extends HTMLElement {
 		})
 	}
 }
-customElements.define("r-clipboard-copy", PostCopy)
+customElements.define("r-clipboard-copy", ClipboardCopy)
 
 class CloseIcon extends HTMLElement {
 	constructor() {

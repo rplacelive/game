@@ -1,7 +1,8 @@
 import { LitElement, html } from "lit-element"
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { until } from "lit-html/directives/until.js";
-import { markdownParse, sanitise, DEFAULT_AUTH, cachedFetch } from "./shared.js";
+import { DEFAULT_AUTH } from "./defaults.js";
+import { markdownParse, sanitise, cachedFetch } from "./shared.js";
 
 const fuzzyNumberFormat = new Intl.NumberFormat(navigator.language, { notation: "compact" })
 

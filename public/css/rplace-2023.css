@@ -33,6 +33,12 @@ button, input[type="button"], textarea {
 	height: 36px;
 }
 
+button[disabled]:disabled, input[type="button"]:disabled, textarea:disabled {
+	cursor: default;
+	color: #0000009c;
+	pointer-events: none;
+}
+
 button:hover, input[type="button"]:hover {
 	background-color: lightgray;
 }
@@ -56,7 +62,7 @@ body {
 	background: white;
 }
 
-#modal {
+.modal {
 	background: rgb(255, 255, 255);
 	color: rgb(0, 0, 0);
 	width: 261px;
@@ -87,12 +93,27 @@ body {
 	border-bottom: var(--pixel-border);
 }
 
+.dialog-modal {
+	padding: 16px;
+}
+
 .context-menu {
 	border: var(--pixel-border);
 	background-color: white;
 }
-.context-menu > ul > li:hover {
+.context-menu > menu > li:hover {
 	background: lightgrey;
+}
+.context-menu > menu > li > button {
+	margin: 0;
+	padding: 0;
+	border: none;
+	width: 100%;
+	background-color: transparent;
+	text-align: left;
+	color: black;
+	height: min-content;
+	font-size: 16px;
 }
 
 /* Buttons */
@@ -155,7 +176,7 @@ r-close-icon {
 	border-bottom: var(--pixel-border);
 }
 
-#posel {
+#positionIndicator {
 	position: absolute;
 	bottom: 24px;
 	left: 50%;
@@ -287,6 +308,7 @@ r-close-icon {
 	height: max(38px, var(--message-input-height));
 	display: flex;
 	padding-top: 8px;
+	padding-right: 58px;
 }
 #messageTypePanel {
 	height: calc(var(--message-input-height) + 72px);
@@ -296,8 +318,20 @@ r-close-icon {
 }
 .message-input-actions {
 	top: 1px;
-    right: 1px;
+	right: 1px;
 }
+
+#messageCancelReplyButton {
+	padding: 0;
+	margin: 0;
+	width: 32px;
+	height: 32px;
+	display: flex;
+	position: absolute;
+	right: -2px;
+	top: -2px;
+}
+
 .message-emojis-suggestion:hover {
 	background: lightgrey;
 }
@@ -317,6 +351,14 @@ r-close-icon {
 	box-shadow: var(--pixel-box-shadow);
 	padding: 21px;
 	background-color: white;
+}
+
+.modal-inner-container {
+	border: var(--pixel-border);
+	padding: 8px;
+	background: #f7f7f7;
+	padding: 4px;
+	opacity: 0.8;
 }
 
 #modMessagePreview {

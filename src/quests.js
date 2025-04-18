@@ -1,6 +1,7 @@
-import { AUDIOS } from "./defaults";
 import { confetti } from "@tsparticles/confetti";
-import { addMessageHandler, syncLocalStorage } from "./shared";
+import { AUDIOS } from "./game-defaults.js";
+import { syncLocalStorage } from "./shared.js";
+import { addIpcMessageHandler } from "shared-ipc";
 
 /**
  * @typedef {Record<string, any>} Quests
@@ -97,4 +98,4 @@ export function closeQuestsFrame() {
 }
 
 // Hook up cross frame / parent window IPC request handlers
-addMessageHandler("closeQuestsFrame", closeQuestsFrame);
+addIpcMessageHandler("closeQuestsFrame", closeQuestsFrame);

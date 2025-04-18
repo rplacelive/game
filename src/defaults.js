@@ -1,4 +1,18 @@
 /**
+ * @constant {string} DEFAULT_SERVER
+ */
+export const DEFAULT_SERVER = "wss://server.rplace.live:443"
+/**
+ * @constant {string} DEFAULT_BOARD
+ */
+export const DEFAULT_BOARD = "https://raw.githubusercontent.com/rplacelive/canvas1/main/place"
+/**
+ * @constant {string} DEFAULT_AUTH
+ */
+export const DEFAULT_AUTH = "https://server.rplace.live/auth"
+
+
+/**
  * @constant {string[]} CHAT_COLOURS
  * List of predefined colours for chat usernames.
  */
@@ -15,33 +29,6 @@ export const VERIFIED_APP_HASH = "90e58b1f2c5fb98f74962806b85c2d7d3f7b18be8abe7a
  * String containing the default palette keys used in the app.
  */
 export const DEFAULT_PALETTE_KEYS = "123456789abcdefghijklmnopqrstuvwxyz"
-
-/**
- * @typedef {Object<string, HTMLAudioElement>} AudioMap
- * @property {HTMLAudioElement} invalid - Invalid sound.
- * @property {HTMLAudioElement} highlight - Highlight sound.
- * @property {HTMLAudioElement} selectColour - Select colour sound.
- * @property {HTMLAudioElement} closePalette - Close palette sound.
- * @property {HTMLAudioElement} cooldownStart - Cooldown start sound.
- * @property {HTMLAudioElement} cooldownEnd - Cooldown end sound.
- * @property {HTMLAudioElement} bell - Bell sound.
- * @property {HTMLAudioElement} celebration - Celebration sound.
- */
-
-/**
- * @constant {AudioMap} AUDIOS
- * Map of audio elements used in the application.
- */
-export const AUDIOS = {
-	invalid: new Audio("/sounds/invalid.mp3"),
-	highlight: new Audio("/sounds/highlight.mp3"),
-	selectColour: new Audio("/sounds/select-colour.mp3"),
-	closePalette: new Audio("/sounds/close-palette.mp3"),
-	cooldownStart: new Audio("/sounds/cooldown-start.mp3"),
-	cooldownEnd: new Audio("/sounds/cooldown-end.mp3"),
-	bell: new Audio("/sounds/bell.mp3"),
-	celebration: new Audio("/sounds/celebration.mp3")
-}
 
 /**
  * @typedef {Map<string, string>} EmojiMap
@@ -150,7 +137,6 @@ export const COMMANDS = new Map([
 	["help", "<kbd>Help information for live chat</kbd>"],
 	["name", "<kbd>Change your username</kbd>"],
 	["vip", "<kbd>Apply a VIP code</kbd>"],
-	["lookup", "<kbd>Get the IDs of all players with the given name</kbd>"],
 	["getid", "<kbd>View your own User Id, or provide a name to view a list of online player User Ids</kbd>"],
 	["whoplaced", "<kbd>View details of who placed the current pixel being hovered</kbd>"]
 ])
@@ -201,8 +187,8 @@ export const LANG_INFOS = new Map([
  * @constant {Map<string, ThemeInfo>} DEFAULT_THEMES
  */
 export const DEFAULT_THEMES = new Map([
-	["r/place 2022", { id: "r/place 2022", css: "/css/rplace-2022.css", cssVersion: "15", pixelselect: "/svg/pixel-select-2022.svg" }],
-	["r/place 2023", { id: "r/place 2023", css: "/css/rplace-2023.css", cssVersion: "15", pixelselect: "/svg/pixel-select-2023.svg" }]
+	["r/place 2022", { id: "r/place 2022", css: "/css/rplace-2022.css", cssVersion: "16", pixelselect: "/svg/pixel-select-2022.svg" }],
+	["r/place 2023", { id: "r/place 2023", css: "/css/rplace-2023.css", cssVersion: "16", pixelselect: "/svg/pixel-select-2023.svg" }]
 ])
 
 /**

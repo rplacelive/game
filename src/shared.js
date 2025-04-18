@@ -1,11 +1,8 @@
 import { Marked } from "marked"
+import { DEFAULT_AUTH } from "./defaults"
 import DOMPurify from "dompurify"
 
 // Contains shared resources across pages
-export const DEFAULT_SERVER = "wss://server.rplace.live:443"
-export const DEFAULT_BOARD = "https://raw.githubusercontent.com/rplacelive/canvas1/main/place"
-export const DEFAULT_AUTH = "https://server.rplace.live/auth"
-
 export const BADGE_ICONS = [ "badges/based.svg", "badges/trouble_maker.svg", "badges/veteran.svg", "badges/admin.svg", "badges/moderator.svg", "badges/noob.svg", "badges/script_kiddie.svg", "badges/ethical_botter.svg", "badges/gay.svg", "badges/discord_member.svg", "badges/100_pixels_placed", "badges/1000_pixels_placed", "badges/5000_pixels_placed", "badges/2000_pixels_placed", "badges/100000_pixels_placed", "badges/1000000_pixels_placed" ]
 export const ACCOUNT_TIER_NAMES = {
 	0: "accountTierFree",
@@ -584,135 +581,6 @@ export function handleFormSubmit(form, endpoint, { bind, checkCustomValidity, pr
 	})
 }
 
-// Cross-frame / parent window IPC system
-/**
- * @typedef {Object} IpcMessage
- * @property {string} call
- * @property {any} data
- * @property {number} handle
- * @property {string} source
- * @property {string} error
- */
-
-let frameReqId = 0
-/**@type {Map<number, PublicPromise>}*/const frameReqs = new Map()
-/**
- * 
- * @param {string} messageCall 
- * @param {any} args 
- */
-export async function makeParentRequest(messageCall, args = undefined) {
-	const handle = frameReqId++
-	const promise = new PublicPromise()
-	const postCall = { call: messageCall, data: args, handle: handle, source: window.name }
-	frameReqs.set(handle, promise)
-	window.parent.postMessage(postCall)
-	return await promise.promise
-}
-/**
- * 
- * @param {string} messageCall 
- * @param {any} args 
- */
-export function sendParentMessage(messageCall, args = undefined) {
-	window.parent.postMessage({ call: messageCall, data: args }, location.origin)
-}
-/**
- * @param {HTMLIFrameElement} frameEl
- * @param {any} messageCall
- */
-export async function makeCrossFrameRequest(frameEl, messageCall, args = undefined) {
-	const handle = frameReqId++
-	const promise = new PublicPromise()
-	const postCall = { 
-		call: messageCall, 
-		data: args, 
-		handle: handle,
-		source: window.name || "main"
-	}
-	frameReqs.set(handle, promise)
-	frameEl.contentWindow?.postMessage(postCall, location.origin)
-	return await promise.promise
-}
-/**
- * @param {HTMLIFrameElement} frameEl
- * @param {any} messageCall
- */
-export function sendCrossFrameMessage(frameEl, messageCall, args = undefined) {
-	frameEl.contentWindow?.postMessage({ 
-		call: messageCall, 
-		data: args,
-		source: window.name || "main"
-	}, location.origin)
-}
-
-// Listen for messages from other frames / child windows
-/**@type {Map<string, Function>}*/const frameReqHandlers = new Map();
-/**
- * 
- * @param {string} name 
- * @param {Function} handler 
- */
-export function addMessageHandler(name, handler) {
-	frameReqHandlers.set(name, handler)
-}
-window.addEventListener("message", async function(event) {
-	if (!event.origin.startsWith(location.origin)) {
-		return;
-	}
-	
-	/**@type {IpcMessage}*/const message = event.data;
-	if (!message) {
-		return;
-	}
-
-	if (message.call && typeof message.call === "string") {
-		/** @type {any} */let result = undefined;
-		try {
-			// Check if the method exists and is callable
-			if (typeof window[message.call] === "function") {
-				result = await (window[message.call])(message.data);
-			}
-			else if (frameReqHandlers.has(message.call)) {
-				const reqHandler = /**@type {Function}*/(frameReqHandlers.get(message.call));
-				result = await reqHandler(message.data);
-			}
-
-			// Send return result back if handle was provided
-			if (message.handle !== undefined && message.handle !== null) {
-				/** @type {Window} */ (event.source).postMessage({ 
-					handle: message.handle, 
-					data: result,
-					source: window.name || "main"
-				}, event.origin);
-			}
-		}
-		catch (error) {
-			console.error(`Error executing cross-frame call '${message.call}':`, error);
-			if (message.handle !== undefined && message.handle !== null) {
-				/** @type {Window} */ (event.source).postMessage({ 
-					handle: message.handle, 
-					error: error instanceof Error ? error.message : String(error),
-					source: window.name || "main"
-				}, event.origin);
-			}
-		}
-	}
-	else if (message.handle) { 
-		// Return value from calling another frames method
-		const request = frameReqs.get(message.handle);
-		if (request) {
-			if (message.error) {
-				request.reject(new Error(message.error));
-			}
-			else {
-				request.resolve(message.data);
-			}
-			frameReqs.delete(message.handle);
-		}
-	}
-});
-
 /**
  * @param {string} text - The input string to be hashed
  * @returns {number} The resulting hash value
@@ -776,4 +644,95 @@ export function syncLocalStorage(storageKey, target) {
 		}
 	}
 	return new Proxy(target, handler)
+}
+
+/**
+ * 
+ * @param {Blob} blob 
+ * @returns {Promise<string>}
+ */
+export function blobToBase64(blob) {
+	return new Promise((resolve, reject) => {
+		const reader = new FileReader();
+		reader.onloadend = function() {
+			const result = reader.result;
+			if (!result || typeof result !== "string") {
+				return reject();
+			}
+
+			const base64String = result.split(",")[1]
+			resolve(base64String);
+		};
+		reader.onerror = reject;
+		reader.readAsDataURL(blob);
+	});
+}
+
+/**
+ * @param {string} base64
+ */
+export function base64ToUint8Array(base64) {
+	const binary = atob(base64);
+	const len = binary.length;
+	const bytes = new Uint8Array(len);
+	for (let i = 0; i < len; i++) {
+		bytes[i] = binary.charCodeAt(i);
+	}
+	return bytes;
+}
+
+/**
+ * @param {string} base64
+ * @param {string} mimeType
+ */
+export function base64ToBlob(base64, mimeType = "") {
+	const bytes = base64ToUint8Array(base64);
+	return new Blob([bytes], { type: mimeType });
+}
+
+/**
+ * 
+ * @param {object} object 
+ * @param {boolean} editable 
+ * @returns {string} - HTML source
+ */
+export function objectToHtml(object, editable = false) {
+	let html = ""
+	let indent = 1
+	let last = false
+
+	/**
+	 * 
+	 * @param {Record<string, any>} obj 
+	 */
+	function propToHtml(obj) {
+		for (let prop in obj) {
+			if (typeof obj[prop] === 'object' && !Array.isArray(obj[prop])) {
+				indent++
+				html += `<div style="margin-left: ${indent * 8}px"><span>${prop}:</span> ${propToHtml(obj[prop])}</div>\n`
+				last = false
+			}
+			else {
+				if (!last) indent--
+				last = true
+				if (!editable) {
+					html += `<div style="margin-left: ${indent * 8}px"><span>${prop}:</span> ${obj[prop]}</div>\n`
+				}
+				else {
+					let input = ""
+					switch (typeof obj[prop]) {
+						case 'string': input = `<input type="text" value=${obj[prop]}>`; break
+						case 'number': input = `<input type="number" value=${Number(obj[prop])}>`; break
+						case 'boolean': input = `<input type="checkbox" ${obj[prop] ? 'checked' : ''}>`; break
+						case 'object': input = `<button>+ Add new</button>`; break;
+					}
+
+					html += `<div style="margin-left: ${indent * 8}px"><span>${prop}:</span> ${input}</div>\n`
+				}
+			}
+		}
+	}
+	propToHtml(object)
+
+	return html
 }

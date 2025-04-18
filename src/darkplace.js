@@ -1,5 +1,4 @@
 import { forceTheme } from "./index.js";
-
 /**@type {Set<any>|null}*/ let fallingMessages = null;
 /**@type {Timer|null}*/let fallingMessageInterval = null;
 /**@type {HTMLCanvasElement|null}*/let backgroundCanvas = null;

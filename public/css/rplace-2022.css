@@ -80,6 +80,7 @@ input[type="radio"] {
 
 input[type="checkbox"] {
 	appearance: auto;
+	height: min-content;
 }
 
 input[type=file]::file-selector-button {
@@ -131,7 +132,7 @@ a {
 	box-shadow: var(--ui-frame-shadow);
 }
 
-#modal {
+.modal {
 	border: none;
 	background: var(--ui-panel-bg);
 	border-radius: 8px;
@@ -140,7 +141,7 @@ a {
 }
 
 @media (max-width:500px){
-	#modal {
+	.modal {
 		padding: 16px;
 	}
 
@@ -210,14 +211,31 @@ dialog {
 	border-radius: 18px;
 }
 
+.dialog-modal {
+	padding: 10px;
+	background: var(--ui-panel-bg);
+	border-radius: 15px;
+	border: none;
+	row-gap: 8px;
+}
+
 .context-menu {
 	background: var(--ui-panel-bg);
 	border-radius: 5px;
 	box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.5);
 }
-.context-menu > ul > li:hover {
+.context-menu > menu > li:hover {
 	background: var(--ui-panel-hover);
 	border-radius: 4px;
+}
+.context-menu > menu > li > button {
+	box-shadow: none;
+	padding: 0;
+	margin: 0;
+	display: block;
+	text-align: left;
+	height: min-content;
+	background: transparent;	
 }
 
 /* Layout buttons */
@@ -262,7 +280,7 @@ dialog {
 	justify-content: center;
 }
 
-#helpbtn, #posel, #place, #archiveView, .toast-menu, #captchaPopup, #closebtn, #timelapsePanel {
+#helpbtn, #positionIndicator, #place, #archiveView, .toast-menu, #captchaPopup, #closebtn, #timelapsePanel {
 	box-shadow: 0 0 30px black;
 }
 
@@ -302,6 +320,14 @@ dialog {
 	opacity: 1;
 }
 
+#messageCancelReplyButton {
+	box-shadow: none;
+	padding: 0;
+	margin: 0;
+	width: min-content;
+	height: min-content;
+}
+
 .message-emojis-suggestion {
 	box-shadow: none;
 }
@@ -331,6 +357,15 @@ r-live-chat-message .emoji-reactors-count {
 	border-radius: 15px;
 }
 
+.modal-inner-container {
+	border-radius: 12px;
+	padding: 8px;
+	box-shadow: inset 2px 2px #dbdbdb;
+	background: var(--ui-panel-inner);
+	padding: 4px;
+	border: 1px solid lightgray;
+}
+
 #modMessagePreview {
 	border-radius: 12px;
 	padding: 8px;
@@ -340,7 +375,7 @@ r-live-chat-message .emoji-reactors-count {
 	border: 1px solid lightgray;
 }
 
-#posel{
+#positionIndicator {
 	position: absolute;
 	top: 20px;
 	left: 50%;
@@ -354,6 +389,8 @@ r-live-chat-message .emoji-reactors-count {
 	text-align: center;
 	z-index: 5;
 	font-family: mono;
+	-webkit-user-select: none;
+	user-select: none;
 	transition: .2s border-radius;
 }
 
@@ -364,7 +401,8 @@ r-live-chat-message .emoji-reactors-count {
 
 #namePanel {
 	background-color: var(--ui-panel-bg);
-	border-radius: 15px;
+	border-radius: 10px;
+	box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
 }
 
 .name-input-container > button {
