@@ -31,6 +31,7 @@ export const TRANSLATIONS = {
 		webappInstall: "Install rplace.live web app",
 		connectionProblems: "Connection problems?",
 		tryClickingHere: "try clicking here",
+		orTweetUs: "Or tweet us",
 		pleaseBeRespectful: "Please be respectful and try not to spam!",
 		enterNickname: "Enter nickname...",
 		enterMessage: "Enter message...",

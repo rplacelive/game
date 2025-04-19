@@ -205,6 +205,12 @@ dialog {
 	line-height: 38px;
 }
 
+.copyright-label {
+	margin-top: 16px;
+	margin-bottom: 0px;
+	font-size: 14px;
+}
+
 .modal-footer-button {
 	color: var(--ui-text);
 	box-shadow: 0 3px 10px rgba(0,0,0,.3);

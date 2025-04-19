@@ -1,7 +1,10 @@
 import { $ } from "./shared.js";
+import { EditList } from "./shared-elements.js";
+import { setSelectColourSample, getDefaultSample } from "./game-audio.js";
 
 export let enableWebglCanvas = localStorage.enableWebglCanvas === "true";
-export let enableNewOverlayMenu = localStorage.enabledNewOverlayMenu === "true";
+export let enableNewOverlayMenu = localStorage.enableNewOverlayMenu === "true";
+export let enableMelodicPalette = localStorage.enableMelodicPalette === "true";
 
 // Experimental settings
 const enableWebglCanvasCheckbox = /**@type {HTMLInputElement}*/($("#enableWebglCanvasCheckbox"));
@@ -9,52 +12,56 @@ enableWebglCanvasCheckbox.checked = enableWebglCanvas;
 enableWebglCanvasCheckbox.addEventListener("change", function() {
 	enableWebglCanvas = !enableWebglCanvas;
 	localStorage.enableWebglCanvas = String(enableWebglCanvas);
-	enableWebglCanvasCheckbox.checked = enableWebglCanvas;
 });
+
 const enableNewOverlayMenuCheckbox = /**@type {HTMLInputElement}*/($("#enableNewOverlayMenuCheckbox"));
 enableNewOverlayMenuCheckbox.checked = enableNewOverlayMenu;
 enableNewOverlayMenuCheckbox.addEventListener("change", function() {
 	enableNewOverlayMenu = !enableNewOverlayMenu;
-	localStorage.enabledNewOverlayMenu = String(enableNewOverlayMenu);
-	enableNewOverlayMenuCheckbox.checked = enableNewOverlayMenu;
+	localStorage.enableNewOverlayMenu = String(enableNewOverlayMenu);
 });
 
 // Secret settings
-const editLocalStorageList = /**@type {HTMLElement}*/($("#editLocalStorageList"));
-function refreshEditLocalStorageList() {
-	editLocalStorageList.innerHTML = "";
-	for (let i = 0; i < localStorage.length; i++) {
-		const key = localStorage.key(i);
-		if (key === null) {
-			continue;
-		}
-	
-		const li = document.createElement("li");
-		const label = document.createElement("label");
-		const span = document.createElement("span");
-		span.textContent = key;
-		label.appendChild(span);
-		const input = document.createElement("input");
-		input.type = "text";
-		input.placeholder = key ? localStorage.getItem(key) || "" : "";
-		input.addEventListener("change", function() {
-			if (confirm(`Are you sure you want to change localStorage item '${key}''s value to '${input.value}'`)) {
-				localStorage.setItem(key, input.value);
-				input.placeholder = input.value;
-			}
-		});
-		label.appendChild(input);
-		li.appendChild(label);
-		const button = document.createElement("button");
-		button.textContent = "x";
-		button.addEventListener("click", function() {
-			if (confirm(`Are you sure you want to delete localStorage item '${key}'?`)) {
-				localStorage.removeItem(key);
-				li.remove();
-			}
-		});
-		li.appendChild(button);
-		editLocalStorageList.appendChild(li);
-	}	
+const enableMelodicPaletteCheckbox = /**@type {HTMLInputElement}*/($("#enableMelodicPaletteCheckbox"));
+enableMelodicPaletteCheckbox.checked = enableMelodicPalette;
+enableMelodicPaletteCheckbox.addEventListener("change", async function() {
+	enableMelodicPalette = !enableMelodicPalette;
+	localStorage.enableMelodicPalette = String(enableMelodicPalette);
+});
+
+const paletteSoundSelect = /**@type {HTMLSelectElement}*/($("#paletteSoundSelect"));
+/** @param {string} value */
+async function handlePaletteSoundChange(value) {
+	const sample = await getDefaultSample(value);
+	if (sample) {
+		setSelectColourSample(sample);
+		localStorage.paletteSelectSound = value;
+	}
 }
-refreshEditLocalStorageList();
+async function initPaletteSoundSelect() {
+	const selectSound = localStorage.paletteSelectSound;
+	if (selectSound) {
+		paletteSoundSelect.value = selectSound;
+		handlePaletteSoundChange(selectSound);
+	}
+}
+initPaletteSoundSelect();
+paletteSoundSelect.addEventListener("change", function() {
+	handlePaletteSoundChange(paletteSoundSelect.value);
+});
+
+// Local storage editor
+const editLocalStorageList = /**@type {EditList}*/($("#editLocalStorageList"));
+editLocalStorageList.data = window.localStorage;
+editLocalStorageList.addEventListener("itemchange", (/**@type {any}*/e) => {
+	const { key, value } = e.detail;
+	localStorage.setItem(key, value);
+});
+editLocalStorageList.addEventListener("itemremove", (/**@type {any}*/e) => {
+	const { key } = e.detail;
+	localStorage.removeItem(key);
+});
+editLocalStorageList.addEventListener("itemadd", (/**@type {any}*/e) => {
+	const { key, value } = e.detail;
+	localStorage.setItem(key, value);
+});

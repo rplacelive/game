@@ -97,3 +97,24 @@ r-canvas-share-embed r-clipboard-copy {
 	flex-shrink: 0;
 	margin-left: auto;
 }
+
+r-edit-list ul {
+	list-style: none;
+	padding: 0;
+}
+
+r-edit-list li {
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
+	margin-bottom: 0.25rem;
+}
+
+r-edit-list input {
+	flex: 1;
+}
+
+r-edit-list button {
+	cursor: pointer;
+	aspect-ratio: 1 / 1;
+}
