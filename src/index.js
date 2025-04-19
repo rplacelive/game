@@ -179,8 +179,8 @@ const themeDropName = /**@type {HTMLElement}*/($("#themeDropName"));
 const themeDropParent = /**@type {HTMLElement}*/($("#themeDropParent"));
 
 // WS & State variables
+/**@type {Map<number, string>}*/ export const intIdNames = new Map(); // intId : name
 /**@type {Map<number, number>}*/ let intIdPositions = new Map(); // position : intId
-/**@type {Map<number, string>}*/ export let intIdNames = new Map(); // intId : name
 /**@type {any|null}*/ let account = null;
 /**@type {number|null}*/ let intId = null;
 /**@type {string|null}*/ let chatName = null;
@@ -377,6 +377,15 @@ function setChatName(name) {
 }
 addIpcMessageHandler("setChatName", setChatName);
 /**
+ * @param {Map<number, string>} newIntIdNames 
+ */
+function handleNameInfo(newIntIdNames) {
+	for (const [ key, value ] of newIntIdNames.entries()) {
+		intIdNames.set(key, value);
+	}
+}
+addIpcMessageHandler("handleNameInfo", handleNameInfo);
+/**
  * @param {{ message: LiveChatMessage, channel: string }} param
  */
 function addLiveChatMessage({ message, channel }) {
@@ -388,8 +397,8 @@ function addLiveChatMessage({ message, channel }) {
 		message.messageId,
 		message.txt,
 		message.senderIntId,
-		message.name,
 		message.sendDate,
+		message.name,
 		message.repliesTo,
 		message.reactions
 	);
@@ -1917,13 +1926,13 @@ function switchLanguageChannel(selected) {
  * @param {number} messageId
  * @param {string} txt
  * @param {number} senderId
- * @param {string|null} name
  * @param {number} sendDate
+ * @param {string|null} name
  * @param {number|null} repliesTo
  * @param {Map<string, Set<number>>|null} reactions
  * @returns {import("./game-elements.js").LiveChatMessage}
  */
-export function createLiveChatMessage(messageId, txt, senderId, name, sendDate, repliesTo = null, reactions = null) {
+export function createLiveChatMessage(messageId, txt, senderId, sendDate, name = null, repliesTo = null, reactions = null) {
 	const message = /**@type {import("./game-elements.js").LiveChatMessage}*/(document.createElement("r-live-chat-message"));
 	message.messageId = messageId;
 	message.content = txt;
@@ -2036,7 +2045,7 @@ To create a separator, create a blank line (Shift + Enter on keyboard) and inser
 \`\`\`
 :name zekiah
 \`\`\`
-(^ Will set your username to 'zekiah')`, 0, ":HELP@RPLACE.LIVE", Date.now());
+(^ Will set your username to 'zekiah')`, 0, Date.now(), ":HELP@RPLACE.LIVE");
 			chatMessages.insertAdjacentElement("beforeend", newMessage);
 			break;
 		}
@@ -2059,14 +2068,14 @@ function addChatMessages({ channel, messages, before }) {
 	const messageRenderPromises = [];
 
 	messages.forEach(msgData => {
-		const name = intIdNames.get(msgData.senderIntId) || 'Unknown';
+		const name = intIdNames.get(msgData.senderIntId) || null;
 		/** @type {import("./game-elements.js").LiveChatMessage}*/
 		const newMessage = createLiveChatMessage(
 			msgData.messageId,
 			msgData.txt,
 			msgData.senderIntId,
-			name,
 			msgData.sendDate,
+			name,
 			msgData.repliesTo,
 			msgData.reactions
 		);
@@ -2347,11 +2356,11 @@ modMessageId.addEventListener("input", async function(e) {
 			const data = await response.json();
 			if (data.messages && data.messages.length > 0) {
 				const message = data.messages[0];
-				const chatName = data.users[message.senderIntId].chatName || "Unknown";
+				const chatName = data.users[message.senderIntId].chatName || null;
 
 				// Use createLiveChatMessage to build the HTML element
 				const messageElement = createLiveChatMessage(message.id, message.message, message.senderIntId,
-					chatName, message.date * 1000, message.repliesTo, null);
+					message.date * 1000, chatName, message.repliesTo, null);
 
 				modMessagePreview.innerHTML = "";
 				modMessagePreview.appendChild(messageElement);
