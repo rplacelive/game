@@ -24,3 +24,19 @@ export const AUDIOS = {
 	bell: new Audio("/sounds/bell.mp3"),
 	celebration: new Audio("/sounds/celebration.mp3")
 }
+
+/**
+ * @typedef SampleInfo
+ * @property {string} url
+ * @property {number} baseNote
+ */
+
+/**
+ * @constant {Map<string, SampleInfo>} DEFAULT_SAMPLE_INFOS
+ * Map of sample names to default sample infos
+ */
+export const DEFAULT_SAMPLE_INFOS = new Map([
+	["default", { url: "/sounds/select-colour.mp3", baseNote: 86 }], // D6
+	["piano", { url: "/sounds/piano-c5.mp3", baseNote: 72 }], // C5
+	["bell", { url: "/sounds/bell.mp3", baseNote: 86 }] // TODO: D6 (86) is probably inaccurate
+]);

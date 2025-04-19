@@ -53,11 +53,11 @@ export class BoardRenderer {
 
 		const vertices = new Float32Array([
 			-1.0, -1.0, 0.0,
-			1.0, -1.0, 0.0,
+			 1.0, -1.0, 0.0,
 			-1.0,  1.0, 0.0,
 			-1.0,  1.0, 0.0,
-			1.0, -1.0, 0.0,
-			1.0,  1.0, 0.0
+			 1.0, -1.0, 0.0,
+			 1.0,  1.0, 0.0
 		]);
 		const uv = new Float32Array([
 			0, 0,
@@ -95,13 +95,13 @@ export class BoardRenderer {
 			void main() {
 				ivec2 texSize = textureSize(u_boardTex, 0);
 				ivec2 uv = ivec2(v_uv * vec2(texSize));
-				
+
 				// Get palette index from board texture
 				uint index = texelFetch(u_boardTex, uv, 0).r;
-				
+
 				// Get color from palette texture
 				uvec4 raw = texelFetch(u_paletteTex, ivec2(int(index), 0), 0);
-				
+
 				// Convert to normalized float
 				fragColour = vec4(raw) / 255.0;
 			}`;
@@ -196,16 +196,16 @@ export class BoardRenderer {
 	}
 
 	#updateCanvasSize() {
-		const dpr = window.devicePixelRatio || 1;
-		const width = this.canvas.clientWidth * dpr;
-		const height = this.canvas.clientHeight * dpr;
-		
+		const dpr = this.#devicePixelRatio;
+		const width = this.canvas.offsetWidth * dpr;
+		const height = this.canvas.offsetHeight * dpr;
+
 		if (this.canvas.width !== width || this.canvas.height !== height) {
 			this.canvas.width = width;
 			this.canvas.height = height;
 			return true;
 		}
-		
+
 		return false;	
 	}
 
@@ -216,7 +216,7 @@ export class BoardRenderer {
 			mvp = this.#mvpMatrix;
 
 		// Calculate canvas translation & scale
-		const effectiveZoom = 1 / (this.#zoom * 50 * this.#devicePixelRatio);
+		const scale = 1 / (this.#zoom * 50 * this.#devicePixelRatio); 
 		const ndcX = -(this.#x - this.#width / 2) / (this.#width / 2);
 		const ndcY = (this.#y - this.#width / 2) / (this.#width / 2);
 
@@ -231,9 +231,9 @@ export class BoardRenderer {
 		// Set up projection matrix (zooming)
 		const aspect = this.canvas.width / this.canvas.height;
 		mat4.ortho(projection,
-			-aspect * effectiveZoom, aspect * effectiveZoom, // Left right
-			-effectiveZoom, effectiveZoom, // Bottom top
-			-100, 100 // Clipping plane
+			-aspect * scale, aspect * scale, // Left right
+			-scale, scale, // Bottom top
+			-1, 1 // Clipping plane
 		);
 		
 		// Combine matrices

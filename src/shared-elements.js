@@ -341,7 +341,6 @@ class GifPanel extends LitElement {
 		this.fetchGifs({ search: searchValue, limit: 8 });
 	}
 
-	// @ts-expect-error Remove shadow DOM by using element itself as the shadow root
 	createRenderRoot() {
 		return this;
 	}
@@ -439,49 +438,49 @@ class CanvasShareEmbed extends LitElement {
 	}
 
 	constructor() {
-		super()
-		this.serverUrl = ""
-		this.boardUrl = ""
-		this.canvasInfo = null
+		super();
+		this.serverUrl = "";
+		this.boardUrl = "";
+		this.canvasInfo = null;
 	}
 
 	createRenderRoot() {
-		return this
+		return this;
 	}
 
 	async connectedCallback() {
-		super.connectedCallback()
-		await this.loadCanvasData()
+		super.connectedCallback();
+		await this.loadCanvasData();
 	}
 
 	async loadCanvasData() {
 		try {
-			const httpServerUrl = this.serverUrl.replace("wss://", "https://").replace("ws://", "http://")
-			const response = await fetch(httpServerUrl)
+			const httpServerUrl = this.serverUrl.replace("wss://", "https://").replace("ws://", "http://");
+			const response = await fetch(httpServerUrl);
 			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`)
+				throw new Error(`HTTP error! status: ${response.status}`);
 			}
-			this.canvasInfo = await response.json()
+			this.canvasInfo = await response.json();
 		}
 		catch (error) {
-			console.error("Failed to load canvas data:", error)
-			this.canvasInfo = null
+			console.error("Failed to load canvas data:", error);
+			this.canvasInfo = null;
 		}
 	}
 
 	render() {
 		if (!this.canvasInfo) {
-			return html`<div class="canvas-embed">...</div>`
+			return html`<div class="canvas-embed">...</div>`;
 		}
 
-		const { instance, canvas } = this.canvasInfo
-		const { name, icon } = instance
-		const { width, height, cooldown } = canvas
+		const { instance, canvas } = this.canvasInfo;
+		const { name, icon } = instance;
+		const { width, height, cooldown } = canvas;
 
 		// Construct the URL for clipboard copy
-		const serverParam = encodeURIComponent(this.serverUrl)
-		const boardParam = encodeURIComponent(this.boardUrl)
-		const shareUrl = `https://rplace.live/?server=${serverParam}&board=${boardParam}`
+		const serverParam = encodeURIComponent(this.serverUrl);
+		const boardParam = encodeURIComponent(this.boardUrl);
+		const shareUrl = `https://rplace.live/?server=${serverParam}&board=${boardParam}`;
 		return html`
 			<div class="canvas-embed">
 				<a href="${shareUrl}" class="canvas-link">
@@ -491,7 +490,87 @@ class CanvasShareEmbed extends LitElement {
 					</div>
 				</a>
 				<r-clipboard-copy title="Copy canvas URL to clipboard" href="${shareUrl}"></r-clipboard-copy>
-			</div>`
+			</div>`;
 	}
 }
-customElements.define("r-canvas-share-embed", CanvasShareEmbed)
+customElements.define("r-canvas-share-embed", CanvasShareEmbed);
+
+export class EditList extends LitElement {
+	static properties = {
+		data: { state: true },
+	};
+
+	constructor() {
+		super();
+		this.data = {};
+	}
+
+	createRenderRoot() {
+		return this
+	}
+
+	/**
+	 * @param {string} key 
+	 * @param {any} value 
+	 */
+	updateEntry(key, value) {
+		const newData = { ...this.data, [key]: value };
+		this.data = newData;
+		this.dispatchEvent(new CustomEvent("change", { detail: this.data }));
+		this.dispatchEvent(new CustomEvent("itemchange", {
+			detail: { key, value },
+			bubbles: true,
+			composed: true
+		}));
+	}
+
+	/**
+	 * @param {string} key 
+	 */
+	removeEntry(key) {
+		const { [key]: _, ...rest } = this.data;
+		this.data = rest;
+		this.dispatchEvent(new CustomEvent("change", { detail: this.data }));
+		this.dispatchEvent(new CustomEvent("itemremove", {
+			detail: { key },
+			bubbles: true,
+			composed: true
+		}));
+	}
+
+	addEntry() {
+		const newKey = prompt("Enter key for new entry");
+		if (!newKey) {
+			return;
+		}
+
+		this.data = { ...this.data, [newKey]: "" };
+		this.dispatchEvent(new CustomEvent("change", { detail: this.data }));
+		this.dispatchEvent(new CustomEvent('itemadd', {
+			detail: { key: newKey, value: "" },
+			bubbles: true,
+			composed: true
+		}));
+	}
+
+	render() {
+		return html`
+			<ul>
+				${Object.entries(this.data).map(([key, value]) => html`
+					<li>
+						<input
+							type="text"
+							title="${key}"
+							.value=${value}
+							@input=${(e) => this.updateEntry(key, e.target.value)}
+							placeholder="${key}"
+						>
+						<button @click=${() => this.removeEntry(key)}>x</button>
+					</li>
+				`)}
+			</ul>
+			<button @click=${this.addEntry}>+ Add Entry</button>
+		`;
+	}
+}
+customElements.define("r-edit-list", EditList);

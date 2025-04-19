@@ -317,6 +317,15 @@ r-close-icon {
 	cursor: pointer;
 }
 
+.copyright-label {
+	text-align: center;
+	opacity: 0.6;
+	margin-top: 16px;
+	margin-bottom: 0px;
+	font-size: 14px;
+	user-select: none;
+}
+
 .dialog-modal {
 	color: var(--ui-text);
 	margin: auto;
@@ -1767,7 +1776,7 @@ r-gif video {
 	left: 0;
 	width: 100%;
 	height: 100%;
-	z-index: 4;
+	z-index: 2;
 	pointer-events: none;
 }
 

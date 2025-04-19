@@ -54,6 +54,10 @@ input:focus-visible, button:focus-visible, textarea:focus-visible {
 	outline: auto;
 }
 
+dialog::backdrop {
+	box-shadow: 0 0 256px rgba(0, 0, 0, 0.9) inset;
+}
+
 body {
 	background-color: #333;
 }
@@ -83,6 +87,7 @@ body {
 	line-height: 28px;
 	cursor: pointer;
 	padding: 4px;
+	text-align: center;
 }
 
 .modal-install:hover {

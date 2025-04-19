@@ -42,7 +42,7 @@
 				<span translate="connectionProblems">Connection problems?</span>
 				<a onclick="localStorage.clear(); history.pushState(null, '', location.origin)" href translate="tryClickingHere">try clicking here</a>
 				<br>
-				<span translate="tweetUs">or tweet us</span>
+				<span translate="orTweetUs">or tweet us</span>
 				<a href="https://x.com/rplacelive">@rplacelive</a>
 			</div>
 		</div>
@@ -211,6 +211,7 @@
 			<div id="canvparent1" noselect>
 				<img id="edge" height="226" width="290" src="images/snoo-edge.png" />
 			</div>
+			<canvas id="viewportCanvas"></canvas>
 			<div id="canvparent2" noselect>
 				<div id="canvselect">
 					<img theme="pixelselect" src="/svg/pixel-select-2022.svg" style="position: absolute; top: -10%; left: -10%; width: 120%; height: 120%" ondragstart="return false">
@@ -229,7 +230,6 @@
 				</menu>
 			</div>
 
-			<canvas id="viewportCanvas"></canvas>
 
 			<div noselect id="captchaPopup" style="display: none;">
 				<canvas id="captchaCanvas" width="500" height="800"></canvas>
@@ -316,7 +316,7 @@
 					Together you can create something more.<br><br>
 				</div>
 				<div class="modal-install" id="modalInstall" noselect>Install rplace.live web app</div>
-				<p class="modal-content" style="text-align: center;opacity: 0.6;margin-top: 16px;margin-bottom: 0px;font-size: 14px;" ondblclick="secretSettingsDialog.showModal()">
+				<p class="modal-content copyright-label" ondblclick="secretSettingsDialog.showModal()">
 					© Zekiah-A, BlobKat
 				</p>
 				<div class="modal-footer">
@@ -359,6 +359,19 @@
 					<p>Be warned.. tinkering here may break things!</p>
 				</div>
 				<div style="display: flex; flex-direction: column; row-gap: 4px;">
+					<h3>Secret settings:</h3>
+					<label>
+						<span>Palette select sound:</span>
+						<select id="paletteSoundSelect">
+							<option value="default">Default</option>
+							<option value="piano">Piano</option>
+							<option value="bell">Bell</option>
+						</select>
+					</label>
+					<label>
+						<span>Enable melodic palette:</span>
+						<input type="checkbox" id="enableMelodicPaletteCheckbox" style="height: min-content;">
+					</label>
 					<hr>
 					<h3>Experimental settings:</h3>
 					<label>
@@ -371,8 +384,8 @@
 					</label>
 					<hr>
 					<details>
-						<summary><h3>Edit local storage:</h3></summary>
-						<ul id="editLocalStorageList"></ul>	
+						<summary><h3 style="display: inline;">Edit local storage:</h3></summary>
+						<r-edit-list id="editLocalStorageList"></r-edit-list>	
 					</details>
 				</div>
 			</dialog>

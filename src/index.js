@@ -5,14 +5,15 @@ import { enableDarkplace, disableDarkplace } from "./darkplace.js";
 import { enableWinter, disableWinter } from "./snowplace.js";
 import { clearCaptchaCanvas, updateImgCaptchaCanvas, updateImgCaptchaCanvasFallback } from "./captcha-canvas.js";
 import { BoardRenderer } from "./board-renderer.js";
-import { muted, placeChat } from "./game-settings.js";
-import { enableNewOverlayMenu, enableWebglCanvas } from "./secret-settings.js";
+import { placeChat } from "./game-settings.js";
+import { runAudio, playSample, getNaturalNotes, loadSample, getDefaultSample, selectColourSample } from "./game-audio.js";
+import { enableMelodicPalette, enableNewOverlayMenu, enableWebglCanvas } from "./secret-settings.js";
 import { AUDIOS } from "./game-defaults.js";
 import { addIpcMessageHandler, handleIpcMessage, sendIpcMessage, makeIpcRequest } from "shared-ipc";
 import FingerprintJS from "@fingerprintjs/fingerprintjs";
 import { openOverlayMenu } from "./overlay-menu.js";
 
-// Ws Capsule
+// HTTPS upgrade
 if(!("subtle" in (window.crypto || {}))) {
 	location.protocol = "https:"
 }
@@ -705,7 +706,7 @@ mainContent.addEventListener("touchstart", function(/**@type {TouchEvent}*/ e) {
 		}
 	}
 })
-mainContent.addEventListener("touchend", function(/** @type {TouchEvent} */ e) {
+mainContent.addEventListener("touchend", function(/**@type {TouchEvent}*/ e) {
 	if (!e.isTrusted) {
 		return;
 	}
@@ -747,12 +748,14 @@ mainContent.addEventListener("touchend", function(/** @type {TouchEvent} */ e) {
 
 		// Handle click on target
 		if (touchMoveDistance > 0 && target) {
+			// NOTE: Any button that requires e.isTrusted to be true will cause a problem on mobile due to 
+			// mobile inputs emitting fake events - remember to bind use touchstart too when trust is required
 			target.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 		}
 	}
 	e.preventDefault();
 });
-mainContent.addEventListener("mousedown", function(/**@type {{ button: number; }}*/ e) {
+mainContent.addEventListener("mousedown", function(/**@type {MouseEvent}*/ e) {
 	moved = 3;
 	mouseDown = e.button + 1;
 
@@ -988,20 +991,11 @@ document.body.addEventListener("keydown", function(/**@type {KeyboardEvent}*/e) 
 		indicator.style.visibility = "visible"
 	}
 	let colourI = [...(colours.children)]
-		.indexOf(colours.children[keyIndex])
-	if (colourI < 0) return
-	let el = colours.children[PEN]
-	if (el) {
-		el.classList.remove("sel")
+		.indexOf(colours.children[keyIndex]);
+	if (colourI < 0) {
+		return
 	}
-	PEN = keyIndex;
-	runAudio(AUDIOS.selectColour)
-	canvSelect.style.background = colours.children[keyIndex].style.background
-	colours.children[keyIndex].classList.add("sel")
-	placeOkButton.classList.add("enabled")
-	canvSelect.children[0].style.display = "none"
-	canvSelect.style.outline= "8px white solid"
-	canvSelect.style.boxShadow= "0px 2px 4px 0px rgb(0 0 0 / 50%)"
+	selectColour(keyIndex);
 });
 
 /**
@@ -1144,14 +1138,17 @@ export function pos(newX=x, newY=y, newZ=z) {
 	localStorage.y = Math.floor(newY) + 0.5;
 	localStorage.z = newZ;
 	transform();
+	boardRenderer?.setPosition(x, y, z);
+
+	// Place context
 	const px = Number(placeContext.dataset.x);
 	const py = Number(placeContext.dataset.y);
 	setPlaceContextPosition(px, py, z);
-	boardRenderer?.setPosition(x, y, z);
 	if (positionIndicator.setPosition) {
 		positionIndicator.setPosition(x, y, z);
 	}
-	
+
+	// Placer info
 	const intX = Math.floor(newX), intY = Math.floor(newY);
 	if (intX != lastIntX || intY != lastIntY) {
 		if(idPositionTimeout) {
@@ -1353,17 +1350,6 @@ function zoomIn() {
 	}, 15)
 }
 
-/**
- * @param {HTMLAudioElement} audio
- */
-export async function runAudio(audio) {
-	if (muted) {
-		return;
-	}
-	audio.currentTime = 0;
-	await audio.play().catch((/** @type {any} */ e) => console.error(e));
-}
-
 // Client state
 let PEN = -1;
 let focused = true;
@@ -1434,8 +1420,6 @@ function handlePixelPlace(e) {
 		PEN = -1
 	}
 }
-// Any button that requires e.isTrusted to be true will cause a problem on mobile due to mobile
-// inputs emitting fake events. This is a workaround to prevent that.
 placeOkButton.addEventListener("touchstart", handlePixelPlace);
 placeOkButton.addEventListener("click", handlePixelPlace);
 /**
@@ -1594,7 +1578,53 @@ else {
 	window.addEventListener("DOMContentLoaded", generatePalette);
 }
 
-colours.onclick = (/**@type {MouseEvent}*/e) => {
+/**
+ * @param {number} colourIndex 
+ */
+function runSelectColourAudio(colourIndex) {
+	if (selectColourSample) {
+		let note = selectColourSample.baseNote;
+		if (enableMelodicPalette) {
+			const naturals = getNaturalNotes(4, PALETTE.length);
+			note = naturals[colourIndex];
+		}
+
+		playSample(selectColourSample.audioBuffer, selectColourSample.baseNote, note);	
+	}
+	else {
+		runAudio(AUDIOS.selectColour);
+	}
+}
+
+/**
+ * @param {number} colourIndex 
+ */
+function selectColour(colourIndex) {
+	// Clear select from old colour
+	const oldColour = colours.children[PEN];
+	if (oldColour) {
+		oldColour.classList.remove("sel");
+	}
+
+	// Apply new selection
+	PEN = colourIndex;
+	const clickedColour = colours.children[PEN];
+	canvSelect.style.background = clickedColour.style.background;
+	clickedColour.classList.add("sel");
+	placeOkButton.classList.add("enabled");
+	canvSelect.children[0].style.display = "none";
+	canvSelect.style.outline = "8px white solid";
+	canvSelect.style.boxShadow = "0px 2px 4px 0px rgb(0 0 0 / 50%)";
+	runSelectColourAudio(colourIndex);
+}
+
+/**
+ * @param {Event} e
+ */
+function handleColourClicked(e) {
+	if (!(e instanceof Event) || !e.isTrusted) {
+		return;
+	}
 	const clickedColour = /**@type {HTMLElement}*/(e.target);
 	if (!clickedColour || !clickedColour.dataset.index) {
 		return;
@@ -1603,20 +1633,11 @@ colours.onclick = (/**@type {MouseEvent}*/e) => {
 	if (Number.isNaN(i) || i < PALETTE_USABLE_REGION.start || i >= PALETTE_USABLE_REGION.end) {
 		return;
 	}
-	for (let i = 0; i < colours.children.length; i++) {
-		const colour = colours.children[i];
-		colour.classList.remove("sel");
-	}
-	PEN = i;
-	canvSelect.style.background = clickedColour.style.background;
-	clickedColour.classList.add("sel");
-	placeOkButton.classList.add("enabled");
-	canvSelect.children[0].style.display = "none";
-	canvSelect.style.outline = "8px white solid";
-	canvSelect.style.boxShadow = "0px 2px 4px 0px rgb(0 0 0 / 50%)";
+	selectColour(i);
 	hideIndicators();
-	runAudio(AUDIOS.selectColour);
 }
+colours.addEventListener("click", handleColourClicked);
+colours.addEventListener("touchstart", handleColourClicked);
 
 /**
  * @param {DataView<ArrayBuffer>} data - Canges packet data
@@ -2954,20 +2975,22 @@ const mainContentObserver = new ResizeObserver((entries) => {
 });
 mainContentObserver.observe(mainContent);
 
-closeButton.addEventListener("click", function() {
+function closeGame() {
 	modal.close();
 	closeChatPanel();
 	document.body.id = "out";
 	onMainContentResize();
-})
+}
+closeButton.addEventListener("click", closeGame);
 
-spaceFiller.addEventListener("click", function() {
+function openGame() {
 	if (document.body.id != "out") {
 		return;
 	}
 	document.body.id = "";
 	onMainContentResize();
-})
+}
+spaceFiller.addEventListener("click", openGame);
 
 /**
  * @param {MouseEvent} e
