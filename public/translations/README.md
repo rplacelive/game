@@ -32,5 +32,5 @@ We are currently looking for official translations for the following languages:
 - **Urdu**
 - **Vietnamese**
 - **Italian**
-- **Serbian**
 - **Azerbaijani**
+- **Dutch**

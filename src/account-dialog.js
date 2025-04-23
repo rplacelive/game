@@ -1,5 +1,5 @@
 import { DEFAULT_AUTH } from "./defaults.js";
-import { handleFormSubmit, $, translate, makeRequest, BADGE_ICONS } from "./shared.js";
+import { handleFormSubmit, $, translate, makeRequest, BADGE_ICONS, ACCOUNT_TIER_NAMES } from "./shared.js";
 
 /**@type {number|null}*/let accountId = null
 /**@type {any|null}*/let accountInstance = null
@@ -20,7 +20,7 @@ authToggleLink.addEventListener("click", async function(e) {
 })
 
 const signinForm = /**@type {HTMLFormElement}*/($("#signinForm"));
-handleFormSubmit(signinForm, `${localStorage.auth || DEFAULT_AUTH}/auth/login`, {
+handleFormSubmit(signinForm, `${localStorage.auth || DEFAULT_AUTH}/auth/signin`, {
 	onSuccess: (login) => {
 		accountId = login.accountId
 		unauthedPage.dataset.page = "authcode"
