@@ -909,7 +909,7 @@ modalInstall.addEventListener("click", () => {
 // Keybinds
 document.body.addEventListener("keydown", function(/**@type {KeyboardEvent}*/e) {
 	if (!e.isTrusted) {
-		return
+		return;
 	}
 
 	// Handle keybindings
@@ -979,7 +979,6 @@ document.body.addEventListener("keydown", function(/**@type {KeyboardEvent}*/e) 
 	if (onCooldown || canvasLocked) {
 		return;
 	}
-	const now = Date.now()
 
 	//"Enter" key to place selected block without using mouse
 	if (e.key == "Enter" && (!document.activeElement || !("value" in document.activeElement))) {
@@ -988,25 +987,25 @@ document.body.addEventListener("keydown", function(/**@type {KeyboardEvent}*/e) 
 	}
 
 	//Keyboard shortcuts for selecting palette colours
-	let keyIndex = null
+	let keyIndex = null;
 	if (document.activeElement != document.body) {
-		return
+		return;
 	}
 	keyIndex = (localStorage.paletteKeys || DEFAULT_PALETTE_KEYS).indexOf(e.key)
 	if (keyIndex == -1) {
-		return
+		return;
 	}
 	if (palette.style.transform == "translateY(100%)") {
-		showPalette()
+		showPalette();
 	}
 	for (let c = 0; c < colours.children.length; c++) {
 		const indicator = /**@type {HTMLElement}*/(colours.children[c].firstChild);
 		indicator.style.visibility = "visible"
 	}
-	let colourI = [...(colours.children)]
+	let colourI = [...Array.from(colours.children)]
 		.indexOf(colours.children[keyIndex]);
 	if (colourI < 0) {
-		return
+		return;
 	}
 	selectColour(keyIndex);
 });
