@@ -3,24 +3,26 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>quests</title>
+	<title>Quests | rplace</title>
+	<link rel="apple-touch-icon" href="favicon.ico">
+	<link rel="icon" type="image/x-icon" href="favicon.ico">
 	<script type="module" src="/src/shared.js"></script>
 	<script type="module" src="/src/shared-elements.js" defer></script>
 	<link rel="stylesheet" href="/posts.css">
 </head>
 <body class="reddit-modal" style="background: transparent; height: 576px;" open>
 	<div style="position: relative; background-color: #f0f0f0;">
-		<div class="header">
+		<header class="header">
 			<h4 style="margin: 0px;">Rplace quests</h4>
-		</div>
+		</header>
 		<r-close-icon onclick="window.parent.postMessage({ call: 'closeQuestsFrame' })" tabindex="0" style="position: absolute; top: 10px; right: 10px; width: 32px; z-index: 1;"></r-close-icon>
-		<div class="body">
+		<main class="body">
 			<h1>Quest complete! 🥳</h1>
 			<p id="questsDescription"><!--TODO: Flesh this out--></p>
 			<img alt="trophy" src="images/trophy.png" height="256" style="object-fit: contain;">
 			<div style="flex-grow: 1;"><!-- Spacer --></div>
-			<button class="reddit-modal-button" onclick="window.parent.postMessage({ call: 'closeQuestsFrame' })">Close</button>
-		</div>
+			<button type="button" class="reddit-modal-button" onclick="window.parent.postMessage({ call: 'closeQuestsFrame' })">Close</button>
+		</main>
 	</div>
 </body>
 </html>

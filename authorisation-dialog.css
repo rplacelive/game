@@ -1,0 +1,7 @@
+main.body[data-page] > div[page] {
+	display: none;
+}
+main.body[data-page="loading"] > div[page="loading"],
+main.body[data-page="authorisation"] > div[page="authorisation"] {
+	display: flex;
+}

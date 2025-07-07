@@ -1125,12 +1125,12 @@ body[eventphase="3"] .coverer-title {
 	gap: 1em;
 }
 
-#moderationMenu[opened] {
+#moderationMenu[open] {
 	display: flex;
 	flex-direction: column;
 	row-gap: 8px;
 }
-#moderationMenu[mode="delete"] > #modMemberId {
+#moderationMenu[mode="delete"] > #modUserIdForm {
 	display: none;
 }
 #modMessageIdForm {

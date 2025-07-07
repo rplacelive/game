@@ -1,48 +1,23 @@
 import { DEFAULT_AUTH } from "./defaults.js";
-import { makeRequest } from "./shared.js";
+import { createTopLevelFrame, makeRequest, removeTopLevelFrame } from "./shared.js";
 import { addIpcMessageHandler } from "shared-ipc";
 
 // Injects the iframe containing the account.html page into the DOM
-export function openAccountFrame(page=null, unauthed=null) {
-	const topWindow = window.top
-	if (!topWindow) {
-		console.error("Couldn't open account frame: Unable to access top-level window")
-		return false
+export async function openAccountFrame(page=null, unauthed=null) { // TODO: Replace with the shared.js version 
+	const accountFrame = await createTopLevelFrame("/src/account-dialog.html", "accountFrame");
+	const loginPanel = /**@type {HTMLElement}*/(accountFrame.contentDocument?.querySelector("#loginPanel"));
+	const unauthedPage = /**@type {HTMLElement}*/(accountFrame.contentDocument?.querySelector("#unauthedPage"));
+	if (loginPanel && page) {
+		loginPanel.dataset.page = page
 	}
-	if (topWindow.document.getElementById("accountFrame")) {
-		return false
+	if (unauthedPage && unauthed) {
+		unauthedPage.dataset.page = unauthed
 	}
-
-	const iframe = topWindow.document.createElement("iframe")
-	iframe.src = "/account-dialog.html"
-	iframe.id = "accountFrame"
-	iframe.classList.add("iframe-modal")
-	iframe.addEventListener("load", () => {
-		const loginPanel = /**@type {HTMLElement}*/(iframe.contentDocument?.querySelector("#loginPanel"));
-		const unauthedPage = /**@type {HTMLElement}*/(iframe.contentDocument?.querySelector("#unauthedPage"));
-		if (loginPanel && page) {
-			loginPanel.dataset.page = page
-		}
-		if (unauthedPage && unauthed) {
-			unauthedPage.dataset.page = unauthed
-		}
-	})
-	topWindow.document.body.appendChild(iframe)
-	return true
 }
 
 // Removes the iframe containing the account.html page from the DOM
 export function closeAccountFrame() {
-	const topWindow = window.top
-	if (!topWindow) {
-		console.error("Couldn't close account frame: Unable to access top-level window")
-		return false
-	}
-
-	const iframe = topWindow.document.getElementById("accountFrame")
-	if (iframe) {
-		iframe.remove()
-	}
+	return removeTopLevelFrame("accountFrame");
 }
 
 // Fetches account details of the currently logged in account

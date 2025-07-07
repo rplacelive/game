@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en" style="background: transparent; padding: 12px;">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Authorisation | rplace</title>
+	<link rel="stylesheet" href="/posts.css">
+	<link rel="stylesheet" href="/authorisation-dialog.css">
+	<script type="module" src="/src/shared.js"></script>
+	<script type="module" src="/src/account.js"></script>
+	<script type="module" src="/src/shared-elements.js"></script>
+	<script type="module" src="/src/authorisation-dialog.js"></script>
+</head>
+<body class="reddit-modal" style="background: transparent; height: 576px;" open>
+	<div style="position: relative; background-color: #f0f0f0;">
+		<header class="header">
+			<h4 style="margin: 0;">Rplace Authorisation</h4>
+		</header>
+		<r-close-icon onclick="window.parent.postMessage({ call: 'closeOAuthFrame' })" tabindex="0" style="position: absolute; top: 10px; right: 10px; width: 32px; z-index: 1;"></r-close-icon>
+		<main id="main" class="body" data-page="loading">
+			<div id="loadingPage" class="body" page="loading">
+				<div style="flex-grow: 1;display: flex;flex-direction: column;justify-content: center;align-items: center;">
+					<h4 id="loadingLabel">Authenticating</h4>
+					<img alt="Loading" src="/svg/loading-spinner.svg" width="64" height="64">		
+				</div>	
+			</div>
+			<div id="authorisationPage" class="body" page="authorisation">
+				<h3 style="margin: 0;">Allow <span id="clientLabel" style="font-size: inherit;">?</span> to access your rplace.live account?</h3>
+				<h4 style="margin: 0;">This will give them access to the following:</h4>
+				<ul id="scopesList"><!--Scopes--></ul>
+				<div style="flex-grow: 1;"><!-- Spacer --></div>
+				<button type="button" class="reddit-modal-button">Yes</button>
+				<button type="button" class="reddit-modal-button">No</button>
+				<small style="margin: 0;" id="redirectLabel">Once you authorise you'll be redirected to: <span id="redirectUriLabel">?</span></small>
+				<small style="margin: 0;">This request will expire in: <span id="expiryDateLabel"></span></small>	
+			</div>
+		</main>
+	</div>
+</body>
+</html>

@@ -426,6 +426,58 @@ export async function markdownParse(text, config = markedMarkdownConfig) {
 	return parsedHTML;
 }
 
+// Utility functions for dialog & iframes
+/**
+ * Creates an instance of the specified iframe page on the topmost
+ * level window with the specified ID
+ * @param {string} src 
+ * @param {string} id
+ * @returns {Promise<HTMLIFrameElement>} 
+ */
+export function createTopLevelFrame(src, id) {
+	return new Promise((resolve, reject) => {
+		const topWindow = window.top;
+		if (!topWindow) {
+			const error = "Unable to access top-level window";
+			console.error("Couldn't open account frame:", error);
+			return reject(error);
+		}
+		if (topWindow.document.getElementById(id)) {
+			return reject();
+		}
+	
+		const iframe = topWindow.document.createElement("iframe");
+		iframe.src = src;
+		iframe.id = id;
+		iframe.classList.add("iframe-modal");
+		iframe.addEventListener("load", () => {
+			resolve(iframe);
+		});
+		topWindow.document.body.appendChild(iframe)
+	})
+}
+/**
+ * Attempts to remove a top level instantiated frame from the DOM
+ * @param {string} id 
+ * @returns {boolean} Removal success
+ */
+export function removeTopLevelFrame(id) {
+	const topWindow = window.top;
+	if (!topWindow) {
+		console.error("Couldn't remove top level frame: Unable to access top-level window");
+		return false;
+	}
+
+	const iframe = topWindow.document.getElementById(id);
+	if (!iframe || !(iframe instanceof HTMLIFrameElement)) {
+		console.error("Couldn't remove top level frame: Frame not found");
+		return false;
+	}
+
+	iframe.remove();
+	return true;
+}
+
 // Utility functions for Auth DB IndexedDB caches
 const currentAuthUrl = new URL(localStorage.auth || DEFAULT_AUTH) // i.e server.rplace.live/auth
 const currentAuthDb = `${currentAuthUrl.host}${currentAuthUrl.pathname}`
