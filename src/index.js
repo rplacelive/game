@@ -133,7 +133,7 @@ const punishmentReason = /** @type {HTMLElement}*/($("#punishmentReason"));
 const punishmentAppeal = /** @type {HTMLElement}*/($("#punishmentAppeal"));
 const punishmentMenu = /** @type {HTMLElement}*/($("#punishmentMenu"));
 const moderationMenu = /**@type {HTMLInputElement}*/($("#moderationMenu"));
-const modMemberId = /**@type {HTMLInputElement}*/($("#modMemberId"));
+const modUserId = /**@type {HTMLInputElement}*/($("#modUserId"));
 const modMessageId = /**@type {HTMLInputElement}*/($("#modMessageId"));
 const modMessagePreview = /**@type {HTMLInputElement}*/($("#modMessagePreview"));
 const modDurationH = /**@type {HTMLInputElement}*/($("#modDurationH"));
@@ -503,9 +503,9 @@ function handleLiveChatReaction({ messageId, reactorId, reactionKey }) {
 }
 addIpcMessageHandler("handleLiveChatReaction", handleLiveChatReaction);
 /**
- * @param {{ options: string[], imageData: Uint8Array, answerCallback:(answer:string) => void }} param
+ * @param {{ options: string[], imageData: Uint8Array }} param
  */
-function handleTextCaptcha({ options, imageData, answerCallback }) {
+function handleTextCaptcha({ options, imageData }) {
 	captchaOptions.innerHTML = ""
 
 	let captchaSubmitted = false
@@ -519,7 +519,7 @@ function handleTextCaptcha({ options, imageData, answerCallback }) {
 				return console.error("Could not send captcha response. No text?")
 			}
 			captchaSubmitted = true;
-			answerCallback(text);
+			sendIpcMessage(wsCapsule, "sendCaptchaResult", text);
 			captchaOptions.style.pointerEvents = "none";
 		})
 	}
@@ -536,50 +536,50 @@ function handleTextCaptcha({ options, imageData, answerCallback }) {
 }
 addIpcMessageHandler("handleTextCaptcha", handleTextCaptcha);
 /**
- * @param {{ options: string[], imageData: Uint8Array, answerCallback:(answer:string) => void }} param
+ * @param {{ options: string[], imageData: Uint8Array }} param
  */
-function handleEmojiCaptcha({ options, imageData, answerCallback }) {
-	captchaOptions.innerHTML = ""
+function handleEmojiCaptcha({ options, imageData }) {
+	captchaOptions.innerHTML = "";
 
-	let captchaSubmitted = false
+	let captchaSubmitted = false;
 	for (const emoji of options) {
-		let buttonParent = document.createElement("button")
-		buttonParent.classList.add("captcha-options-button")
-		buttonParent.setAttribute("value", emoji)
-		let emojiImg = document.createElement("img")
-		emojiImg.src = `./tweemoji/${emoji.codePointAt(0)?.toString(16)}.png`
-		emojiImg.alt = emoji
-		emojiImg.title = emoji
-		emojiImg.fetchPriority = "high"
+		const buttonParent = document.createElement("button");
+		buttonParent.classList.add("captcha-options-button");
+		buttonParent.setAttribute("value", emoji);
+		const emojiImg = document.createElement("img");
+		emojiImg.src = `./tweemoji/${emoji.codePointAt(0)?.toString(16)}.png`;
+		emojiImg.alt = emoji;
+		emojiImg.title = emoji;
+		emojiImg.fetchPriority = "high";
 		emojiImg.addEventListener("load", (event) => {
-			buttonParent.classList.add("loaded")
+			buttonParent.classList.add("loaded");
 		})
-		buttonParent.appendChild(emojiImg)
-		captchaOptions.appendChild(buttonParent)
+		buttonParent.appendChild(emojiImg);
+		captchaOptions.appendChild(buttonParent);
 
 		function submitCaptcha() {
 			if (captchaSubmitted || !emoji) {
 				return console.error("Could not send captcha response. No emoji?")
 			}
-			captchaSubmitted = true
-			answerCallback(emoji)
+			captchaSubmitted = true;
+			sendIpcMessage(wsCapsule, "sendCaptchaResult", emoji);
 			captchaOptions.style.pointerEvents = "none";
 			clearCaptchaCanvas();
 		}
-		buttonParent.addEventListener("click", submitCaptcha)
-		emojiImg.addEventListener("click", submitCaptcha)
-		buttonParent.addEventListener("touchend", submitCaptcha)
-		emojiImg.addEventListener("touchend", submitCaptcha)
+		buttonParent.addEventListener("click", submitCaptcha);
+		emojiImg.addEventListener("click", submitCaptcha);
+		buttonParent.addEventListener("touchend", submitCaptcha);
+		emojiImg.addEventListener("touchend", submitCaptcha);
 	}
 
-	captchaPopup.style.display = "flex"
-	captchaOptions.style.pointerEvents = "all"
-	const imageBlob = new Blob([imageData], { type: "image/png" })
+	captchaPopup.style.display = "flex";
+	captchaOptions.style.pointerEvents = "all";
+	const imageBlob = new Blob([imageData], { type: "image/png" });
 	if (webGLSupported) {
-		updateImgCaptchaCanvas(imageBlob)
+		updateImgCaptchaCanvas(imageBlob);
 	}
 	else {
-		updateImgCaptchaCanvasFallback(imageBlob)
+		updateImgCaptchaCanvasFallback(imageBlob);
 	}
 }
 addIpcMessageHandler("handleEmojiCaptcha", handleEmojiCaptcha);
@@ -806,6 +806,10 @@ mainContent.addEventListener("contextmenu", function(e) {
 	placeContext.dataset.y = String(canvasPos.y);
 	setPlaceContextPosition(canvasPos.x, canvasPos.y, z);
 });
+if (!localStorage.vip) {
+	const placeContextModItem = /**@type {HTMLElement}*/($("#placeContextModItem"));
+	placeContextModItem.setAttribute("hidden", "");
+}
 /**
  * @param {number} x 
  * @param {number} y 
@@ -2353,10 +2357,9 @@ modMessageId.addEventListener("input", async function(e) {
 				throw new Error("Message not found");
 			}
 
-			const data = await response.json();
-			if (data.messages && data.messages.length > 0) {
-				const message = data.messages[0];
-				const chatName = data.users[message.senderIntId].chatName || null;
+			const message = await response.json();
+			if (message) {
+				const chatName = message.sender.chatName ?? null;
 
 				// Use createLiveChatMessage to build the HTML element
 				const messageElement = createLiveChatMessage(message.id, message.message, message.senderIntId,
@@ -2379,7 +2382,7 @@ modMessageId.addEventListener("input", async function(e) {
  */
 function getModOptions() {
 	const reason = modReason.value.slice(0, 300);
-	const memberId = +modMemberId.value;
+	const memberId = +modUserId.value;
 	const messageId = +modMessageId.value;
 	const affectsAll = modAffectsAll.checked;
 
@@ -2425,8 +2428,8 @@ function clearChatModerate() {
 	modReason.value = ""
 }
 function closeChatModerate() {
-	moderationMenu.removeAttribute('opened')
-	clearChatModerate()
+	moderationMenu.removeAttribute("open");
+	clearChatModerate();
 }
 modCloseButton.addEventListener("click", closeChatModerate);
 modCancelButtonn.addEventListener("click", closeChatModerate);
@@ -2438,46 +2441,46 @@ modCancelButtonn.addEventListener("click", closeChatModerate);
  */
 export function chatModerate(mode, senderId, messageId = null, messageElement = null) {
 	clearChatModerate()
-	modMemberId.value = String(senderId)
-	modMessageId.value = String(messageId)
-	moderationMenu.setAttribute("open", "true")
-	moderationMenu.setAttribute("mode", mode)
-	modMessagePreview.innerHTML = messageElement?.innerHTML || ""
+	modUserId.value = String(senderId);
+	modMessageId.value = String(messageId);
+	moderationMenu.setAttribute("open", "true");
+	moderationMenu.setAttribute("mode", mode);
+	modMessagePreview.innerHTML = messageElement?.innerHTML || "";
 
 	switch(mode) {
 		case "delete":
-			modActionDelete.checked = true
-			break
+			modActionDelete.checked = true;
+			break;
 		case "kick":
-			modActionKick.checked = true
-			break
+			modActionKick.checked = true;
+			break;
 		case "mute":
-			modActionMute.checked = true
-			break
+			modActionMute.checked = true;
+			break;
 		case "ban":
-			modActionBan.checked = true
-			break
+			modActionBan.checked = true;
+			break;
 		case "captcha":
-			modActionCaptcha.checked = true
-			break
+			modActionCaptcha.checked = true;
+			break;
 	}
 }
 
 // Chat messages UI
 function closeMessageEmojisPanel() {
-	messageEmojisPanel.setAttribute("closed", "true")
-	messageInput.setAttribute("state", "default")
+	messageEmojisPanel.setAttribute("closed", "true");
+	messageInput.setAttribute("state", "default");
 }
 
 let messageInputHeight = messageInput.scrollHeight
 function updateMessageInputHeight() {
-	messageInput.style.height = "0px"
-	const oldHeight = messageInputHeight
-	messageInputHeight = Math.min(messageInput.scrollHeight, 256)
-	chatPanel.style.setProperty("--message-input-height", messageInputHeight + "px")
-	messageInput.style.height = "" // unset
-	const diffHeight = messageInputHeight - oldHeight
-	chatMessages.scrollBy(0, diffHeight)
+	messageInput.style.height = "0px";
+	const oldHeight = messageInputHeight;
+	messageInputHeight = Math.min(messageInput.scrollHeight, 256);
+	chatPanel.style.setProperty("--message-input-height", messageInputHeight + "px");
+	messageInput.style.height = ""; // unset
+	const diffHeight = messageInputHeight - oldHeight;
+	chatMessages.scrollBy(0, diffHeight);
 }
 if (document.readyState !== "loading") {
 	updateMessageInputHeight();
@@ -2487,118 +2490,122 @@ else {
 }
 
 messageInput.oninput = (/** @type {{ isTrusted: any; }} */ e) => {
-	if (!e.isTrusted) return
-	updateMessageInputHeight()
+	if (!e.isTrusted) {
+		return;
+	}
+	updateMessageInputHeight();
 
-	messageEmojisPanel.innerHTML = ""
-	let comp = ""
-	let search = true
-	let count = 0
+	messageEmojisPanel.innerHTML = "";
+	let comp = "";
+	let search = true;
+	let count = 0;
 	for (let i = messageInput.value.length - 1; i >= 0; i--) {
 		// No emoji code will ever have a space before we reach the opening : (going backwards
 		// through string) so we can guess to just stop if seen as we backtrack
 		if (messageInput.value[i] == " " && search) {
-			comp = ""
-			break
+			comp = "";
+			break;
 		}
 		else if (messageInput.value[i] == ":") {
-			count++
-			search = false
+			count++;
+			search = false;
 		}
 		if (search) {
-			comp = messageInput.value[i] + comp
+			comp = messageInput.value[i] + comp;
 		}
 	}
 	// All : already closed, they are probably not trying to do an emoji so we ignore
-	if (count % 2 == 0) comp = ""
+	if (count % 2 == 0) {
+		comp = "";
+	}
 
 	if (comp) {
-		messageInput.setAttribute("state", "command")
+		messageInput.setAttribute("state", "command");
 	}
 	else {
-		closeMessageEmojisPanel()
+		closeMessageEmojisPanel();
 	}
 
 	/**
 	 * @param {any} emojiCode
 	 */
 	function createEmojiEntry(emojiCode) {
-		const entryElement = document.createElement("button")
-		entryElement.classList.add("message-emojis-suggestion")
-		entryElement.title = `Send this emoji in chat with :${emojiCode}:`
-		const entryLabel = document.createElement("span")
-		entryLabel.textContent = `:${emojiCode}:`
-		entryElement.appendChild(entryLabel)
-		return entryElement
+		const entryElement = document.createElement("button");
+		entryElement.classList.add("message-emojis-suggestion");
+		entryElement.title = `Send this emoji in chat with :${emojiCode}:`;
+		const entryLabel = document.createElement("span");
+		entryLabel.textContent = `:${emojiCode}:`;
+		entryElement.appendChild(entryLabel);
+		return entryElement;
 	}
 
-	let handled = false
+	let handled = false;
 	for (const [emojiCode, value] of EMOJIS) {
 		if (comp && emojiCode.startsWith(comp)) {
-			const entryElement = createEmojiEntry(emojiCode)
-			const entryValueText = document.createTextNode(value)
-			entryElement.appendChild(entryValueText)
+			const entryElement = createEmojiEntry(emojiCode);
+			const entryValueText = document.createTextNode(value);
+			entryElement.appendChild(entryValueText);
 			entryElement.addEventListener("click", function() {
 				for (let i = messageInput.value.length - 1; i >= 0; i--) {
 					if (messageInput.value[i] == ":") {
-						messageInput.value = messageInput.value.slice(0, i) + value
-						closeMessageEmojisPanel()
+						messageInput.value = messageInput.value.slice(0, i) + value;
+						closeMessageEmojisPanel();
 						break
 					}
 				}
 			})
-			messageEmojisPanel.appendChild(entryElement)
-			messageEmojisPanel.removeAttribute("closed")
+			messageEmojisPanel.appendChild(entryElement);
+			messageEmojisPanel.removeAttribute("closed");
 		}
 
 		if (messageInput.value.includes(":" + emojiCode + ":")) {
-			messageInput.value = messageInput.value.replace(":" + emojiCode + ":", value)
-			messageInput.setAttribute("state", "default")
-			handled = true
+			messageInput.value = messageInput.value.replace(":" + emojiCode + ":", value);
+			messageInput.setAttribute("state", "default");
+			handled = true;
 		}
 	}
 	if (!handled) for (const [emojiCode, value] of CUSTOM_EMOJIS) {
 		if (comp && emojiCode.startsWith(comp)) {
-			const entryElement = createEmojiEntry(emojiCode)
-			entryElement.appendChild(stringToHtml(value))
+			const entryElement = createEmojiEntry(emojiCode);
+			entryElement.appendChild(stringToHtml(value));
 			entryElement.addEventListener("click", function() {
 				for (let i = messageInput.value.length - 1; i >= 0; i--) {
 					if (messageInput.value[i] == ":") {
-						messageInput.value = messageInput.value.slice(0, i) + ":" + emojiCode + ":"
-						closeMessageEmojisPanel()
-						break
+						messageInput.value = messageInput.value.slice(0, i) + ":" + emojiCode + ":";
+						closeMessageEmojisPanel();
+						break;
 					}
 				}
 			})
-			messageEmojisPanel.appendChild(entryElement)
-			messageEmojisPanel.removeAttribute("closed")
+			messageEmojisPanel.appendChild(entryElement);
+			messageEmojisPanel.removeAttribute("closed");
 		}
 
 		if (messageInput.value.includes(":" + emojiCode + ":")) {
-			messageInput.setAttribute("state", "default")
-			handled = true
+			messageInput.setAttribute("state", "default");
+			handled = true;
 		}
 	}
 	if (!handled) for (const [commandCode, value] of COMMANDS) {
 		if (comp && commandCode.startsWith(comp)) {
-			const entryElement = document.createElement("button")
-			entryElement.classList.add("message-emojis-suggestion")
-			entryElement.title = `Use this command in chat :${commandCode} [ARGUMENTS]`
-			const entryLabel = document.createElement("span")
-			entryLabel.textContent = `:${commandCode}`
-			entryElement.appendChild(entryLabel)
+			const entryElement = document.createElement("button");
+			entryElement.classList.add("message-emojis-suggestion");
+			entryElement.title = `Use this command in chat :${commandCode} [ARGUMENTS]`;
+			const entryLabel = document.createElement("span");
+			entryLabel.textContent = `:${commandCode}`;
+			entryElement.appendChild(entryLabel);
 			entryElement.addEventListener("click", function() {
-				messageInput.value = ":" + commandCode
-				closeMessageEmojisPanel()
+				messageInput.value = ":" + commandCode;
+				closeMessageEmojisPanel();
 			})
 			entryElement.appendChild(stringToHtml(value))
-			messageEmojisPanel.appendChild(entryElement)
-			messageEmojisPanel.removeAttribute("closed")
+			messageEmojisPanel.appendChild(entryElement);
+			messageEmojisPanel.removeAttribute("closed");
 		}
 
 		if (messageInput.value.includes(":" + commandCode)) {
-			messageInput.setAttribute("state", "default")
-			handled = true
+			messageInput.setAttribute("state", "default");
+			handled = true;
 		}
 	}
 }
