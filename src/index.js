@@ -1475,18 +1475,13 @@ placeCancelButton.addEventListener("click", function(e) {
 
 // Cooldown handling
 /**@type {Timer|null}*/let cooldownInterval = null;
-/**@type {number|Null}*/let currentResolution = null;
+/**@type {number|null}*/let currentResolution = null;
 /**
  * Renders the pixel place button with the current cooldown state,
  * (READ ONLY) will not affect any cooldown state directly
  */
 async function updatePlaceButton() {
-	const now = Date.now();
-	const endDate = cooldownEndDate ?? 0;
-	const left = endDate - now;
-	const leftS = Math.floor(left / 1000);
-
-	let innerHTML;
+	let innerHTML = "???";
 	if (connectStatus === "connecting") {
 		innerHTML = await translate("connecting");
 	}
@@ -1494,26 +1489,33 @@ async function updatePlaceButton() {
 		innerHTML = `<span style="color:#f50; white-space: nowrap;">${await translate("connectingFail")}</span>`;
 		clearCooldownInterval();
 	}
-	else if (left > 0) {
-		if (leftS >= 1) {
-			const h = String(Math.floor(leftS / 3600)).padStart(2, "0");
-			const m = String(Math.floor((leftS / 60) % 60)).padStart(2, "0");
-			const s = String(leftS % 60).padStart(2, "0");
-			innerHTML = `
-				<svg xmlns="http://www.w3.org/2000/svg" data-name="icons final" viewBox="0 0 20 20" style="height: 1.1rem; vertical-align: top;">
-					<path d="M13.558 14.442l-4.183-4.183V4h1.25v5.741l3.817 3.817-.884.884z"></path>
-					<path d="M10 19.625A9.625 9.625 0 1119.625 10 9.636 9.636 0 0110 19.625zm0-18A8.375 8.375 0 1018.375 10 8.384 8.384 0 0010 1.625z"></path>
-				</svg> ${h}:${m}:${s}`;
-			startCooldownInterval(500);
+	else if (connectStatus === "connected") {
+		const now = Date.now();
+		const endDate = cooldownEndDate ?? 0;
+		const left = endDate - now;
+		const leftS = Math.floor(left / 1000);
+
+		if (left > 0) {
+			if (leftS >= 1) {
+				const h = String(Math.floor(leftS / 3600)).padStart(2, "0");
+				const m = String(Math.floor((leftS / 60) % 60)).padStart(2, "0");
+				const s = String(leftS % 60).padStart(2, "0");
+				innerHTML = `
+					<svg xmlns="http://www.w3.org/2000/svg" data-name="icons final" viewBox="0 0 20 20" style="height: 1.1rem; vertical-align: top;">
+						<path d="M13.558 14.442l-4.183-4.183V4h1.25v5.741l3.817 3.817-.884.884z"></path>
+						<path d="M10 19.625A9.625 9.625 0 1119.625 10 9.636 9.636 0 0110 19.625zm0-18A8.375 8.375 0 1018.375 10 8.384 8.384 0 0010 1.625z"></path>
+					</svg> ${h}:${m}:${s}`;
+				startCooldownInterval(500);
+			}
+			else {
+				innerHTML = `<span style="color:#f50;">${left}ms</span>`;
+				startCooldownInterval(100);
+			}
 		}
 		else {
-			innerHTML = `<span style="color:#f50;">${left}ms</span>`;
-			startCooldownInterval(100);
+			innerHTML = await translate("placeTile");
+			clearCooldownInterval();
 		}
-	}
-	else {
-		innerHTML = await translate("placeTile");
-		clearCooldownInterval();
 	}
 
 	placeButton.innerHTML = innerHTML;
@@ -1531,25 +1533,34 @@ async function updatePlaceButton() {
 function setCooldown(endDate) {
 	if (cooldownTimeout !== null) {
 		clearTimeout(cooldownTimeout);
+		cooldownTimeout = null; // Ensure stale timeout state is cleared
 	}
 	
 	cooldownEndDate = endDate;
 	const now = Date.now();
 
-	if (endDate && endDate > now) {
-		onCooldown = true;
+	if (endDate !== null) {
+		if (endDate > now) {
+			// If endDate in future, on cooldown & schedule timeout
+			onCooldown = true;
 
-		cooldownTimeout = setTimeout(() => {
+			cooldownTimeout = setTimeout(() => {
+				// Scheduled logic for when cooldown expires
+				onCooldown = false;
+				if (!document.hasFocus()) {
+					runAudio(AUDIOS.cooldownEnd);
+				}
+				updatePlaceButton();
+			}, endDate - now);
+		}
+		else {
+			// If endDate is in past, then fast track to off cooldown
 			onCooldown = false;
-			if (!document.hasFocus()) {
-				runAudio(AUDIOS.cooldownEnd);
-			}
-
-			updatePlaceButton();
-		}, endDate - now);
+		}
 	}
 	else {
-		onCooldown = false;
+		// If endDate is null, then we assume indefinite cooldown
+		onCooldown = true;
 	}
 
 	updatePlaceButton();
