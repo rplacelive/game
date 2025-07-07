@@ -612,12 +612,13 @@ addIpcMessageHandler("handleTurnstileSuccess", handleTurnstileSuccess);
  * @param {ModerationPacket} packet
  */
 function applyPunishment(packet) {
-	messageInput.disabled = true;
 	if (packet.state === PUNISHMENT_STATE.mute) {
+		messageInput.disabled = true;
 		punishmentNote.innerHTML = "You have been <strong>muted</strong>, you cannot send messages in live chat.";
 	}
 	else if (packet.state === PUNISHMENT_STATE.ban) {
 		canvasLocked = true;
+		messageInput.disabled = true;
 		canvasLock.style.display = "flex";
 		punishmentNote.innerHTML = "You have been <strong>banned</strong> from placing on the canvas or sending messages in live chat.";
 	}
@@ -626,7 +627,7 @@ function applyPunishment(packet) {
 	punishmentStartDate.textContent = `Started on: ${new Date(packet.startDate).toLocaleString()}`;
 	punishmentEndDate.textContent = `Ending on: ${new Date(packet.endDate).toLocaleString()}`;
 	punishmentReason.textContent = `Reason: ${packet.reason}`;
-	punishmentAppeal.textContent = `Appeal status: ${(packet.appeal && packet.appeal !== "null") ? packet.appeal : 'Unappealable'}`;
+	punishmentAppeal.textContent = `Appeal status: ${(packet.appeal && packet.appeal !== "null") ? packet.appeal : "Unappealable"}`;
 	punishmentMenu.setAttribute("open", "true");
 }
 addIpcMessageHandler("applyPunishment", applyPunishment);

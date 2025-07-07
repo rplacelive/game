@@ -7,6 +7,7 @@ const pages = await glob("*.html");
 
 export default defineConfig({
 	base: "/",
+	appType: "mpa",
 	server: {
 		open: true,
 		strictPort: true,
