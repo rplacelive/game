@@ -185,7 +185,7 @@ const themeDropParent = /**@type {HTMLElement}*/($("#themeDropParent"));
 /**@type {number|null}*/ let intId = null;
 /**@type {string|null}*/ let chatName = null;
 /**@type {boolean}*/ let includesPlacer = false; // Server will tell us this
-/**@type {boolean}*/ let initialConnect = false;
+/**@type {"connecting"|"connected"|"disconnected"}*/ let connectStatus = "connecting";
 /**@type {number}*/ let online = 1;
 /**@type {boolean}*/ let canvasLocked = false;
 
@@ -221,11 +221,8 @@ injectedCjs.innerHTML = `
 `;
 document.body.appendChild(injectedCjs);
 
-/**
- * 
- */
 function handleConnect() {
-	initialConnect = true;
+	connectStatus = "connected";
 	if (automated) {
 		const activityObj = {
 			windowOuterWidth: window.outerWidth,
@@ -264,7 +261,7 @@ addIpcMessageHandler("handlePalette", handlePalette);
  * @param {{ endDate: number, cooldown: number }} param 
  */
 function handleCooldownInfo({ endDate, cooldown }) {
-	updateCooldown(endDate);
+	setCooldown(endDate);
 	COOLDOWN = cooldown;
 }
 addIpcMessageHandler("handleCooldownInfo", handleCooldownInfo);
@@ -357,7 +354,7 @@ addIpcMessageHandler("handlePixels", handlePixels);
  * @param {{ endDate: number, position: number, colour: number }} param 
  */
 function handleRejectedPixel({ endDate, position, colour }) {
-	updateCooldown(endDate);
+	setCooldown(endDate);
 	seti(position, colour);
 }
 addIpcMessageHandler("handleRejectedPixel", handleRejectedPixel);
@@ -365,7 +362,7 @@ addIpcMessageHandler("handleRejectedPixel", handleRejectedPixel);
  * @param {{ endDate: number }} param0 
  */
 function handleCooldown({ endDate }) {
-	updateCooldown(endDate);
+	setCooldown(endDate);
 }
 addIpcMessageHandler("handleCooldown", handleCooldown);
 /**
@@ -639,8 +636,9 @@ function handleDisconnect({ code, reason }) {
 		sessionStorage.err = "1";
 		window.location.reload();
 	}
-	updateCooldown(null);
+	connectStatus = "disconnected";
 	showLoadingScreen("disconnected", reason);
+	setCooldown(null);
 }
 addIpcMessageHandler("handleDisconnect", handleDisconnect);
 function handleCaptchaSuccess() {
@@ -981,6 +979,7 @@ document.body.addEventListener("keydown", function(/**@type {KeyboardEvent}*/e) 
 	if (onCooldown || canvasLocked) {
 		return;
 	}
+	const now = Date.now()
 
 	//"Enter" key to place selected block without using mouse
 	if (e.key == "Enter" && (!document.activeElement || !("value" in document.activeElement))) {
@@ -1189,7 +1188,7 @@ export function pos(newX=x, newY=y, newZ=z) {
 				const height = Math.min(placersRadius, HEIGHT - intY);
 				const position = centreX + centreY * WIDTH;
 
-				if (initialConnect) {
+				if (connectStatus === "connected") {
 					sendIpcMessage(wsCapsule, "requestPixelPlacers", { position, width, height });
 				}
 				return;
@@ -1400,11 +1399,7 @@ function handlePixelPlace(e) {
 	if (!(e instanceof Event) || !e.isTrusted) {
 		return
 	}
-
-	// If cooldownEndDate is null but we have already made that initial connection, we have likely ghost disconnected from the WS
-	if (!focused || !initialConnect
-		|| (cooldownEndDate === null && initialConnect)
-		|| (cooldownEndDate && cooldownEndDate > Date.now())) {
+	if (!focused || connectStatus !== "connected" || (cooldownEndDate && cooldownEndDate > Date.now())) {
 		return;
 	}
 	if (!placeOkButton.classList.contains("enabled")) {
@@ -1444,7 +1439,7 @@ function handlePlaceButtonClicked(e) {
 		return;
 	}
 
-	if (initialConnect && cooldownEndDate < Date.now()) {
+	if (connectStatus === "connected" && (cooldownEndDate && cooldownEndDate < Date.now())) {
 		zoomIn()
 		showPalette()
 
@@ -1480,10 +1475,12 @@ placeCancelButton.addEventListener("click", function(e) {
 })
 
 // Cooldown handling
-/**@type {number|null}*/let cooldownEndDate = null;
 /**@type {Timer|null}*/let cooldownInterval = null;
-/**@type {boolean}*/let onCooldown = false;
 /**@type {number|Null}*/let currentResolution = null;
+/**
+ * Renders the pixel place button with the current cooldown state,
+ * (READ ONLY) will not affect any cooldown state directly
+ */
 async function updatePlaceButton() {
 	const now = Date.now();
 	const endDate = cooldownEndDate ?? 0;
@@ -1491,11 +1488,10 @@ async function updatePlaceButton() {
 	const leftS = Math.floor(left / 1000);
 
 	let innerHTML;
-	if (!initialConnect) {
+	if (connectStatus === "connecting") {
 		innerHTML = await translate("connecting");
-	
 	}
-	else if (cooldownEndDate === null) {
+	else if (connectStatus === "disconnected") {
 		innerHTML = `<span style="color:#f50; white-space: nowrap;">${await translate("connectingFail")}</span>`;
 		clearCooldownInterval();
 	}
@@ -1522,22 +1518,41 @@ async function updatePlaceButton() {
 	}
 
 	placeButton.innerHTML = innerHTML;
-
-	if (endDate > now && !onCooldown) {
-		onCooldown = true;
-	}
-	if (endDate < now && onCooldown) {
-		onCooldown = false;
-		if (!document.hasFocus()) {
-			runAudio(AUDIOS.cooldownEnd);
-		}
-	}
+	placeButton.disabled = onCooldown;
 }
+// Unix date for cooldown end (null = indefinite)
+/**@type {number|null}*/let cooldownEndDate = null;
+// Simple boolean interface for if currently on cooldown
+/**@type {boolean}*/let onCooldown = false;
+// Tracking timer that will update onCooldown and placeButton on completion
+/**@type {Timer|null}*/let cooldownTimeout = null;
 /**
  * @param {number|null} endDate 
  */
-function updateCooldown(endDate) {
+function setCooldown(endDate) {
+	if (cooldownTimeout !== null) {
+		clearTimeout(cooldownTimeout);
+	}
+	
 	cooldownEndDate = endDate;
+	const now = Date.now();
+
+	if (endDate && endDate > now) {
+		onCooldown = true;
+
+		cooldownTimeout = setTimeout(() => {
+			onCooldown = false;
+			if (!document.hasFocus()) {
+				runAudio(AUDIOS.cooldownEnd);
+			}
+
+			updatePlaceButton();
+		}, endDate - now);
+	}
+	else {
+		onCooldown = false;
+	}
+
 	updatePlaceButton();
 }
 /**
@@ -1558,7 +1573,6 @@ function clearCooldownInterval() {
 		currentResolution = null;
 	}
 }
-
 
 function showPalette() {
 	palette.style.transform = "";
@@ -2913,8 +2927,6 @@ overlayCopyButton.addEventListener("click", async function(e) {
 	if (!uriString) {
 		return;
 	}
-
-	console.log(uriString);
 
 	if (uriString.length < 2000) {
 		navigator.clipboard.writeText(uriString)
