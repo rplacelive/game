@@ -1,6 +1,6 @@
 import { confetti } from "@tsparticles/confetti";
-import { AUDIOS } from "./game-defaults.js";
-import { syncLocalStorage } from "./shared.js";
+import { AUDIOS } from "../pages/index/game-defaults.js";
+import { syncLocalStorage } from "../shared.js";
 import { addIpcMessageHandler } from "shared-ipc";
 
 /**

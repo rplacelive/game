@@ -1,7 +1,7 @@
-import { DEFAULT_AUTH, DEFAULT_SERVER, DEFAULT_BOARD } from "./defaults.js";
-import { translateAll, $, makeRequest } from "./shared.js"
-import { clearPosts, tryLoadBottomPosts, tryLoadKeywordPosts, tryLoadTopPosts } from "./posts-manager.js"
-import { getAccount, openAccountFrame } from "./account.js";
+import { DEFAULT_AUTH, DEFAULT_SERVER, DEFAULT_BOARD } from "../../defaults.js";
+import { translateAll, $, makeRequest } from "../../shared.js"
+import { clearPosts, tryLoadBottomPosts, tryLoadKeywordPosts, tryLoadTopPosts } from "../../services/posts-manager.js"
+import { getAccount, openAccountFrame } from "../../services/account-manager.js";
 import { addIpcMessageHandler, handleIpcMessage, sendIpcMessage, makeIpcRequest } from "shared-ipc";
 
 //  Main
@@ -83,7 +83,7 @@ liveChatPost.addEventListener("click", function(e) {
 	sendIpcMessage(window.parent, "openChatPanel");
 });
 const createPostPost = /**@type {HTMLElement}*/($("#createPostPost"));
-const createPostContent = /**@type {import("./posts-elements.js").CreatePostContentsPreview}*/($("#createPostContent"));
+const createPostContent = /**@type {import("./components/posts-elements.js").CreatePostContentsPreview}*/($("#createPostContent"));
 const postRulesDialog = /**@type {HTMLDialogElement}*/($("#postRulesDialog"));
 const discardPostButton = /**@type {HTMLButtonElement}*/($("#discardPostButton"));
 discardPostButton.addEventListener("click", function(e) {

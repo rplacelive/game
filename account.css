@@ -1,0 +1,412 @@
+/** TODO: Move over these special styles to reddit-modal-page.css or something! */
+html {
+	background: transparent;
+	padding: 12px;
+	width: 100%;
+	height: 100%;
+}
+body {
+	background: transparent !important;
+	height: 100% !important;
+	width: 100% !important;
+	position: relative;
+}
+
+/* Account elements*/
+.user-card {
+	background: #fff;
+	margin: 8px;
+	border: 1px solid #ccc;
+	border-radius: 4px;
+	padding: 16px;
+	min-width: 280px;
+	max-width: 320px;
+}
+
+.user-card:hover {
+	box-shadow: 0px 2px 4px #0003;
+}
+
+.user-card-header {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 12px;
+}
+
+.user-card-header img {
+	border-radius: 4px;
+}
+
+.user-card-titles h2 {
+	margin: 0;
+	font-size: 18px;
+	font-weight: 600;
+	color: #333;
+}
+
+.user-card-titles span {
+	font-size: 14px;
+	color: #666;
+}
+
+#userDate {
+	font-size: 14px;
+	color: #666;
+	margin-bottom: 12px;
+	display: block;
+}
+
+.user-card hr {
+	border: none;
+	border-top: 1px solid #eee;
+	margin: 12px 0;
+}
+
+.user-card-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 8px;
+	margin-bottom: 16px;
+}
+
+.user-card-grid h1 {
+	margin: 0;
+	font-size: 24px;
+	font-weight: 700;
+	color: #333;
+}
+
+.user-card-grid span {
+	font-size: 12px;
+	color: #666;
+	text-transform: uppercase;
+	font-weight: 500;
+}
+
+.user-card-details {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.user-card-detail-item {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 6px 0;
+	border-bottom: 1px solid #f5f5f5;
+}
+
+.user-card-detail-item:last-child {
+	border-bottom: none;
+}
+
+.user-card-detail-item .label {
+	font-size: 13px;
+	color: #666;
+	font-weight: 500;
+}
+
+.user-card-detail-item .value {
+	font-size: 13px;
+	color: #333;
+	font-weight: 600;
+}
+	
+/* Main: account.html */
+#loginPanel[data-page] > div[page] {
+	display: none;
+}
+#loginPanel[data-page="loading"] > div[page="loading"],
+#loginPanel[data-page="unauthed"] > div[page="unauthed"],
+#loginPanel[data-page="profile"] > div[page="profile"],
+#loginPanel[data-page="error"] > div[page="error"] {
+	display: flex;
+}
+
+#verificationCode {
+	height: 64px;
+	font-size: 42px;
+	text-align: center;
+	margin: 8 0 0 0;
+}
+
+#loginSignupMessage {
+	color: red;
+	font-weight: bold;
+}
+
+#unauthedPage[data-page] > div[page] {
+	display: none;
+}
+#unauthedPage[data-page="signin"] > div[page="signin"],
+#unauthedPage[data-page="signup"] > div[page="signup"],
+#unauthedPage[data-page="authcode"] > div[page="authcode"] {
+	display: flex;
+}
+.profile-section {
+	overflow-y: auto;
+	overflow-x: hidden;
+}
+.profile-picture {
+	display: flex;
+	position: relative;
+	align-self: center;
+	overflow: clip;
+	max-width: 256px;
+	max-height: 256px;
+	aspect-ratio: 1/1;
+	border-radius: 4px;
+	border: 1px solid lightgrey;
+}
+.profile-picture::before {
+	position: absolute;
+	content: "";
+	width: 100%;
+	height: 100%;
+	opacity: 0;
+	transition: .2s opacity;
+	background-color: rgba(0, 0, 0, 0.2);
+}
+.profile-picture:focus-within > button,
+	.profile-picture:hover > button,
+	.profile-picture:focus-within::before,
+	.profile-picture:hover::before {
+	opacity: 1;
+}
+.profile-picture > button {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	width: max-content;
+	text-align: center;
+	display: flex;
+	align-items: center;
+	transition: .2s opacity;
+	opacity: 0;
+}
+#profileName {
+	margin-top: 0px;
+	margin-bottom: 8px;
+	font-weight: 600;
+}
+#profileBioForm {
+	height: min-content;
+	margin-bottom: 16px;
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	row-gap: 4px;
+}
+#profileBio {
+	margin: 0;
+	border-radius: 4px;
+	border: 1px solid grey;
+	min-height: 96px;
+	height: 96px;
+	width: 100%;
+	resize: none;
+	font-family: 'IBM Plex Sans', sans-serif;
+}
+#profileBioSubmit {
+	max-height: 0px;
+	opacity: 0;
+	padding: 0;
+	transition: .2s opacity, .2s max-height, .2s padding;
+}
+#profileBioForm:focus-within #profileBioSubmit {
+	opacity: 1;
+	max-height: 32px;
+	padding: 8px 16px;
+}
+.profile-canvas-user-list {
+	margin: 0;
+	padding: 0;
+	list-style-type: none;
+	display: flex;
+	gap: 4px;
+	flex-wrap: wrap;
+}
+.profile-canvas-user-list > li {
+	margin: 0;
+	font-size: 12px;
+	text-align: center;
+	display: flex;
+	align-items: center;
+	background: lightgrey;
+	padding: 4px;
+	border-radius: 16px;
+	position: relative;
+	max-width: 128px;
+	opacity: 0.8;
+	transition: .2s max-width ease-in, .2s opacity;
+}
+.profile-canvas-user-list > li:hover {
+	max-width: 256px;
+	opacity: 1;
+}
+.profile-canvas-user-list > li > span {
+	text-overflow: ellipsis;
+	overflow: hidden;
+	white-space: nowrap;
+	font-size: inherit;
+}
+.profile-canvas-user-list > li > r-user-tooltip {
+	opacity: 0;
+	transition: opacity 0.4s ease;
+	pointer-events: none;
+}
+.profile-canvas-user-list > li:hover > r-user-tooltip {
+	opacity: 1;
+	visibility: visible;
+	transition: opacity 0.4s ease;
+	pointer-events: auto;
+}
+.profile-canvas-users-cards {
+	padding: 4px;
+	display: flex;
+	flex-wrap: wrap;
+}
+.profile-section > div {
+	margin: 0px;
+	overflow: hidden;
+	white-space: nowrap;
+	position: relative;
+	transition: .2s all;
+}
+.profile-editable {
+	border-radius: 4px;
+	transition: .2s border;
+}
+.profile-editable[open] {
+	border: 1px solid lightgray;
+}
+.profile-editable > summary {
+	display: flex;
+	column-gap: 4px;
+	cursor: pointer;
+	user-select: none;
+	transition: .2s background-color;
+}
+.profile-editable > * {
+	transition: .2s padding;
+}
+.profile-editable[open] > * {
+	padding: 2px;
+}
+.profile-editable[open] > summary {
+	background-color: lightgray;
+}
+.profile-editable > summary svg {
+	margin-left: auto;
+	opacity: 0.2;
+	transition: .2s opacity;
+}
+.profile-editable > summary .summary-arrow {
+	transition: .2s transform;
+}
+.profile-editable[open] > summary .summary-arrow {
+	transform: rotate(180deg);
+}
+.profile-editable > summary:hover svg {
+	opacity: 0.6;
+}
+.profile-section > div.profile-editable:hover {
+	overflow: visible;
+	background-color: white;
+	box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.243);
+	border-radius: 4px;
+	min-width: fit-content;
+	z-index: 2;
+	padding: 4px;
+}
+.form-error {
+	color: red;
+	font-weight: bold;
+	font-style: italic;
+	font-size: 14px;
+	margin: 0px;
+}
+
+.reddit-card {
+	margin: 8px;
+	border: 1px solid #ccc;
+	border-radius: 4px;
+	padding: 10px;
+	margin-bottom: 10px;
+	position: relative;
+	background: white;
+	display: flex;
+	flex-direction: column;
+	row-gap: 16px;
+}
+.reddit-card:hover {
+	box-shadow: 0px 2px 4px #0003;
+}
+
+.reddit-card-header {
+	display: flex;
+	column-gap: 16px;
+	flex-direction: row;
+}
+
+/*
+ * HACK: Literally everything to do with .reddit-modal
+ * TODO: Fix scrollbar margins, body header and icon handling on all reddit modals
+ */
+.reddit-modal .body {
+	margin: 0;
+	row-gap: 0;
+}
+.reddit-modal .section {
+	padding: 8px;
+}
+.reddit-modal .body-header {
+	position: sticky;
+	z-index: 1;
+	background: #f0f0f075;
+	top: 0;
+	backdrop-filter: blur(8px);
+}
+.reddit-modal label {
+	font-size: 16px;
+}
+.reddit-modal r-close-icon {
+	position: absolute;
+	top: 8px;
+	right: 16px;
+	width: 24px;
+	height: 24px;
+	z-index: 1;
+	cursor: pointer;
+}
+.reddit-modal .body-header r-close-icon {
+	right: 8px;
+}
+@media (orientation: portrait) {
+	.reddit-modal r-close-icon {
+		right: 8px;
+	}
+	.reddit-modal r-close-icon svg {
+		fill: white;
+	}
+	.reddit-modal .body-header r-close-icon {
+		display: none;
+	}
+
+	.reddit-card {
+		flex-direction: column;
+		height: fit-content !important;
+	}
+	.reddit-card-header {
+		flex-direction: column;
+		height: 100%;
+		overflow-y: hidden;
+	}
+	.profile-section {
+		overflow-y: hidden;
+		height: 100%;
+	}
+}

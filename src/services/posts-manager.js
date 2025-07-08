@@ -1,14 +1,14 @@
-import { DEFAULT_AUTH } from "./defaults.js";
-import { PublicPromiseSync } from "./shared.js";
+import { DEFAULT_AUTH } from "../defaults.js";
+import { PublicPromiseSync } from "../shared.js";
 
 class PostElArray {
 	constructor() {
-		/**@type {import("./posts-elements.js").Post[]}*/this.items = []
+		/**@type {import("../pages/posts/posts-elements.js").Post[]}*/this.items = []
 	}
 
 	/**
 	 * 
-	 * @param {import("./posts-elements.js").Post} postEl 
+	 * @param {import("../pages/posts/posts-elements.js").Post} postEl 
 	 * @param {Function} comparisonFn 
 	 */
 	orderedInsert(postEl, comparisonFn) {
@@ -30,21 +30,21 @@ class PostElArray {
 	}
 
 	/**
-	 * @param {import("./posts-elements.js").Post} postEl 
+	 * @param {import("../pages/posts/posts-elements.js").Post} postEl 
 	 */
 	delete(postEl) {
 		this.items = this.items.filter(existingItem => existingItem.post.id !== postEl.post?.id);
 	}
 
 	/**
-	 * @param {import("./posts-elements.js").Post} postEl 
+	 * @param {import("../pages/posts/posts-elements.js").Post} postEl 
 	 */
 	includes(postEl) {
 		return this.items.some(existingItem => existingItem.post.id === postEl.post?.id);
 	}
 
 	/**
-	 * @param {import("./posts-elements.js").Post} id 
+	 * @param {import("../pages/posts/posts-elements.js").Post} id 
 	 */
 	getById(id) {
 		return this.items.find(postEl => postEl.post?.id === id);
@@ -123,7 +123,7 @@ async function tryLoadPosts(sortBy, paramsObject) {
 			existingPost.fromPost(post);
 		}
 		else {
-			const postEl = /**@type {import("./posts-elements.js").Post}*/(document.createElement("r-post"));
+			const postEl = /**@type {import("../pages/posts/posts-elements.js").Post}*/(document.createElement("r-post"));
 			postEl.fromPost(post);
 			if (hideSensitive && post.hasSensitiveContent) {
 				postEl.hidden = true;

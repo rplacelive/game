@@ -1,4 +1,4 @@
-import { translate } from "./shared";
+import { translate } from "../../shared";
 
 const loadingScreen = /**@type {HTMLElement}*/(document.getElementById("loadingScreen"));
 

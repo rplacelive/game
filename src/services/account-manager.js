@@ -1,10 +1,10 @@
-import { DEFAULT_AUTH } from "./defaults.js";
-import { createTopLevelFrame, makeRequest, removeTopLevelFrame } from "./shared.js";
+import { DEFAULT_AUTH } from "../defaults.js";
+import { createTopLevelFrame, makeRequest, removeTopLevelFrame } from "../shared.js";
 import { addIpcMessageHandler } from "shared-ipc";
 
 // Injects the iframe containing the account.html page into the DOM
-export async function openAccountFrame(page=null, unauthed=null) { // TODO: Replace with the shared.js version 
-	const accountFrame = await createTopLevelFrame("/src/account-dialog.html", "accountFrame");
+export async function openAccountFrame(page = null, unauthed = null) { // TODO: Replace with the shared.js version 
+	const accountFrame = await createTopLevelFrame("/account.html", "accountFrame");
 	const loginPanel = /**@type {HTMLElement}*/(accountFrame.contentDocument?.querySelector("#loginPanel"));
 	const unauthedPage = /**@type {HTMLElement}*/(accountFrame.contentDocument?.querySelector("#unauthedPage"));
 	if (loginPanel && page) {

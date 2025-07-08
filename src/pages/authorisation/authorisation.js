@@ -1,6 +1,6 @@
-import { DEFAULT_AUTH } from "./defaults.js";
-import { getAccount } from "./account.js";
-import { $, createTopLevelFrame } from "./shared.js";
+import { DEFAULT_AUTH } from "../../defaults.js";
+import { getAccount } from "../../services/account-manager.js";
+import { $, createTopLevelFrame } from "../../shared.js";
 import { addIpcMessageHandler, handleIpcMessage } from "shared-ipc";
 
 /**
@@ -36,7 +36,7 @@ async function oAuthAuthorise({ responseType, clientId, redirectUri, scope, stat
 	if (!account) {
 		// We need to log in
 		loadingLabel.textContent = "You are not logged in: opening account login dialog";
-		const accountFrame = await createTopLevelFrame("/account-dialog.html", "accountFrame");
+		const accountFrame = await createTopLevelFrame("/account.html", "accountFrame");
 		return;
 	}
 

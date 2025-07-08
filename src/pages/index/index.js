@@ -1,5 +1,5 @@
-import { DEFAULT_BOARD, DEFAULT_SERVER, ADS, CHAT_COLOURS, COMMANDS, CUSTOM_EMOJIS, DEFAULT_HEIGHT, DEFAULT_PALETTE_KEYS, DEFAULT_THEMES, DEFAULT_WIDTH, EMOJIS, LANG_INFOS, MAX_CHANNEL_MESSAGES, PUNISHMENT_STATE, DEFAULT_PALETTE_USABLE_REGION, DEFAULT_PALETTE, DEFAULT_COOLDOWN } from "./defaults.js";
-import { lang, PublicPromise, translate, translateAll, hash, $, stringToHtml, blobToBase64, base64ToBlob }  from "./shared.js";
+import { DEFAULT_BOARD, DEFAULT_SERVER, ADS, CHAT_COLOURS, COMMANDS, CUSTOM_EMOJIS, DEFAULT_HEIGHT, DEFAULT_PALETTE_KEYS, DEFAULT_THEMES, DEFAULT_WIDTH, EMOJIS, LANG_INFOS, MAX_CHANNEL_MESSAGES, PUNISHMENT_STATE, DEFAULT_PALETTE_USABLE_REGION, DEFAULT_PALETTE, DEFAULT_COOLDOWN } from "../../defaults.js";
+import { lang, PublicPromise, translate, translateAll, hash, $, stringToHtml, blobToBase64, base64ToBlob }  from "../../shared.js";
 import { showLoadingScreen, hideLoadingScreen } from "./loading-screen.js";
 import { enableDarkplace, disableDarkplace } from "./darkplace.js";
 import { enableWinter, disableWinter } from "./snowplace.js";
@@ -2692,15 +2692,15 @@ export async function forceTheme(forceTheme, forceVariant = null , forceEffects 
 	const currentVariant = document.documentElement.dataset.variant
 	if (currentThemeSet != forceTheme || currentVariant != forceVariant) {
 		console.warn("Forcing site theme to", forceTheme, forceVariant)
-		await theme(/**@type {import("./defaults.js").ThemeInfo}*/(DEFAULT_THEMES.get(forceTheme)), forceVariant, forceEffects)
+		await theme(/**@type {import("../../defaults.js").ThemeInfo}*/(DEFAULT_THEMES.get(forceTheme)), forceVariant, forceEffects)
 	}
 }
 
 /**@type {HTMLLinkElement|null}*/let styleElement = null;
-/**@type {import("./defaults.js").ThemeInfo|null}*/let currentTheme = null;
+/**@type {import("../../defaults.js").ThemeInfo|null}*/let currentTheme = null;
 
 /**
- * @param {import("./defaults.js").ThemeInfo} themeSet
+ * @param {import("../../defaults.js").ThemeInfo} themeSet
  * @param {string|null} variant
  * @param {string|null} effects
  */

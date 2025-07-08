@@ -1,5 +1,5 @@
+import { DEFAULT_AUTH } from "./defaults.js"
 import { Marked } from "marked"
-import { DEFAULT_AUTH } from "./defaults"
 import DOMPurify from "dompurify"
 
 // Contains shared resources across pages
