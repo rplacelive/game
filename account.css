@@ -13,84 +13,84 @@ body {
 }
 
 /* Account elements*/
-.user-card {
+r-canvas-user-card {
 	background: #fff;
-	margin: 8px;
 	border: 1px solid #ccc;
 	border-radius: 4px;
 	padding: 16px;
-	min-width: 280px;
+	/*min-width: 280px;*/
 	max-width: 320px;
 }
 
-.user-card:hover {
+r-canvas-user-card:hover {
 	box-shadow: 0px 2px 4px #0003;
 }
 
-.user-card-header {
+r-canvas-user-card hr {
+	border: none;
+	border-top: 1px solid #eee;
+	margin: 12px 0;
+}
+
+r-canvas-user-card .user-card-header {
 	display: flex;
 	align-items: center;
 	gap: 12px;
 	margin-bottom: 12px;
 }
 
-.user-card-header img {
+r-canvas-user-card .user-card-header img {
 	border-radius: 4px;
 }
 
-.user-card-titles h2 {
+r-canvas-user-card .user-card-titles h2 {
 	margin: 0;
 	font-size: 18px;
 	font-weight: 600;
 	color: #333;
 }
 
-.user-card-titles span {
+r-canvas-user-card .user-card-titles span {
 	font-size: 14px;
 	color: #666;
 }
 
-#userDate {
+r-canvas-user-card #userDate {
 	font-size: 14px;
 	color: #666;
 	margin-bottom: 12px;
 	display: block;
 }
 
-.user-card hr {
-	border: none;
-	border-top: 1px solid #eee;
-	margin: 12px 0;
-}
 
-.user-card-grid {
+r-canvas-user-card .user-card-grid {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	gap: 8px;
 	margin-bottom: 16px;
 }
 
-.user-card-grid h1 {
+r-canvas-user-card .user-card-grid h1 {
 	margin: 0;
 	font-size: 24px;
 	font-weight: 700;
 	color: #333;
 }
 
-.user-card-grid span {
+r-canvas-user-card .user-card-grid span {
 	font-size: 12px;
 	color: #666;
 	text-transform: uppercase;
 	font-weight: 500;
 }
 
-.user-card-details {
+r-canvas-user-card .user-card-details {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
 }
 
-.user-card-detail-item {
+r-canvas-user-card .user-card-detail-item {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
@@ -98,17 +98,17 @@ body {
 	border-bottom: 1px solid #f5f5f5;
 }
 
-.user-card-detail-item:last-child {
+r-canvas-user-card .user-card-detail-item:last-child {
 	border-bottom: none;
 }
 
-.user-card-detail-item .label {
+r-canvas-user-card .user-card-detail-item .label {
 	font-size: 13px;
 	color: #666;
 	font-weight: 500;
 }
 
-.user-card-detail-item .value {
+r-canvas-user-card .user-card-detail-item .value {
 	font-size: 13px;
 	color: #333;
 	font-weight: 600;
@@ -268,6 +268,8 @@ body {
 	padding: 4px;
 	display: flex;
 	flex-wrap: wrap;
+	gap: 4px;
+	justify-content: stretch;
 }
 .profile-section > div {
 	margin: 0px;
@@ -294,7 +296,7 @@ body {
 	transition: .2s padding;
 }
 .profile-editable[open] > * {
-	padding: 2px;
+	padding: 4px;
 }
 .profile-editable[open] > summary {
 	background-color: lightgray;
@@ -350,6 +352,19 @@ body {
 	display: flex;
 	column-gap: 16px;
 	flex-direction: row;
+}
+
+/*Linked profiles searchbar styles*/
+.linked-profiles-form {
+	display: flex;
+	column-gap: 4px;
+}
+.linked-profiles-form > label {
+	flex-grow: 1;
+	display: flex;
+	column-gap: 4px;
+	flex-grow: 1;
+	align-items: center;
 }
 
 /*

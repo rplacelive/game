@@ -17,8 +17,7 @@ export class CanvasUserCard extends LitElement {
 		// Instance properties
 		instanceVanityName: { type: String, attribute: "instancevanityname" },
 		serverLocation: { type: String, attribute: "serverlocation" },
-		legacy: { type: Boolean, attribute: "legacy" },
-		ownerId: { type: Number, attribute: "ownerid" }
+		legacy: { type: Boolean, attribute: "legacy" }
 	}
 
 	constructor() {
@@ -31,9 +30,8 @@ export class CanvasUserCard extends LitElement {
 		this.pixelsPlaced = 0;
 		this.playTimeSeconds = 0;
 		this.instanceVanityName = "...";
-		this.serverLocation = "";
-		this.legacy = false;
-		this.ownerId = 0;
+		this.instanceServerLocation = "";
+		this.instanceLegacy = false;
 	}
 
 	createRenderRoot() {
@@ -57,33 +55,43 @@ export class CanvasUserCard extends LitElement {
 		}
 
 		const lastJoinedDate = `Last joined ${new Date(this.lastJoined).toLocaleString()}`;
+		const canvasUrlName = this.instanceVanityName ?? "canvas"+this.instanceId;
+		let canvasUrl;
+		if (this.instanceVanityName) {
+			canvasUrl = `${location.origin}/${canvasUrlName}`
+		}
+		else {
+			const params = new URLSearchParams({
+				server: this.instanceServerLocation,
+				legacy: String(this.instanceLegacy)
+			});
+			canvasUrl = `${location.origin}/${params.toString()}`;
+		}
 
 		return html`
-			<div class="user-card">
-				<div class="user-card-header">
-					<img src="images/rplace.png" width="32">
-					<div class="user-card-titles">
-						<h2>${userIdentifier}</h2>
-						<span>@${instanceIdentifier}</span>
-					</div>
+			<div class="user-card-header">
+				<img src="images/rplace.png" width="32">
+				<div class="user-card-titles">
+					<h2>${userIdentifier}</h2>
+					<span>@${instanceIdentifier}</span>
 				</div>
-				<span id="userDate">${lastJoinedDate}</span>
-				<hr>
-				<div class="user-card-grid">
-					<h1>${fuzzyNumberFormat.format(this.pixelsPlaced)}</h1>
-					<h1>${fuzzyNumberFormat.format(playTime)}</h1>
-					<span>Pixels placed</span>
-					<span>${playTimeUnit}</span>
+			</div>
+			<span id="userDate">${lastJoinedDate}</span>
+			<hr>
+			<div class="user-card-grid">
+				<h1>${fuzzyNumberFormat.format(this.pixelsPlaced)}</h1>
+				<h1>${fuzzyNumberFormat.format(playTime)}</h1>
+				<span>Pixels placed</span>
+				<span>${playTimeUnit}</span>
+			</div>
+			<div class="user-card-details">
+				<div class="user-card-detail-item">
+					<span class="label">User ID:</span>
+					<span class="value">${this.userIntId}</span>
 				</div>
-				<div class="user-card-details">
-					<div class="user-card-detail-item">
-						<span class="label">User ID:</span>
-						<span class="value">${this.userIntId}</span>
-					</div>
-					<div class="user-card-detail-item">
-						<span class="label">Canvas URL:</span>
-						<span class="value"><a href="https://rplace.live">${this.serverLocation}</a></span>
-					</div>
+				<div class="user-card-detail-item">
+					<span class="label">Canvas URL:</span>
+					<span class="value"><a href="${canvasUrl}">${canvasUrlName}</a></span>
 				</div>
 			</div>`;
 	}
@@ -94,22 +102,21 @@ export class CanvasUserCard extends LitElement {
 	 */
 	fromCanvasUser(canvasUser, instance) {
 		// Canvas user properties
-		this.userIntId = canvasUser.userIntId
-		this.instanceId = canvasUser.instanceId
-		this.accountId = canvasUser.accountId
-		this.chatName = canvasUser.chatName
-		this.lastJoined = canvasUser.lastJoined
-		this.pixelsPlaced = canvasUser.pixelsPlaced
-		this.playTimeSeconds = canvasUser.playTimeSeconds
+		this.userIntId = canvasUser.userIntId;
+		this.instanceId = canvasUser.instanceId;
+		this.accountId = canvasUser.accountId;
+		this.chatName = canvasUser.chatName;
+		this.lastJoined = canvasUser.lastJoined;
+		this.pixelsPlaced = canvasUser.pixelsPlaced;
+		this.playTimeSeconds = canvasUser.playTimeSeconds;
 
 		// Instance properties
-		this.instanceVanityName = instance.vanityName
-		this.serverLocation = instance.serverLocation
-		this.legacy = instance.legacy
-		this.ownerId = instance.ownerId
+		this.instanceVanityName = instance.vanityName;
+		this.instanceServerLocation = instance.serverLocation;
+		this.instanceLegacy = instance.legacy;
 	}
 }
-customElements.define("r-canvas-user-card", CanvasUserCard)
+customElements.define("r-canvas-user-card", CanvasUserCard);
 
 export class UserTooltip extends LitElement {
 	static properties = {
@@ -131,7 +138,7 @@ export class UserTooltip extends LitElement {
 	}
 
 	constructor() {
-		super()
+		super();
 		this.type = "";
 		this.chatName = "...";
 		this.creationDate = 0;
@@ -145,36 +152,36 @@ export class UserTooltip extends LitElement {
 	}
 
 	createRenderRoot() {
-		return this
+		return this;
 	}
 
 	render() {
-		const userIdentifier = (this.chatName ?? "") + (`#${this.userIntId}`)
+		const userIdentifier = (this.chatName ?? "") + (`#${this.userIntId}`);
 		const instanceIdentifier = this.instanceVanityName ?? (`canvas${this.instanceId}`);
 
-		let playTime = this.playTimeSeconds
-		let playTimeUnit = "Seconds played"
+		let playTime = this.playTimeSeconds;
+		let playTimeUnit = "Seconds played";
 		
 		if (playTime > 3600) {
-			playTime = Math.floor(playTime / 3600)
-			playTimeUnit = "Hours played"
+			playTime = Math.floor(playTime / 3600);
+			playTimeUnit = "Hours played";
 		}
 		else if (playTime > 60) {
-			playTime = Math.floor(playTime / 60)
-			playTimeUnit = "Minutes played"
+			playTime = Math.floor(playTime / 60);
+			playTimeUnit = "Minutes played";
 		}
 
 		const userDate = this.type === "account" 
 			? `Joined on ${new Date(this.creationDate).toLocaleString()}`
-			: `Last joined ${new Date(this.lastJoined).toLocaleString()}`
+			: `Last joined ${new Date(this.lastJoined).toLocaleString()}`;
 
 		const secondInfoValue = this.type === "account" 
 			? this.badges.length 
-			: fuzzyNumberFormat.format(playTime)
+			: fuzzyNumberFormat.format(playTime);
 
 		const secondInfoDescription = this.type === "account" 
 			? "User badges" 
-			: playTimeUnit
+			: playTimeUnit;
 
 		return html`
 			<div class="user-tooltip-header">
@@ -191,34 +198,34 @@ export class UserTooltip extends LitElement {
 				<h1>${secondInfoValue}</h1>
 				<span>Pixels placed</span>
 				<span>${secondInfoDescription}</span>
-			</div>`
+			</div>`;
 	}
 
 	fromAccount(profile) {
-		this.type = "account"
+		this.type = "account";
 		
 		// Account
-		this.chatName = profile.chatName
-		this.creationDate = profile.creationDate
-		this.pixelsPlaced = profile.pixelsPlaced
-		this.badges = profile.badges
+		this.chatName = profile.chatName;
+		this.creationDate = profile.creationDate;
+		this.pixelsPlaced = profile.pixelsPlaced;
+		this.badges = profile.badges;
 	}
 
 	fromCanvasUser(canvasUser, instance=null) {
-		this.type = "canvasuser"
+		this.type = "canvasuser";
 		
 		// Canvas user
-		this.chatName = canvasUser.chatName
-		this.userIntId = canvasUser.userIntId
-		this.lastJoined = canvasUser.lastJoined
-		this.pixelsPlaced = canvasUser.pixelsPlaced
-		this.playTimeSeconds = canvasUser.playTimeSeconds
+		this.chatName = canvasUser.chatName;
+		this.userIntId = canvasUser.userIntId;
+		this.lastJoined = canvasUser.lastJoined;
+		this.pixelsPlaced = canvasUser.pixelsPlaced;
+		this.playTimeSeconds = canvasUser.playTimeSeconds;
 
 		// Instance
 		if (instance) {
-			this.instanceId = instance.id
-			this.instanceVanityName = instance.vanityName
+			this.instanceId = instance.id;
+			this.instanceVanityName = instance.vanityName;
 		}
 	}
 }
-customElements.define("r-user-tooltip", UserTooltip)
+customElements.define("r-user-tooltip", UserTooltip);
