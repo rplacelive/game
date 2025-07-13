@@ -1,5 +1,5 @@
 import { makeIpcRequest, sendIpcMessage } from "shared-ipc";
-import { createTopLevelFrame } from "./shared.js";
+import { createTopLevelFrame } from "../../shared.js";
 
 async function initOAuth() {
 	const params = new URLSearchParams(location.search);
@@ -18,7 +18,7 @@ async function initOAuth() {
 		}
 
 		// Construct an authorisation dialog that will handle making the /oauth/authorize request to AuthServer
-		const authorisationFrame = await createTopLevelFrame("/authorisation-dialog.html", "authorisationFrame");
+		const authorisationFrame = await createTopLevelFrame("/authorisation.html", "authorisationFrame");
 		// Tell authorisation frame to authorize our credentials
 		const authorisationCode = await makeIpcRequest(authorisationFrame, "oAuthAuthorise", {
 			responseType,

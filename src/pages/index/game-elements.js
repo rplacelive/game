@@ -2,8 +2,8 @@ import { LitElement, html } from "lit-element"
 import { styleMap } from "lit-html/directives/style-map.js"
 import { until } from "lit/directives/until.js"
 import { unsafeHTML } from "lit/directives/unsafe-html.js"
-import { CHAT_COLOURS, EMOJIS, CUSTOM_EMOJIS } from "./defaults.js"
-import { sanitise, translate, hash, $, markdownParse } from "./shared.js"
+import { CHAT_COLOURS, EMOJIS, CUSTOM_EMOJIS } from "../../defaults.js"
+import { sanitise, translate, hash, $, markdownParse } from "../../shared.js"
 import { chatMentionUser, chatModerate, chatReply, cMessages, currentChannel, onChatContext, pos, x, y, z, intIdNames, chatReport, chatReact } from "./index.js"
 
 export class PositionIndicator extends HTMLElement {

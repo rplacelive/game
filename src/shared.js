@@ -1,5 +1,5 @@
+import { DEFAULT_AUTH } from "./defaults.js"
 import { Marked } from "marked"
-import { DEFAULT_AUTH } from "./defaults"
 import DOMPurify from "dompurify"
 
 // Contains shared resources across pages
@@ -788,4 +788,15 @@ export function objectToHtml(object, editable = false) {
 	propToHtml(object)
 
 	return html
+}
+
+/**
+ * 
+ * @param {number} from 
+ * @param {number} to 
+ * @param {number} weight 
+ * @returns 
+ */
+export function lerp(from, to, weight) {
+	return from + weight * (to - from)
 }

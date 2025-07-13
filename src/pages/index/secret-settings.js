@@ -1,5 +1,5 @@
-import { $ } from "./shared.js";
-import { EditList } from "./shared-elements.js";
+import { $ } from "../../shared.js";
+import { EditList } from "../../shared-elements.js";
 import { setSelectColourSample, getDefaultSample } from "./game-audio.js";
 
 export let enableWebglCanvas = localStorage.enableWebglCanvas === "true";

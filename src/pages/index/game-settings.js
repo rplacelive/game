@@ -1,4 +1,4 @@
-import { $ } from "./shared.js";
+import { $ } from "../../shared.js";
 
 const muteButton = /**@type {HTMLButtonElement}*/($("#muteButton"));
 const muteButtonImage = /**@type {HTMLImageElement}*/($("#muteButtonImage"));

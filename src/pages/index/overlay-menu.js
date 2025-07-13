@@ -1,6 +1,6 @@
 import { BoardRenderer } from "./board-renderer.js";
-import { DEFAULT_PALETTE } from "./defaults.js";
-import { $ } from "./shared.js"
+import { DEFAULT_PALETTE } from "../../defaults.js";
+import { $ } from "../../shared.js"
 
 const overlayMenu = /**@type {HTMLDialogElement}*/($("#overlayMenu"));
 const overlayMenuCanvas = /**@type {HTMLCanvasElement}*/($("#overlayMenuCanvas"));

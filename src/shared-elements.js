@@ -429,7 +429,6 @@ class GifPanel extends LitElement {
 }
 customElements.define("r-gif-panel", GifPanel);
 
-
 class CanvasShareEmbed extends LitElement {
 	static properties = {
 		serverUrl: { type: String, attribute: "serverurl" },
@@ -574,3 +573,4 @@ export class EditList extends LitElement {
 	}
 }
 customElements.define("r-edit-list", EditList);
+

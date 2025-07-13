@@ -8,12 +8,16 @@
 	<link rel="stylesheet" href="/styles.css">
 	<link rel="stylesheet" href="/shared.css">
 	<link rel="stylesheet" href="/posts.css">
-	<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2508999262953411" crossorigin="anonymous"></script>
+	<!--Shared resources-->
 	<script type="module" src="/src/shared.js"></script>
-	<script type="module" src="/src/account.js"></script>
 	<script type="module" src="/src/shared-elements.js" defer></script>
-	<script type="module" src="/src/posts-elements.js" defer></script>
-	<script type="module" src="/src/posts-manager.js" defer></script>
+	<!--Services-->
+	<script type="module" src="/src/services/account-manager.js" defer></script>
+	<script type="module" src="/src/services/posts-manager.js" defer></script>
+	<!--Page scripts-->
+	<script type="module" src="/src/pages/posts/posts-elements.js" defer></script>
+	<!--Misc-->
+	<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2508999262953411" crossorigin="anonymous"></script>
 </head>
 <body>
 	<header>
@@ -24,13 +28,17 @@
 			<img src="./images/rplace.png" class="header-icon" alt="Rplace logo">
 			<h1 class="header-title" translate="rplaceLivePosts">rplace.live posts</h1>
 		</div>
-		<input id="postsSearchbar" type="text" class="post-input searchbar" translate="searchKeyword" placeholder="Search keyword">
+		<input id="postsSearchbar" type="text" class="post-input searchbar" translate="searchKeyword"
+			placeholder="Search keyword">
 		<div><!--Spacer--></div>
 	</header>
 	<div id="sidebar" class="sidebar">
 		<a type="button" href="/posts" style="column-gap: 8px;">
-			<svg fill="currentColor" icon-name="home-fill" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
-				<path d="m19.724 6.765-9.08-6.11A1.115 1.115 0 0 0 9.368.647L.276 6.765a.623.623 0 0 0 .35 1.141h.444v10.001c.001.278.113.544.31.74.196.195.462.304.739.303h5.16a.704.704 0 0 0 .706-.707v-4.507c0-.76 1.138-1.475 2.02-1.475.882 0 2.02.715 2.02 1.475v4.507a.71.71 0 0 0 .707.707h5.16c.274-.001.538-.112.732-.307.195-.195.305-.46.306-.736v-10h.445a.618.618 0 0 0 .598-.44.625.625 0 0 0-.25-.702Z"></path>
+			<svg fill="currentColor" icon-name="home-fill" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"
+				width="24" height="24">
+				<path
+					d="m19.724 6.765-9.08-6.11A1.115 1.115 0 0 0 9.368.647L.276 6.765a.623.623 0 0 0 .35 1.141h.444v10.001c.001.278.113.544.31.74.196.195.462.304.739.303h5.16a.704.704 0 0 0 .706-.707v-4.507c0-.76 1.138-1.475 2.02-1.475.882 0 2.02.715 2.02 1.475v4.507a.71.71 0 0 0 .707.707h5.16c.274-.001.538-.112.732-.307.195-.195.305-.46.306-.736v-10h.445a.618.618 0 0 0 .598-.44.625.625 0 0 0-.25-.702Z">
+				</path>
 			</svg>
 			Posts
 		</a>
@@ -48,8 +56,10 @@
 	<div id="contents">
 		<div class="posts-side-panel">
 			<div class="posts-extern-buttons">
-				<button type="button" id="postJumpButton" class="posts-button posts-jump-button" onclick="communityPostsPost.scrollIntoView({ behavior: 'smooth', block: 'start' })">
-					<svg title="Change channel" style="vertical-align: bottom;" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24">
+				<button type="button" id="postJumpButton" class="posts-button posts-jump-button"
+					onclick="communityPostsPost.scrollIntoView({ behavior: 'smooth', block: 'start' })">
+					<svg title="Change channel" style="vertical-align: bottom;" xmlns="http://www.w3.org/2000/svg"
+						height="24" viewBox="0 -960 960 960" width="24">
 						<path d="M480-345 240-585l43-43 197 198 197-197 43 43-240 239Z"></path>
 					</svg>Jump to community posts
 				</button>
@@ -61,7 +71,8 @@
 		<div id="createPostPost" class="post" style="padding-left: 15px; cursor: default;">
 			<div class="create-post-image-drop">
 				<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24">
-					<path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h360v80H200v560h560v-360h80v360q0 33-23.5 56.5T760-120H200Zm480-480v-80h-80v-80h80v-80h80v80h80v80h-80v80h-80ZM240-280h480L570-480 450-320l-90-120-120 160Zm-40-480v560-560Z"/>
+					<path
+						d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h360v80H200v560h560v-360h80v360q0 33-23.5 56.5T760-120H200Zm480-480v-80h-80v-80h80v-80h80v80h80v80h-80v80h-80ZM240-280h480L570-480 450-320l-90-120-120 160Zm-40-480v560-560Z" />
 				</svg>
 				<span>Upload image</span>
 			</div>
@@ -70,18 +81,22 @@
 					<img src="./svg/account.svg" alt="Account icon" width="32" height="32">
 				</div>
 				<div class="create-post-inputs-container">
-					<input type="text" id="createPostTitle" minlength="1" maxlength="64" required class="create-post-input create-post-extra" placeholder="Post title...">
-					<textarea id="createPostInput" maxlength="360" class="create-post-input" placeholder="Create post..."></textarea>
+					<input type="text" id="createPostTitle" minlength="1" maxlength="64" required
+						class="create-post-input create-post-extra" placeholder="Post title...">
+					<textarea id="createPostInput" maxlength="360" class="create-post-input"
+						placeholder="Create post..."></textarea>
 				</div>
 				<button type="button" class="create-post-content-button" onclick="createPostContentInput.click()">
 					<img src="./svg/image.svg" alt="Add post attachment" width="32" height="32">
 				</button>
-				<input type="file" id="createPostContentInput" accept="image/gif,image/jpeg,image/png,image/webp" style="display: none;">
+				<input type="file" id="createPostContentInput" accept="image/gif,image/jpeg,image/png,image/webp"
+					style="display: none;">
 			</div>
 			<div id="createPostOptions" class="create-post-extra">
 				<r-post-contents-preview id="createPostContent"></r-post-contents-preview>
 				<div class="create-post-create-discard">
-					<button id="discardPostButton" type="button" class="post-button discard-post-button">Discard</button>
+					<button id="discardPostButton" type="button"
+						class="post-button discard-post-button">Discard</button>
 					<button id="createPostButton" type="button" class="post-button create-post-button">Post</button>
 				</div>
 				<span id="createPostStatus" class="create-post-status"></span>
@@ -104,32 +119,40 @@
 					<div class="description">???x??? (cooldown: ...ms)</div>
 				</div>
 			</div>
-			<r-clipboard-copy title="Copy canvas URL to clipbaord" href="https://rplace.live/?server=wss://server.rplace.live:443&board=https://raw.githubusercontent.com/rplacelive/canvas1/main/place"></r-clipboard-copy>
+			<r-clipboard-copy title="Copy canvas URL to clipbaord"
+				href="https://rplace.live/?server=wss://server.rplace.live:443&board=https://raw.githubusercontent.com/rplacelive/canvas1/main/place"></r-clipboard-copy>
 		</div>
-		<r-post id="accountPost" style="cursor: pointer; opacity: 0.6; pointer-events: none;" class="post" novotes="true" title="My Account" description="Login or signup to an rplace.live account, access special features and host your own custom canvases"
+		<r-post id="accountPost" class="post" style="cursor: pointer;" novotes="true" title="My Account"
+			description="Login or signup to an rplace.live account, access special features and host your own custom canvases"
 			coverimageurl="images/account-profile.png"></r-post>
 		<!--<r-post onclick="window.open('https:\/\/lamda.count.land/', '_blank')" class="post" novotes="true" title="Lamda" description="Chat anonymously with strangers online. Start random voice calls and meet others!"
 			coverimageurl="images/lamda.png"></r-post>
 		<r-post onclick="toggleTlPanel()" class="post" style="opacity: 0.6; pointer-events: none;" novotes="true" title="Timelapse tool" description="Combine a sequence from the history of the canvas to create your own timelapse video!"
 			coverimageurl="images/timelapse.png"></r-post>-->
-		<r-post id="overlayPost" style="cursor: pointer;" class="post" novotes="true" title="Overlay menu" description="Visualise your build with template images!"
+		<r-post id="overlayPost" style="cursor: pointer;" class="post" novotes="true" title="Overlay menu"
+			description="Visualise your build with template images!"
 			coverimageurl="images/hammer-and-wrench.png"></r-post>
-		<r-post onclick="window.open('https:\/\/discord.gg/r-place-2-960966748289507338','_blank')" style="cursor: pointer;" class="post" novotes="true" title="Discord" description="Join the community at discord.gg/r-place-2-960966748289507338"
+		<r-post onclick="window.open('https:\/\/discord.gg/r-place-2-960966748289507338','_blank')"
+			style="cursor: pointer;" class="post" novotes="true" title="Discord"
+			description="Join the community at discord.gg/r-place-2-960966748289507338"
 			coverimageurl="images/discord.png"></r-post>
-		<r-post onclick="window.open('https:\/\/bit.ly/3LVwDtW','_blank')" style="cursor: pointer;" class="post" novotes="true" title="Donate" description="Help keep rplace.live alive!"
+		<r-post onclick="window.open('https:\/\/bit.ly/3LVwDtW','_blank')" style="cursor: pointer;" class="post"
+			novotes="true" title="Donate" description="Help keep rplace.live alive!"
 			coverimageurl="images/patreon.png"></r-post>
-		<r-post onclick="window.open('https:/\/reddit.com/r/placetk','_blank')" style="cursor: pointer;" class="post" novotes="true" title="Subreddit" description="Visit the official rplace.live subreddit (r/placetk)"
+		<r-post onclick="window.open('https:/\/reddit.com/r/placetk','_blank')" style="cursor: pointer;" class="post"
+			novotes="true" title="Subreddit" description="Visit the official rplace.live subreddit (r/placetk)"
 			coverimageurl="images/reddit.png"></r-post>
-		<r-post onclick="window.open('https:\/\/rplacelive.github.io\/colour-utils\/','_blank')" style="cursor: pointer;" class="post" novotes="true" title="Colour utils" description="A collection of nifty utilities to work with rplace.live canvases"
+		<r-post onclick="window.open('https:\/\/rplacelive.github.io\/colour-utils\/','_blank')"
+			style="cursor: pointer;" class="post" novotes="true" title="Colour utils"
+			description="A collection of nifty utilities to work with rplace.live canvases"
 			coverimageurl="images/colour-utils.png"></r-post>
-		<r-post onclick="window.open('https:\/\/canv.tk/', '_blank')" style="cursor: pointer;" class="post" novotes="true" title="Canv.tk" description="Visit our sister site, the proof of concept this site itself was built off, canv.tk here!"
+		<r-post onclick="window.open('https:\/\/canv.tk/', '_blank')" style="cursor: pointer;" class="post"
+			novotes="true" title="Canv.tk"
+			description="Visit our sister site, the proof of concept this site itself was built off, canv.tk here!"
 			coverimageurl="images/canv.png"></r-post>
 		<!-- Google ad -->
-		<ins class="adsbygoogle post-inline-ad post"
-			novotes="true"
-			data-ad-format="fluid"
-			data-ad-layout-key="-h1-1k+3g-2d+2x"
-			data-ad-client="ca-pub-2508999262953411"
+		<ins class="adsbygoogle post-inline-ad post" novotes="true" data-ad-format="fluid"
+			data-ad-layout-key="-h1-1k+3g-2d+2x" data-ad-client="ca-pub-2508999262953411"
 			data-ad-slot="1977315749"></ins>
 		<div id="communityPostsPost" class="post" novotes="true">
 			<div class="body">
@@ -140,25 +163,30 @@
 				</div>
 				<div style="display: flex; column-gap: 16px; align-items: center; justify-content: center;">
 					<label for="postsSortSelect" translate="sortBy">Sort by:</label>
-					<select id="postsSortSelect" style="box-shadow: none; border-radius: 64px; background: rgb(226, 218, 218);">
+					<select id="postsSortSelect"
+						style="box-shadow: none; border-radius: 64px; background: rgb(226, 218, 218);">
 						<option value="date" translate="date">Date</option>
 						<option value="upvotes" translate="upvotes">Upvotes</option>
 					</select>
 					<label for="postsHideSensitive" translate="hideSensitive">Hide sensitive:</label>
-					<input id="postsHideSensitive" type="checkbox" checked style="box-shadow: none; border-radius: 64px;">
+					<input id="postsHideSensitive" type="checkbox" checked
+						style="box-shadow: none; border-radius: 64px;">
 				</div>
 			</div>
 		</div>
 	</div>
 	<dialog id="postRulesDialog" class="reddit-modal">
-		<r-close-icon onclick="postRulesDialog.close()" style="position: absolute; top: 10px; right: 10px; z-index: 1;"></r-close-icon>
+		<r-close-icon onclick="postRulesDialog.close()"
+			style="position: absolute; top: 10px; right: 10px; z-index: 1;"></r-close-icon>
 		<div style="display: flex; flex-direction: column; padding: 16px; overflow-y: scroll; row-gap: 8px;">
 			<h4>By creating a post, you agree to the following conditions:</h4>
 			<ol style="font-size: 18px;line-height: 32px;margin-left: 16px; flex-grow: 1;">
-				<li>All posts you create are public, and any information shared in a post will be visible to everyone.</li>
+				<li>All posts you create are public, and any information shared in a post will be visible to everyone.
+				</li>
 				<li>Your post must be related to rplace and must not contain NSFW or copyrighted content.</li>
 				<li>All content uploaded may be processed by third party content filters and AI detection systems.</li>
-				<li>Illegal content shall not be posted, and will be reported to relevant authorities, alongside any necessary user information to aid with investigation.</li>
+				<li>Illegal content shall not be posted, and will be reported to relevant authorities, alongside any
+					necessary user information to aid with investigation.</li>
 			</ol>
 			<img src="images/example-post.png" alt="Example post" style="height: 256px;object-fit: contain;">
 			<button type="button" class="reddit-modal-button" onclick="
@@ -168,9 +196,9 @@
 		</div>
 	</dialog>
 </body>
-<script type="module" src="/src/posts.js" defer></script>
+<script type="module" src="/src/pages/posts/posts.js" defer></script>
 <script>
 	// Ads
-	;(adsbygoogle = window.adsbygoogle || []).push({});
+	; (adsbygoogle = window.adsbygoogle || []).push({});
 </script>
 </html>

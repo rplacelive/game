@@ -1,5 +1,5 @@
-import { DEFAULT_BOARD, DEFAULT_SERVER, ADS, CHAT_COLOURS, COMMANDS, CUSTOM_EMOJIS, DEFAULT_HEIGHT, DEFAULT_PALETTE_KEYS, DEFAULT_THEMES, DEFAULT_WIDTH, EMOJIS, LANG_INFOS, MAX_CHANNEL_MESSAGES, PUNISHMENT_STATE, DEFAULT_PALETTE_USABLE_REGION, DEFAULT_PALETTE, DEFAULT_COOLDOWN } from "./defaults.js";
-import { lang, PublicPromise, translate, translateAll, hash, $, stringToHtml, blobToBase64, base64ToBlob }  from "./shared.js";
+import { DEFAULT_BOARD, DEFAULT_SERVER, ADS, CHAT_COLOURS, COMMANDS, CUSTOM_EMOJIS, DEFAULT_HEIGHT, DEFAULT_PALETTE_KEYS, DEFAULT_THEMES, DEFAULT_WIDTH, EMOJIS, LANG_INFOS, MAX_CHANNEL_MESSAGES, PUNISHMENT_STATE, DEFAULT_PALETTE_USABLE_REGION, DEFAULT_PALETTE, DEFAULT_COOLDOWN } from "../../defaults.js";
+import { lang, PublicPromise, translate, translateAll, hash, $, stringToHtml, blobToBase64, base64ToBlob }  from "../../shared.js";
 import { showLoadingScreen, hideLoadingScreen } from "./loading-screen.js";
 import { enableDarkplace, disableDarkplace } from "./darkplace.js";
 import { enableWinter, disableWinter } from "./snowplace.js";
@@ -12,6 +12,7 @@ import { AUDIOS } from "./game-defaults.js";
 import { addIpcMessageHandler, handleIpcMessage, sendIpcMessage, makeIpcRequest } from "shared-ipc";
 import FingerprintJS from "@fingerprintjs/fingerprintjs";
 import { openOverlayMenu } from "./overlay-menu.js";
+import { TurnstileWidget } from "../../services/turnstile-manager.js";
 
 // HTTPS upgrade
 if(!("subtle" in (window.crypto || {}))) {
@@ -188,6 +189,7 @@ const themeDropParent = /**@type {HTMLElement}*/($("#themeDropParent"));
 /**@type {"connecting"|"connected"|"disconnected"}*/ let connectStatus = "connecting";
 /**@type {number}*/ let online = 1;
 /**@type {boolean}*/ let canvasLocked = false;
+/**@type {TurnstileWidget|null}*/let currentTurnstileWidget = null;
 
 // Readonly WS & State variables
 let PALETTE_USABLE_REGION = DEFAULT_PALETTE_USABLE_REGION;
@@ -302,14 +304,15 @@ function setOnline(count) {
 }
 addIpcMessageHandler("setOnline", setOnline);
 /**
- * @param {{ position: number, width: number, height: number, region: DataView<ArrayBuffer> }} param
+ * @param {{ position: number, width: number, height: number, region: ArrayBuffer }} param
  */
 function handlePlacerInfoRegion({ position, width, height, region }) {
+	const regionView = new DataView(region);
 	let i = position;
 	let regionI = 0;
 	while (regionI < region.byteLength) {
 		for (let xi = i; xi < i + width; xi++) {
-			const placerIntId = region.getUint32(regionI);
+			const placerIntId = regionView.getUint32(regionI);
 			if (placerIntId !== 0xFFFFFFFF) {
 				intIdPositions.set(xi, placerIntId);
 			}
@@ -581,27 +584,36 @@ function handleEmojiCaptcha({ options, imageData }) {
 }
 addIpcMessageHandler("handleEmojiCaptcha", handleEmojiCaptcha);
 /**
- * @param {{ siteKey:string, turnstileCallback: (token: string) => void }} param
+ * @param {string} siteKey
  */
-function handleTurnstile({ siteKey, turnstileCallback }) {
-	const siteVariant = document.documentElement.dataset.variant
-	const turnstileTheme = siteVariant === "dark" ? "dark" : "light"
+function handleTurnstile(siteKey) {
+	const siteVariant = document.documentElement.dataset.variant;
+	const turnstileTheme = siteVariant === "dark" ? "dark" : "light";
+	turnstileMenu.setAttribute("open", "true");
 
-	turnstileMenu.setAttribute("open", "true")
-
-	if (window.turnstile) {
-		window.turnstile.ready(function () {
-			window.turnstile.render("#turnstileContainer", {
-				sitekey: siteKey,
-				theme: turnstileTheme,
-				language: lang,
-				callback: turnstileCallback
-			})
-		})
+	// Clean up any existing widget
+	if (currentTurnstileWidget) {
+		currentTurnstileWidget.destroy();
 	}
+
+	const turnstileContainer = document.getElementById("turnstileContainer");
+	currentTurnstileWidget = new TurnstileWidget(turnstileContainer, {
+		sitekey: siteKey,
+		theme: turnstileTheme,
+		language: lang,
+		onVerify: (token) => {
+			sendIpcMessage(wsCapsule, "sendTurnstileResult", token);
+		},
+		onError: (error) => {
+			console.error("Turnstile error:", error);
+		},
+		onLoad: (widgetId) => {
+			console.log("Turnstile loaded successfully");
+		}
+	});
 }
 addIpcMessageHandler("handleTurnstile", handleTurnstile);
-export function handleTurnstileSuccess() {
+function handleTurnstileSuccess() {
 	turnstileMenu.removeAttribute("open")
 }
 addIpcMessageHandler("handleTurnstileSuccess", handleTurnstileSuccess);
@@ -2692,15 +2704,15 @@ export async function forceTheme(forceTheme, forceVariant = null , forceEffects 
 	const currentVariant = document.documentElement.dataset.variant
 	if (currentThemeSet != forceTheme || currentVariant != forceVariant) {
 		console.warn("Forcing site theme to", forceTheme, forceVariant)
-		await theme(/**@type {import("./defaults.js").ThemeInfo}*/(DEFAULT_THEMES.get(forceTheme)), forceVariant, forceEffects)
+		await theme(/**@type {import("../../defaults.js").ThemeInfo}*/(DEFAULT_THEMES.get(forceTheme)), forceVariant, forceEffects)
 	}
 }
 
 /**@type {HTMLLinkElement|null}*/let styleElement = null;
-/**@type {import("./defaults.js").ThemeInfo|null}*/let currentTheme = null;
+/**@type {import("../../defaults.js").ThemeInfo|null}*/let currentTheme = null;
 
 /**
- * @param {import("./defaults.js").ThemeInfo} themeSet
+ * @param {import("../../defaults.js").ThemeInfo} themeSet
  * @param {string|null} variant
  * @param {string|null} effects
  */

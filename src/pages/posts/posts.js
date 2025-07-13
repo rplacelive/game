@@ -1,21 +1,10 @@
-import { DEFAULT_AUTH, DEFAULT_SERVER, DEFAULT_BOARD } from "./defaults.js";
-import { translateAll, $, makeRequest } from "./shared.js"
-import { clearPosts, tryLoadBottomPosts, tryLoadKeywordPosts, tryLoadTopPosts } from "./posts-manager.js"
-import { getAccount, openAccountFrame } from "./account.js";
+import { DEFAULT_AUTH, DEFAULT_SERVER, DEFAULT_BOARD } from "../../defaults.js";
+import { translateAll, $, makeRequest, lerp } from "../../shared.js"
+import { clearPosts, tryLoadBottomPosts, tryLoadKeywordPosts, tryLoadTopPosts } from "../../services/posts-manager.js"
+import { getAccount, openAccountFrame } from "../../services/account-manager.js";
 import { addIpcMessageHandler, handleIpcMessage, sendIpcMessage, makeIpcRequest } from "shared-ipc";
 
 //  Main
-/**
- * 
- * @param {number} from 
- * @param {number} to 
- * @param {number} weight 
- * @returns 
- */
-function lerp(from, to, weight) {
-	return from + weight * (to - from)
-}
-
 const sidebar = /**@type {HTMLElement}*/($("#sidebar"));
 const sidebarBackground = /**@type {HTMLElement}*/($("#sidebarBackground"));
 let sidebarDragLastX = 0, sidebarDragStartX = 0, sidebarDragStartY = 0,
@@ -83,7 +72,7 @@ liveChatPost.addEventListener("click", function(e) {
 	sendIpcMessage(window.parent, "openChatPanel");
 });
 const createPostPost = /**@type {HTMLElement}*/($("#createPostPost"));
-const createPostContent = /**@type {import("./posts-elements.js").CreatePostContentsPreview}*/($("#createPostContent"));
+const createPostContent = /**@type {import("./components/posts-elements.js").CreatePostContentsPreview}*/($("#createPostContent"));
 const postRulesDialog = /**@type {HTMLDialogElement}*/($("#postRulesDialog"));
 const discardPostButton = /**@type {HTMLButtonElement}*/($("#discardPostButton"));
 discardPostButton.addEventListener("click", function(e) {

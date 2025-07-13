@@ -5,11 +5,14 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Authorisation | rplace</title>
 	<link rel="stylesheet" href="/posts.css">
-	<link rel="stylesheet" href="/authorisation-dialog.css">
+	<link rel="stylesheet" href="/authorisation.css">
+	<!--Shared resources-->
 	<script type="module" src="/src/shared.js"></script>
-	<script type="module" src="/src/account.js"></script>
-	<script type="module" src="/src/shared-elements.js"></script>
-	<script type="module" src="/src/authorisation-dialog.js"></script>
+	<script type="module" src="/src/shared-elements.js" defer></script>
+	<!--Services-->
+	<script type="module" src="/src/services/account-manager.js"></script>
+	<!--Page scripts-->
+	<script type="module" src="/src/pages/authorisation/authorisation.js"></script>
 </head>
 <body class="reddit-modal" style="background: transparent; height: 576px;" open>
 	<div style="position: relative; background-color: #f0f0f0;">

@@ -188,6 +188,7 @@ r-user-tooltip::before {
 }
 r-user-tooltip > hr {
 	opacity: 0.2;
+	margin: 0;
 }
 r-user-tooltip > span {
 	color: #aaa;
@@ -198,12 +199,26 @@ r-user-tooltip > span {
 	align-items: center;
 	column-gap: 4px;
 }
+.user-tooltip-titles > h2 {
+	margin: 0;
+}
+.user-tooltip-titles > span {
+    font-size: 10px;
+    text-align: left;
+}
+.user-tooltip-titles {
+	display: flex;
+	flex-direction: column;
+}
 .user-tooltip-grid {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	grid-template-rows: auto min-content;
 	column-gap: 2px;
 	flex-grow: 1;
+}
+.user-tooltip-grid > h1 {
+	margin: 0;
 }
 .user-tooltip-grid > span {
 	color: #aaa;
@@ -742,7 +757,7 @@ dialog {
 	height: 14px;
 	margin: 0;
 	background-color: white;
-
+	cursor: text;
 }
 .reddit-modal-input[type=file]::file-selector-button {
 	all: unset;
@@ -789,4 +804,8 @@ dialog {
 }
 .reddit-modal-button:hover {
 	background-color: #b0c8e6;
+}
+.reddit-modal-button:disabled {
+	opacity: 0.6;
+	pointer-events: none;
 }

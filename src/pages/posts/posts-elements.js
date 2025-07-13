@@ -1,10 +1,8 @@
 import { LitElement, html } from "lit-element"
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { until } from "lit-html/directives/until.js";
-import { DEFAULT_AUTH } from "./defaults.js";
-import { markdownParse, sanitise, cachedFetch } from "./shared.js";
-
-const fuzzyNumberFormat = new Intl.NumberFormat(navigator.language, { notation: "compact" })
+import { DEFAULT_AUTH } from "../../defaults.js";
+import { markdownParse, sanitise, cachedFetch } from "../../shared.js";
 
 export class Post extends LitElement {
 	static properties = {
@@ -285,95 +283,6 @@ class PostContents extends LitElement {
 	}
 }
 customElements.define("r-post-contents", PostContents)
-
-class UserTooltip extends LitElement {
-	static properties = {
-		type: { type: String },
-		chatName: { type: String, attribute: "chatname" },
-		creationDate: { type: Number, attribute: "creationdate" },
-		pixelsPlaced: { type: Number, attribute: "pixelsplaced" },
-		badges: { type: Array, attribute: "badges" },
-		lastJoined: { type: Number, attribute: "lastjoined" },
-		playTimeSeconds: { type: Number, attribute: "playtimeseconds" },
-		userIntId: { type: Number, attribute: "userintid" }
-	}
-
-	constructor() {
-		super()
-		this.type = ""
-		this.chatName = "..."
-		this.creationDate = 0
-		this.pixelsPlaced = 0
-		this.badges = []
-		this.lastJoined = 0
-		this.playTimeSeconds = 0
-		this.userIntId = 0
-	}
-
-	createRenderRoot() {
-		return this
-	}
-
-	render() {
-		let userIdentifier = this.chatName || (this.userIntId ? `#${this.userIntId}` : "...")
-		
-		let playTime = this.playTimeSeconds
-		let playTimeUnit = "Seconds played"
-		
-		if (playTime > 3600) {
-			playTime = Math.floor(playTime / 3600)
-			playTimeUnit = "Hours played"
-		}
-		else if (playTime > 60) {
-			playTime = Math.floor(playTime / 60)
-			playTimeUnit = "Minutes played"
-		}
-
-		const userDate = this.type === "account" 
-			? `Joined on ${new Date(this.creationDate).toLocaleString()}`
-			: `Last joined ${new Date(this.lastJoined).toLocaleString()}`
-
-		const secondInfoValue = this.type === "account" 
-			? this.badges.length 
-			: fuzzyNumberFormat.format(playTime)
-
-		const secondInfoDescription = this.type === "account" 
-			? "User badges" 
-			: playTimeUnit
-
-		return html`
-			<div class="user-tooltip-header">
-				<img src="images/rplace.png" width="32">
-				<h2 id="userName">${userIdentifier}</h2>
-			</div>
-			<span id="userDate">${userDate}</span>
-			<hr>
-			<div class="user-tooltip-grid">
-				<h1 id="userInfo1">${fuzzyNumberFormat.format(this.pixelsPlaced)}</h1>
-				<h1 id="userInfo2">${secondInfoValue}</h1>
-				<span id="userInfo1Description">Pixels placed</span>
-				<span id="userInfo2Description">${secondInfoDescription}</span>
-			</div>`
-	}
-
-	fromAccount(profile) {
-		this.type = "account"
-		this.chatName = profile.chatName
-		this.creationDate = profile.creationDate
-		this.pixelsPlaced = profile.pixelsPlaced
-		this.badges = profile.badges
-	}
-
-	fromCanvasUser(canvasUser) {
-		this.type = "canvasuser"
-		this.chatName = canvasUser.chatName
-		this.userIntId = canvasUser.userIntId
-		this.lastJoined = canvasUser.lastJoined
-		this.pixelsPlaced = canvasUser.pixelsPlaced
-		this.playTimeSeconds = canvasUser.playTimeSeconds
-	}
-}
-customElements.define("r-user-tooltip", UserTooltip)
 
 export class CreatePostContent extends HTMLElement {
 	#fileThumbnail
