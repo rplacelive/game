@@ -33,11 +33,6 @@
 	<script type="module" src="/src/pages/index/game-defaults.js" defer></script>
 	<script type="module" src="/src/pages/index/secret-settings.js" defer></script>
 	<script type="module" src="/src/pages/index/board-renderer.js" defer></script>
-	<!-- Ads -->
-	<meta name="ezoic-site-verification" content="ROECB3x9cUYm4q519GQxZqHgFCoomp" />
-	<script src="https://cmp.gatekeeperconsent.com/min.js" data-cfasync="false"></script>
-	<script src="https://the.gatekeeperconsent.com/cmp.min.js" data-cfasync="false"></script>
-	<script src="https://www.ezojs.com/ezoic/sa.min.js" async ></script>
 </head>
 	<body>
 		<div id="loadingScreen">
@@ -504,8 +499,6 @@
 					], { duration: 1000, iterations: 1, })
 					setTimeout(() => adLabel.style.display = 'none', 1000)
 				">x</button>
-				<!-- Ads -->
-				<div id="ezoic-pub-ad-placeholder-101"></div>
 			</a>
 			<span id="adLabel" style="display: none; opacity: 0; align-self: center;" translate="adHidden">Ad hidden for 14 days!</span>
 			<button id="chatPreviousButton" type="button" class="horizontal-labeled-separator" noselect><hr><span>See previous messages</span><hr></button>
@@ -594,10 +587,5 @@
 	<script type="module" src="/src/pages/index/index.js" defer></script>
 	<% if (!isDev) { %>
 		<script src="https://cdn.jsdelivr.net/npm/disable-devtool" disable-devtool-auto disable-menu="false" md5="60961bf94b2a5d69f98efa9c2ab2caf9"></script>
-		<script>
-			// Ads
-			window.ezstandalone = window.ezstandalone || {};
-			ezstandalone.cmd = ezstandalone.cmd || [];
-		</script>
 	<% } %>
 </html>
