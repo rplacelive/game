@@ -1,17 +1,3 @@
-/** TODO: Move over these special styles to reddit-modal-page.css or something! */
-html {
-	background: transparent;
-	padding: 12px;
-	width: 100%;
-	height: 100%;
-}
-body {
-	background: transparent !important;
-	height: 100% !important;
-	width: 100% !important;
-	position: relative;
-}
-
 /* Account elements*/
 r-canvas-user-card {
 	background: #fff;
@@ -354,7 +340,7 @@ r-canvas-user-card .user-card-detail-item .value {
 	flex-direction: row;
 }
 
-/*Linked profiles searchbar styles*/
+/* Linked profiles searchbar styles */
 .linked-profiles-form {
 	display: flex;
 	column-gap: 4px;
@@ -367,50 +353,16 @@ r-canvas-user-card .user-card-detail-item .value {
 	align-items: center;
 }
 
-/*
- * HACK: Literally everything to do with .reddit-modal
- * TODO: Fix scrollbar margins, body header and icon handling on all reddit modals
- */
+/** Reddit modal style hacks */
 .reddit-modal .body {
-	margin: 0;
+	padding: 0;
 	row-gap: 0;
 }
 .reddit-modal .section {
 	padding: 8px;
 }
-.reddit-modal .body-header {
-	position: sticky;
-	z-index: 1;
-	background: #f0f0f075;
-	top: 0;
-	backdrop-filter: blur(8px);
-}
-.reddit-modal label {
-	font-size: 16px;
-}
-.reddit-modal r-close-icon {
-	position: absolute;
-	top: 8px;
-	right: 16px;
-	width: 24px;
-	height: 24px;
-	z-index: 1;
-	cursor: pointer;
-}
-.reddit-modal .body-header r-close-icon {
-	right: 8px;
-}
-@media (orientation: portrait) {
-	.reddit-modal r-close-icon {
-		right: 8px;
-	}
-	.reddit-modal r-close-icon svg {
-		fill: white;
-	}
-	.reddit-modal .body-header r-close-icon {
-		display: none;
-	}
 
+@media (orientation: portrait) {
 	.reddit-card {
 		flex-direction: column;
 		height: fit-content !important;
