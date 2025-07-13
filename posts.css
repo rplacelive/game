@@ -7,6 +7,16 @@
 		--contents-padding: 16px;
 	}
 }
+/* Elements */
+* {
+	touch-action: auto !important;
+}
+dialog {
+	margin: 0 !important;
+	position: fixed;
+	left: 50%; /* insanity */
+	transform: translate(-50%, calc(-50% + var(--posts-dialog-top)));
+}
 
 /* Posts */
 #postsFrame {
@@ -660,152 +670,4 @@ html[embedded="true"] .sidebar {
 	html[embedded="false"] #contents {
 		padding-left: var(--sidebar-width);
 	}
-}
-dialog {
-	margin: 0 !important;
-	position: fixed;
-	left: 50%; /* insanity */
-	transform: translate(-50%, calc(-50% + var(--posts-dialog-top)));
-}
-* {
-	touch-action: auto !important;
-}
-
-/* Reddit-themed dialog & modal styles (ported from instance manager) */
-.reddit-modal {
-	margin: auto;
-	border: 1px solid gray;
-	border-radius: 4px;
-	background-color: #f0f0f0;
-	height: 600px;
-	width: min(800px, 100% - 16px);
-	box-shadow: 0px 0px 12px black;
-	overflow: clip;
-	display: none;
-	flex-direction: column;
-}
-.reddit-modal[open] {
-	display: flex;
-}
-/* i.e loginPanel */
-.reddit-modal > div {
-	display: flex;
-	flex-grow: 1;
-	max-height: 100%;
-}
-.reddit-modal {
-	font-family: 'IBM Plex Sans', sans-serif;
-	font-size: 20px;
-}
-.reddit-modal p, a, span {
-	font-size: 16px;
-}
-.reddit-modal p {
-	margin-top: 20px;
-	margin-bottom: 20px;
-}
-.reddit-modal .header {
-	position: sticky;
-  	top: 0;
-	color: black;
-	padding: 16px;
-	background: url(/images/reddit-login-banner.png);
-	background-size: cover;
-	min-width: 144px;
-	width: 144px;
-}
-.reddit-modal .body {
-	margin: 8px;
-	display: flex;
-	flex-direction: column;
-	row-gap: 8px;
-	flex-grow: 1;
-	overflow-y: auto;
-	overflow-x: hidden;
-}
-.reddit-modal .section {
-	display: flex;
-	flex-direction: column;
-	row-gap: 8px;
-}
-.reddit-modal, .body, .reddit-modal .body {
-	touch-action: manipulation;
-}
-@media (orientation: portrait) {
-	.reddit-modal > div {
-		flex-direction: column;
-		position: relative;
-	}
-	.reddit-modal .header {
-		background: #343536;
-		color: white;
-		width: auto;
-	}
-	.reddit-modal .confirm-button {
-		position: absolute;
-		bottom: 8px;
-		width: calc(100% - 16px);
-	}
-}
-.reddit-modal-input {
-	all: unset;
-	border: 1px solid #ccc;
-	border-radius: 4px;
-	padding: 8px;
-	font-size: 14px;
-	outline: none;
-	height: 14px;
-	margin: 0;
-	background-color: white;
-	cursor: text;
-}
-.reddit-modal-input[type=file]::file-selector-button {
-	all: unset;
-	border-radius: 5px;
-	background-color: white;
-	border: 0px solid black;
-	box-shadow: none;
-	height: 100%;
-}
-.reddit-modal-input[type=file] {
-	height: 48px;
-	background-color: transparent;
-}
-.reddit-modal-input:focus {
-	border-color: #369;
-	box-shadow: 0 0 5px #ccc;
-}
-.reddit-signin-button {
-	border: 1px solid #dbdbdb;
-	border-radius: 4px;
-	background-color: white;
-	width: fit-content;
-	display: flex;
-	height: 46px;
-	column-gap: 8px;
-	cursor: pointer;
-	padding-right: 8px;
-	box-shadow: none;
-}
-.reddit-modal-button {
-	all: unset;
-	display: inline-block;
-	padding: 8px 16px;
-	border: none;
-	border-radius: 4px;
-	background-color: #cee3f8;
-	color: #1a1a1b;
-	font-size: 14px;
-	font-weight: bold;
-	text-align: center;
-	text-decoration: none;
-	cursor: pointer;
-	transition: background-color 0.2s ease-in-out;
-}
-.reddit-modal-button:hover {
-	background-color: #b0c8e6;
-}
-.reddit-modal-button:disabled {
-	opacity: 0.6;
-	pointer-events: none;
 }
