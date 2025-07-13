@@ -789,3 +789,14 @@ export function objectToHtml(object, editable = false) {
 
 	return html
 }
+
+/**
+ * 
+ * @param {number} from 
+ * @param {number} to 
+ * @param {number} weight 
+ * @returns 
+ */
+export function lerp(from, to, weight) {
+	return from + weight * (to - from)
+}
