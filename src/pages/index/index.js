@@ -15,12 +15,13 @@ import { TurnstileWidget } from "../../services/turnstile-manager.js";
 import FingerprintJS from "@fingerprintjs/fingerprintjs";
 
 // HTTPS upgrade
-if (import.meta.env.MODE !== "development") {
-	if(  !("subtle" in (window.crypto || {}))) {
+// TODO: Make sure this doesn't happen on localhost
+/*if (import.meta.env.MODE !== "development") {
+	if(!("subtle" in (window.crypto || {}))) {
 		console.error("HTTP unsupported, upgrading to HTTPS");
 		location.protocol = "https:";
 	}
-}
+}*/
 
 // Types
 /**
@@ -192,7 +193,6 @@ let COOLDOWN = DEFAULT_COOLDOWN;
 
 // WsCapsule logic & wscapsule message handlers
 const automated = navigator.webdriver;
-
 const httpServerUrl = (localStorage.server || DEFAULT_SERVER)
 	.replace("wss://", "https://").replace("ws://", "http://");
 const res = await fetch(`${httpServerUrl}/public/game-worker.js`);
@@ -203,6 +203,11 @@ const wsCapsule = new Worker(url, {
 	type: "module"
 });
 wsCapsule.addEventListener("message", handleIpcMessage);
+window.addEventListener("beforeunload", (e) => {
+	sendIpcMessage(wsCapsule, "stop");
+});
+
+// Undefine global objects
 const injectedCjs = document.createElement("script");
 injectedCjs.innerHTML = `
 	delete WebSocket;
@@ -703,6 +708,7 @@ function handleDisconnect({ code, reason }) {
 	connectStatus = "disconnected";
 	showLoadingScreen("disconnected", reason);
 	setCooldown(null);
+	sendIpcMessage(wsCapsule, "close");
 }
 addIpcMessageHandler("handleDisconnect", handleDisconnect);
 function handleCaptchaSuccess() {
