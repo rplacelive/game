@@ -703,12 +703,13 @@ addIpcMessageHandler("applyPunishment", applyPunishment);
 function handleDisconnect({ code, reason }) {
 	if (code === 1006 && !sessionStorage.err) {
 		sessionStorage.err = "1";
-		window.location.reload();
+		//window.location.reload();
 	}
+
 	connectStatus = "disconnected";
 	showLoadingScreen("disconnected", reason);
+	wsCapsule.terminate();
 	setCooldown(null);
-	sendIpcMessage(wsCapsule, "close");
 }
 addIpcMessageHandler("handleDisconnect", handleDisconnect);
 function handleCaptchaSuccess() {
