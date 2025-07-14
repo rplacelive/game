@@ -69,7 +69,7 @@ body {
 .modal {
 	background: rgb(255, 255, 255);
 	color: rgb(0, 0, 0);
-	width: 261px;
+	width: 312px;
 	padding: 21px;
 	border: var(--pixel-border);
 	box-shadow: var(--pixel-box-shadow);
@@ -121,7 +121,7 @@ body {
 	font-size: 16px;
 }
 
-/* Buttons */
+/* Layout/HUD elements */
 .layout {
 	border: var(--pixel-border);
 	box-shadow: var(--pixel-box-shadow);
@@ -136,11 +136,26 @@ body {
 	font-size: var(--font-size);
 	pointer-events: all;
 	position: absolute;
-	z-index: 5;
+	z-index: 3;
 }
-
 .layout:hover {
 	background: linear-gradient(rgba(0, 0, 0, 0.2) 0px, rgba(0, 0, 0, 0.2) 0px), rgb(255, 255, 255);
+}
+#place {
+	z-index: 3;
+}
+#positionIndicator {
+	position: absolute;
+	bottom: 24px;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 140px;
+	text-align: center;
+	z-index: 4;
+	pointer-events: none;
+	color: white;
+	font-family: var(--font-pixel);
+	font-size: 14px;
 }
 
 #helpbtn {
@@ -150,14 +165,12 @@ body {
 #helpbtn > img {
 	height: 24px;
 }
-
 #chatbtn {
 	bottom: 20px;
 	right: calc(50% - 140px);
 	line-height: 15px;
 	text-align: center;
 }
-
 #closebtn {
 	top: 20px;
 	left: 20px;
@@ -179,20 +192,6 @@ r-close-icon {
 	cursor: pointer;
 	border-left: var(--pixel-border);
 	border-bottom: var(--pixel-border);
-}
-
-#positionIndicator {
-	position: absolute;
-	bottom: 24px;
-	left: 50%;
-	transform: translateX(-50%);
-	width: 140px;
-	text-align: center;
-	z-index: 6;
-	pointer-events: none;
-	color: white;
-	font-family: var(--font-pixel);
-	font-size: 14px;
 }
 
 #palette {
