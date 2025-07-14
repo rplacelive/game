@@ -65,7 +65,7 @@ import FingerprintJS from "@fingerprintjs/fingerprintjs";
  * @property {string} appeal - Appeal status text
  */
 
-const params = new URLSearchParams(location.search);
+const params = new URLSearchParams(window.location.search);
 const boardParam = params.get("board");
 const serverParam = params.get("server");
 if (boardParam && serverParam) {
@@ -75,6 +75,24 @@ if (boardParam && serverParam) {
 		history.pushState(null, "", location.origin);
 		window.location.reload();
 	}
+}
+const debugParam = params.get("debug");
+if (debugParam) {
+	alert("Debug mode active: Errors will be output in alerts.");
+
+	window.addEventListener("unhandledrejection", (e) => {
+		prompt("Received window unhandledRejection event", JSON.stringify({
+			type: e.type,
+			reason: e.reason
+		}, null, 2));
+	});
+	window.addEventListener("error", (e) => {
+		prompt("Received window error event", JSON.stringify({
+			type: e.type,
+			error: e.error,
+			message: e.message
+		}, null, 2));
+	});
 }
 
 // HTML Elements
@@ -204,6 +222,7 @@ const wsCapsule = new Worker(url, {
 });
 wsCapsule.addEventListener("message", handleIpcMessage);
 window.addEventListener("beforeunload", (e) => {
+	console.log("Stopping wsCapsule...")
 	sendIpcMessage(wsCapsule, "stop");
 });
 
@@ -426,7 +445,7 @@ function addLiveChatMessage({ message, channel }) {
 		const { messageId, senderId } = e.detail;
 		chatReport(messageId, senderId);
 	});
-	newMessage.addEventListener("react-click", (/**@type {CustomEvent}*/e) => {
+	newMessage.addEventListener("reply-click", (/**@type {CustomEvent}*/e) => {
 		const { messageId, senderId } = e.detail;
 		chatReply(messageId, senderId);
 	});
@@ -549,9 +568,9 @@ function handleLiveChatReaction({ messageId, reactorId, reactionKey }) {
 
 			const currentReactions = messageEl.reactions;
 			const reactors = currentReactions?.get(reactionKey) || new Set();
-			if (!reactors.has(reactorId)) {
+			if (![...reactors].find((reactor) => reactor.intId == reactorId)) {
 				const newReactions = currentReactions ? new Map(currentReactions) : new Map();
-				reactors.add(reactorId);
+				reactors.add({ intId: reactorId, chatName: intIdNames.get(reactorId) ?? null });
 				newReactions.set(reactionKey, reactors);
 				messageEl.reactions = newReactions;
 			}
@@ -701,10 +720,13 @@ addIpcMessageHandler("applyPunishment", applyPunishment);
  * @param {{code: number, reason: string }} param 
  */
 function handleDisconnect({ code, reason }) {
-	if (code === 1006 && !sessionStorage.err) {
-		sessionStorage.err = "1";
-		//window.location.reload();
-	}
+	localStorage.lastDisconnect = Date.now();
+	console.log("Disconnected from server with code:", code, `(${reason})`);
+	// TODO: Look into if this logic is still necessary
+	//if (code === 1006 && !sessionStorage.err) {
+	//	sessionStorage.err = "1";
+	//	window.location.reload();
+	//}
 
 	connectStatus = "disconnected";
 	showLoadingScreen("disconnected", reason);
@@ -1089,7 +1111,7 @@ export function setSize(w, h = w) {
 	y = +localStorage.y || h / 2;
 	z = +localStorage.z || 0.2;
 
-	for (let [key, value] of new URLSearchParams(location.search)) {
+	for (let [key, value] of new URLSearchParams(window.location.search)) {
 		switch (key) { // Only for numeric value params
 			case "x": {
 				x = parseInt(value, 10) || 0;
@@ -1104,11 +1126,7 @@ export function setSize(w, h = w) {
 				z = parseInt(value, 10) || 0;
 				break;
 			}
-			case "err": {
-				onerror = alert;
-				break;
-			}
-			case "overlay":
+			case "overlay": {
 				overlayInfo = JSON.parse(value);
 				const imageData = base64ToBlob(overlayInfo.data, overlayInfo.type);
 				templateImage.src = URL.createObjectURL(imageData);
@@ -1122,6 +1140,7 @@ export function setSize(w, h = w) {
 				pos();
 				openOverlayMenuOld();
 				break;
+			}
 		}
 	}
 	onMainContentResize();
@@ -3094,6 +3113,11 @@ const mainContentObserver = new ResizeObserver((entries) => {
 mainContentObserver.observe(mainContent);
 
 function closeGame() {
+	// Lazy load posts frame
+	if (!postsFrame.src) {
+		postsFrame.src = "/posts.html";
+	}
+
 	modal.close();
 	closeChatPanel();
 	document.body.id = "out";
@@ -3288,8 +3312,14 @@ else {
 	cycleAd();
 }
 
+let initialised = false;
+async function initialise() {
+	if (initialised) {
+		return;
+	}
+	initialised = true;
+	console.log("Initialising...");
 
-async function initDOM() {
 	// Perform lang translations
 	translateAll();
 
@@ -3306,18 +3336,27 @@ async function initDOM() {
 	addIpcMessageHandler("resizePostsFrame", resizePostsFrame);
 	window.addEventListener("message", handleIpcMessage);
 
-	// Tell wsCapsule to start initialising websocket connection
-	const fingerprintJS = await FingerprintJS.load();
-	const result = await fingerprintJS.get();
-	sendIpcMessage(wsCapsule, "connect", {
-		device: result.visitorId,
-		server: localStorage.server || DEFAULT_SERVER,
-		vip: localStorage.vip
-	});
+	// We leave 200ms between connections to ensure server has time to accept us again
+	let lastDisconnect = parseInt(localStorage.lastDisconnect ?? "0");
+	if (isNaN(lastDisconnect)) {
+		lastDisconnect = 0;
+	}
+	const nextSafeConnectDate = lastDisconnect + 200;
+
+	setTimeout(async () => {
+		// Tell wsCapsule to start initialising websocket connection
+		const fingerprintJS = await FingerprintJS.load();
+		const result = await fingerprintJS.get();
+		sendIpcMessage(wsCapsule, "connect", {
+			device: result.visitorId,
+			server: localStorage.server || DEFAULT_SERVER,
+			vip: localStorage.vip
+		});
+	}, Math.max(0, nextSafeConnectDate - Date.now()));
 }
 if (document.readyState !== "loading") {
-	initDOM();
+	initialise();
 }
 else {
-	window.addEventListener("DOMContentLoaded", initDOM);
+	window.addEventListener("DOMContentLoaded", initialise);
 }

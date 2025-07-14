@@ -244,7 +244,7 @@ dialog {
 	background: transparent;	
 }
 
-/* Layout buttons */
+/* Layout/HUD elements */
 .layout {
 	display: block;
 	width: 36px;
@@ -256,14 +256,15 @@ dialog {
 	cursor: pointer;
 	background: var(--ui-panel-bg);
 	fill: var(--ui-text);
-	z-index: 5;
+	z-index: 3;
 }
-
+#positionIndicator, #place {
+	z-index: 3;
+}
 #helpbtn {
 	top: 20px;
 	right: 20px;
 }
-
 #chatbtn {
 	bottom: 20px;
 	right: 20px;
@@ -271,10 +272,8 @@ dialog {
 	background: var(--ui-panel-bg);
 	border-radius: 100px;
 	text-align: center;
-	z-index: 5;
 	cursor: pointer;
 }
-
 #closebtn {
 	right: unset;
 	left: 20px;
@@ -285,11 +284,9 @@ dialog {
 	display: flex;
 	justify-content: center;
 }
-
 #helpbtn, #positionIndicator, #place, #archiveView, .toast-menu, #captchaPopup, #closebtn, #timelapsePanel {
 	box-shadow: 0 0 30px black;
 }
-
 #place {
 	min-width: 155px;
 	height: 24px;
@@ -299,6 +296,7 @@ dialog {
 	border-radius: 100px;
 	cursor: pointer;
 }
+
 
 #chatPanel {
 	border-radius: 10px;
@@ -393,7 +391,6 @@ r-live-chat-message .emoji-reactors-count {
 	background: var(--ui-panel-bg);
 	border-radius: 100px;
 	text-align: center;
-	z-index: 5;
 	font-family: mono;
 	-webkit-user-select: none;
 	user-select: none;

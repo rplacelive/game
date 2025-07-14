@@ -78,7 +78,7 @@ body {
 }
 
 #loadingScreen {
-	z-index: 20;
+	z-index: 5;
 	transition: opacity .3s;
 	opacity: 1;
 	position: fixed;
@@ -96,7 +96,7 @@ body {
 }
 
 #placeContext {
-	z-index: 4;
+	z-index: 2;
 }
 
 .loading-logo {
@@ -237,7 +237,6 @@ btn{
 	transform: translateX(-50%);
 	padding: 5px;
 	text-align: center;
-	z-index: 5;
 }
 #place::after{
 	content: " ";
@@ -683,7 +682,7 @@ body[eventphase="3"] .coverer-title {
 	width: 360px;
 	bottom: 20px;
 	right: 20px;
-	z-index: 99;
+	z-index: 4;
 	transform: translateX(calc(100% + 20px));
 	transition: transform .2s;
 	/* Used by panels such as messageTypePanel to determine height based on messageInput scaling */
@@ -918,7 +917,7 @@ body[eventphase="3"] .coverer-title {
 
 #captchaPopup {
 	width: 450px;
-	z-index: 7;
+	z-index: 3;
 	position: absolute;
 	top: 50%;
 	left: 50%;
@@ -1128,6 +1127,7 @@ body[eventphase="3"] .coverer-title {
 	display: flex;
 	flex-direction: column;
 	row-gap: 8px;
+	z-index: 3;
 }
 #moderationMenu[mode="delete"] > #modUserIdForm {
 	display: none;
@@ -1152,7 +1152,7 @@ body[eventphase="3"] .coverer-title {
 	margin-top: 8px;
 	display: block;
 }
-#modMessagePreview > div {
+#modMessagePreview .actions {
 	display: none;
 }
 
@@ -1759,7 +1759,6 @@ r-gif video {
 	transform: translate(-50%, -50%);
 	height: 600px;
 	width: min(800px, 100% - 16px);
-	background: transparent;
 }
 
 #viewportCanvas {
