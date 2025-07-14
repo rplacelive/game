@@ -1,22 +1,25 @@
 import { DEFAULT_BOARD, DEFAULT_SERVER, ADS, CHAT_COLOURS, COMMANDS, CUSTOM_EMOJIS, DEFAULT_HEIGHT, DEFAULT_PALETTE_KEYS, DEFAULT_THEMES, DEFAULT_WIDTH, EMOJIS, LANG_INFOS, MAX_CHANNEL_MESSAGES, PUNISHMENT_STATE, DEFAULT_PALETTE_USABLE_REGION, DEFAULT_PALETTE, DEFAULT_COOLDOWN } from "../../defaults.js";
-import { lang, PublicPromise, translate, translateAll, hash, $, stringToHtml, blobToBase64, base64ToBlob }  from "../../shared.js";
+import { lang, PublicPromise, translate, translateAll, hash, $, stringToHtml, blobToBase64, base64ToBlob, sha256 }  from "../../shared.js";
 import { showLoadingScreen, hideLoadingScreen } from "./loading-screen.js";
-import { enableDarkplace, disableDarkplace } from "./darkplace.js";
-import { enableWinter, disableWinter } from "./snowplace.js";
+//import { enableDarkplace, disableDarkplace } from "./darkplace.js";
+//import { enableWinter, disableWinter } from "./snowplace.js";
 import { clearCaptchaCanvas, updateImgCaptchaCanvas, updateImgCaptchaCanvasFallback } from "./captcha-canvas.js";
 import { BoardRenderer } from "./board-renderer.js";
 import { placeChat } from "./game-settings.js";
-import { runAudio, playSample, getNaturalNotes, loadSample, getDefaultSample, selectColourSample } from "./game-audio.js";
+import { runAudio, playSample, getNaturalNotes, selectColourSample } from "./game-audio.js";
 import { enableMelodicPalette, enableNewOverlayMenu, enableWebglCanvas } from "./secret-settings.js";
 import { AUDIOS } from "./game-defaults.js";
 import { addIpcMessageHandler, handleIpcMessage, sendIpcMessage, makeIpcRequest } from "shared-ipc";
-import FingerprintJS from "@fingerprintjs/fingerprintjs";
 import { openOverlayMenu } from "./overlay-menu.js";
 import { TurnstileWidget } from "../../services/turnstile-manager.js";
+import FingerprintJS from "@fingerprintjs/fingerprintjs";
 
 // HTTPS upgrade
-if(!("subtle" in (window.crypto || {}))) {
-	location.protocol = "https:"
+if (import.meta.env.MODE !== "development") {
+	if(  !("subtle" in (window.crypto || {}))) {
+		console.error("HTTP unsupported, upgrading to HTTPS");
+		location.protocol = "https:";
+	}
 }
 
 // Types
@@ -61,30 +64,21 @@ if(!("subtle" in (window.crypto || {}))) {
  * @property {string} appeal - Appeal status text
  */
 
-
-// Utilities
-const encoder = new TextEncoder()
-const decoder = new TextDecoder()
-
-// csrfstate not used at the moment, may be later to encode some extra info for client
-let params = new URLSearchParams(location.search);
-let csrfState = params.get("state");
-let redditOauthCode = params.get("code");
-let boardParam = params.get("board");
-let serverParam = params.get("server");
-
+const params = new URLSearchParams(location.search);
+const boardParam = params.get("board");
+const serverParam = params.get("server");
 if (boardParam && serverParam) {
 	if (localStorage.server != serverParam || localStorage.board != boardParam) {
-		localStorage.server = serverParam
-		localStorage.board = boardParam
-		history.pushState(null, "", location.origin)
-		window.location.reload()
+		localStorage.server = serverParam;
+		localStorage.board = boardParam;
+		history.pushState(null, "", location.origin);
+		window.location.reload();
 	}
 }
 
 // HTML Elements
 const postsFrame = /**@type {HTMLIFrameElement}*/($("#postsFrame"));
-const more = /**@type {HTMLElement}*/$("#more");
+const more = /**@type {HTMLElement}*/($("#more"));
 const spaceFiller = /**@type {HTMLElement}*/($("#spaceFiller"));
 const mainContent = /**@type {HTMLElement}*/($("#maincontent"));
 const canvParent1 = /**@type {HTMLElement}*/($("#canvparent1"));
@@ -143,7 +137,7 @@ const modDurationS = /**@type {HTMLInputElement}*/($("#modDurationS"));
 const modAffectsAll = /**@type {HTMLInputElement}*/($("#modAffectsAll"));
 const modReason = /**@type {HTMLInputElement}*/($("#modReason"));
 const modCloseButton = /**@type {HTMLButtonElement}*/$("#modCloseButton");
-const modCancelButtonn = /**@type {HTMLButtonElement}*/$("#modCancelButton");
+const modCancelButton = /**@type {HTMLButtonElement}*/$("#modCancelButton");
 const captchaPopup = /**@type {HTMLElement}*/($("#captchaPopup"));
 const modActionDelete = /**@type {HTMLInputElement}*/($("#modActionDelete"));
 const modActionKick = /**@type {HTMLInputElement}*/($("#modActionKick"));
@@ -185,9 +179,7 @@ const themeDropParent = /**@type {HTMLElement}*/($("#themeDropParent"));
 /**@type {any|null}*/ let account = null;
 /**@type {number|null}*/ let intId = null;
 /**@type {string|null}*/ let chatName = null;
-/**@type {boolean}*/ let includesPlacer = false; // Server will tell us this
 /**@type {"connecting"|"connected"|"disconnected"}*/ let connectStatus = "connecting";
-/**@type {number}*/ let online = 1;
 /**@type {boolean}*/ let canvasLocked = false;
 /**@type {TurnstileWidget|null}*/let currentTurnstileWidget = null;
 
@@ -298,7 +290,6 @@ addIpcMessageHandler("handleChanges", handleChanges);
  * @param {number} count 
  */
 function setOnline(count) {
-	online = count;
 	onlineCounter.textContent = String(count);
 	sendIpcMessage(postsFrame, "onlineCounter", count);
 }
@@ -402,6 +393,67 @@ function addLiveChatMessage({ message, channel }) {
 		message.repliesTo,
 		message.reactions
 	);
+
+	// Register event handlers
+	newMessage.addEventListener("coordinate-click", (/**@type {CustomEvent}*/e) => {
+		const newX = e.detail.x ?? x;
+		const newY = e.detail.y ?? y;
+
+		const params = new URLSearchParams(window.location.search);
+		params.set("x", String(newX));
+		params.set("y", String(newY));
+		const newUrl = `${window.location.pathname}?${params.toString()}`;
+		window.history.pushState({}, "", newUrl);
+		pos(newX, newY);
+	});
+	newMessage.addEventListener("name-click", (/**@type {CustomEvent}*/e) => {
+		const { messageId, senderId } = e.detail;
+		if (messageId > 0) {
+			chatMentionUser(senderId);
+		}
+	});
+	newMessage.addEventListener("context-menu", (/**@type {import("./game-elements.js").LiveChatMouseEvent}*/e) => {
+		if (e.messageId > 0) {
+			onChatContext(e, e.senderId, e.messageId);
+		}
+	});
+	newMessage.addEventListener("report-click", (/**@type {CustomEvent}*/e) => {
+		const { messageId, senderId } = e.detail;
+		chatReport(messageId, senderId);
+	});
+	newMessage.addEventListener("react-click", (/**@type {CustomEvent}*/e) => {
+		const { messageId, senderId } = e.detail;
+		chatReply(messageId, senderId);
+	});
+	newMessage.addEventListener("react-click", (/**@type {CustomEvent}*/e) => {
+		const { messageId, messageElement } = e.detail;
+
+		// Open react panel singleton element
+		const chatReactionsPanel = /**@type {HTMLElement}*/($("#chatReactionsPanel"));
+		chatReactionsPanel.setAttribute("open", "true");
+		
+		const bounds = messageElement.getBoundingClientRect();
+		const panelHeight = chatReactionsPanel.offsetHeight;
+		const viewportHeight = window.innerHeight;
+		const topPosition = Math.min(bounds.y, viewportHeight - panelHeight - 8); // Ensure it stays on screen
+	
+		// Apply position
+		chatReactionsPanel.style.right = "8px";
+		chatReactionsPanel.style.top = `${Math.max(8, topPosition)}px`; // Ensure it doesn't go off the top
+	
+		// @ts-expect-error
+		chatReactionsPanel.addEventListener("emojiselection", (/**@type {CustomEvent}*/e) => {
+			const { key } = e.detail;
+			if (chatReact) {
+				chatReact(messageId, key);
+			}
+			chatReactionsPanel.removeAttribute("open");
+		})
+	});
+	newMessage.addEventListener("moderate-click", (/**@type {CustomEvent}*/e) => {
+		const { senderId, messageId, messageElement } = e.detail;
+		chatModerate("delete", senderId, messageId, messageElement);
+	});
 
 	// Apply user blocking
 	if (message.senderIntId !== 0 && blockedUsers.includes(message.senderIntId)) {
@@ -953,30 +1005,21 @@ document.body.addEventListener("keydown", function(/**@type {KeyboardEvent}*/e) 
 
 		// Move around with arrow keys
 		let moveEaseI = 10;
-		let arrowkeyDown = {
-			left: false,
-			right: false,
-			up: false,
-			down: false
-		};
-		let repeatFunc = setInterval(function() {
+		const repeatFunc = setInterval(function() {
 			// We use 55 because: 10/55+9/55+8/55+7/55+6/55+5/55+4/55+3/55+2/55+1/55 = 1
+			const step = moveEaseI / 55;
 			switch (e.code) {
 			case "ArrowLeft":
-				x -= moveEaseI / 55;
-				arrowkeyDown.right = true;
+				x -= step;
 				break;
 			case "ArrowUp":
-				y -= moveEaseI / 55;
-				arrowkeyDown.up = true;
+				y -= step;
 				break;
 			case "ArrowRight":
-				x += moveEaseI / 55;
-				arrowkeyDown.left = true;
+				x += step;
 				break;
 			case "ArrowDown":
-				y += moveEaseI / 55;
-				arrowkeyDown.down = true;
+				y += step;
 				break;
 			}
 			pos();
@@ -1175,7 +1218,7 @@ export function pos(newX=x, newY=y, newZ=z) {
 	// Placer info
 	const intX = Math.floor(newX), intY = Math.floor(newY);
 	if (intX != lastIntX || intY != lastIntY) {
-		if(idPositionTimeout) {
+		if (idPositionTimeout) {
 			clearTimeout(idPositionTimeout);
 		}
 		idPosition.style.display = "none";
@@ -1211,7 +1254,7 @@ export function pos(newX=x, newY=y, newZ=z) {
 				/** @type {HTMLElement} */(idPosition.children[1]).style.color = CHAT_COLOURS[hash("" + id) & 7];
 				idPosition.children[1].textContent = intIdNames.get(id) || ("#" + id);
 			}
-		}, 1000)
+		}, 1000);
 	}
 }
 
@@ -1981,7 +2024,12 @@ export function createLiveChatMessage(messageId, txt, senderId, sendDate, name =
 	message.name = name;
 	message.sendDate = sendDate;
 	message.repliesTo = repliesTo;
-	message.reactions = reactions;
+	message.reactions = reactions ? new Map(
+		Array.from(reactions, ([key, userIds]) => [
+			key,
+			new Set([...userIds].map(userId => ({ intId: userId, chatName: intIdNames.get(userId) ?? null })))
+		])
+	) : null;
 	return message;
 }
 
@@ -2347,13 +2395,24 @@ messageCancelReplyButton.addEventListener("click", function(e) {
  * @typedef {"kick" | "mute" | "ban" | "captcha" | "delete"} ModAction
  */
 /**
- * @typedef {Object} ModOptions
+ * @typedef {Object} BaseModOptions
  * @property {ModAction} action
  * @property {string} reason
- * @property {number|undefined} memberId
- * @property {number|undefined} messageId
- * @property {boolean|undefined} affectsAll
- * @property {number} duration - Seconds
+ */
+/**
+ * @typedef {BaseModOptions & { action: "kick", memberId: number }} KickOptions
+ */
+/**
+ * @typedef {BaseModOptions & { action: "mute" | "ban", memberId: number, duration: number }} MuteBanOptions
+ */
+/**
+ * @typedef {BaseModOptions & { action: "captcha", memberId: number, affectsAll: boolean }} CaptchaOptions
+ */
+/**
+ * @typedef {BaseModOptions & { action: "delete", messageId: number }} DeleteOptions
+ */
+/**
+ * @typedef {KickOptions | MuteBanOptions | CaptchaOptions | DeleteOptions} ModOptions
  */
 const modOptionsButton = /**@type {HTMLButtonElement}*/($("#modOptionsButton"));
 modOptionsButton.addEventListener("click", async function(e) {
@@ -2364,7 +2423,7 @@ modOptionsButton.addEventListener("click", async function(e) {
 	const statusMsg = await makeIpcRequest(wsCapsule, "sendModAction", options);
 	alert(statusMsg);
 	clearChatModerate();
-})
+});
 modMessageId.addEventListener("input", async function(e) {
 	// Show loading state immediately
 	modMessagePreview.textContent = "Loading message...";
@@ -2453,23 +2512,24 @@ function getModOptions() {
 			messageId
 		};
 	}
+
 	return null;
 }
 function clearChatModerate() {
-	modMessageId.value = ""
-	modMessagePreview.innerHTML = ""
-	modDurationH.value = "0"
-	modDurationM.value = "0"
-	modDurationS.value = "0"
-	modAffectsAll.checked = false
-	modReason.value = ""
+	modMessageId.value = "";
+	modMessagePreview.innerHTML = "";
+	modDurationH.value = "0";
+	modDurationM.value = "0";
+	modDurationS.value = "0";
+	modAffectsAll.checked = false;
+	modReason.value = "";
 }
 function closeChatModerate() {
 	moderationMenu.removeAttribute("open");
 	clearChatModerate();
 }
 modCloseButton.addEventListener("click", closeChatModerate);
-modCancelButtonn.addEventListener("click", closeChatModerate);
+modCancelButton.addEventListener("click", closeChatModerate);
 
 /**
  * @param {"delete"|"kick"|"mute"|"ban"|"captcha"} mode
@@ -3130,45 +3190,47 @@ changeMyNameButton.addEventListener("click", function(e) {
 	chatContext.style.display = "none";
 });
 
-const verifiedAppHash = "f255e4c294a5413cce887407b91062ac162faec4cb1e6e21cdd6e4492fb270f8"
+// TODO: For some inconceivably stupid reason this keeps activating on false positives? Find a solution
+/*const verifiedAppHash = "f255e4c294a5413cce887407b91062ac162faec4cb1e6e21cdd6e4492fb270f8";
 async function checkVerifiedAppStatus() {
 	const urlParams = new URLSearchParams(window.location.search);
-	const verifyAppValue = urlParams.get("verify-app")
+	const verifyAppValue = urlParams.get("verify-app");
 	if (!verifyAppValue) {
-		return "none"
+		return "none";
 	}
-	const hashedValue = await sha256(verifyAppValue)
-	return hashedValue === verifiedAppHash ?  "valid" : "invalid"
-}
-/**
- * @param {string} str
- */
-function sha256(str) {
-	const encoder = new TextEncoder()
-	const data = encoder.encode(str)
-	return crypto.subtle.digest("SHA-256", data).then(hashBuffer => {
-		const hashArray = Array.from(new Uint8Array(hashBuffer))
-		return hashArray.map(byte => byte.toString(16).padStart(2, "0")).join("")
-	})
+	const hashedValue = await sha256(verifyAppValue);
+	return hashedValue === verifiedAppHash ?  "valid" : "invalid";
 }
 checkVerifiedAppStatus().then(status => {
+
 	if (status === "valid") {
 		console.log("Successfully verified rplace.live app");
+		return;
 	}
-	else if (import.meta.env.MODE !== "development" && (
-		window.location !== window.parent.location
-			|| typeof window.Android !== "undefined"
-			|| typeof window.Kodular !== "undefined"
-			|| status === "invalid")) {
-		window.location.replace("fakeapp.html")
 
-		// Block interaction if page redirect was overidden
-		document.body.style.opacity = "0.6"
-		document.body.style.pointerEvents = "none"
-		alert("Error: App failed verification - game is being accessed via an unofficial or unauthorised site or app\n" +
-			"Please report to developers or visit the game online at https://rplace.live")
+	const suspiciousContext = (
+		window.location !== window.parent.location
+		|| typeof window.Android !== "undefined"
+		|| typeof window.Kodular !== "undefined"
+	);
+
+	function blockAccess() {
+		window.location.replace("https://rplace.live/fakeapp");
+		mainContent.style.opacity = "0.6";
+		mainContent.style.pointerEvents = "none";
+		//alert("Error: App failed verification - game is being accessed via an unofficial or unauthorised site or app\n" +
+		//	"Please report to developers or visit the game online at https://rplace.live");
 	}
-})
+
+	if (status === "invalid") {
+		blockAccess();
+		return;
+	}
+	else if (import.meta.env.MODE !== "development" && suspiciousContext) {
+		blockAccess();
+		return;
+	}
+});*/
 
 // Cancel context menu
 window.addEventListener("contextmenu", function(e) {
@@ -3219,28 +3281,36 @@ else {
 	cycleAd();
 }
 
-// Final initialisation
-translateAll();
-showLoadingScreen();
 
-// Hook up cross frame / parent window IPC request handlers
-addIpcMessageHandler("fetchLinkKey", () => makeIpcRequest(wsCapsule, "fetchLinkKey"));
-addIpcMessageHandler("openChatPanel", openChatPanel);
-addIpcMessageHandler("scrollToPosts", scrollToPosts);
-addIpcMessageHandler("defaultServer", defaultServer);
-addIpcMessageHandler("openOverlayMenu", openOverlayMenuOld);
-addIpcMessageHandler("resizePostsFrame", resizePostsFrame);
-window.addEventListener("message", handleIpcMessage);
+async function initDOM() {
+	// Perform lang translations
+	translateAll();
 
-// Tell wsCapsule to start initialising websocket connection
-const fingerprintJS = await FingerprintJS.load();
-const result = await fingerprintJS.get();
-sendIpcMessage(wsCapsule, "connect", {
-	device: result.visitorId,
-	server: localStorage.server || DEFAULT_SERVER,
-	vip: localStorage.vip
-});
+	// Blank default render and canvas size init before we have loaded board
+	setSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+	renderAll();
 
-// Blank default render and canvas size init before we have loaded board
-setSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
-renderAll();
+	// Hook up cross frame / parent window IPC request handlers
+	addIpcMessageHandler("fetchLinkKey", () => makeIpcRequest(wsCapsule, "fetchLinkKey"));
+	addIpcMessageHandler("openChatPanel", openChatPanel);
+	addIpcMessageHandler("scrollToPosts", scrollToPosts);
+	addIpcMessageHandler("defaultServer", defaultServer);
+	addIpcMessageHandler("openOverlayMenu", openOverlayMenuOld);
+	addIpcMessageHandler("resizePostsFrame", resizePostsFrame);
+	window.addEventListener("message", handleIpcMessage);
+
+	// Tell wsCapsule to start initialising websocket connection
+	const fingerprintJS = await FingerprintJS.load();
+	const result = await fingerprintJS.get();
+	sendIpcMessage(wsCapsule, "connect", {
+		device: result.visitorId,
+		server: localStorage.server || DEFAULT_SERVER,
+		vip: localStorage.vip
+	});
+}
+if (document.readyState !== "loading") {
+	initDOM();
+}
+else {
+	window.addEventListener("DOMContentLoaded", initDOM);
+}

@@ -222,3 +222,6 @@ window.addEventListener("resize", () => {
 	waitingGame.columns = [];
 	waitingGame.initializeColumns();
 });
+
+// Initialise
+showLoadingScreen();

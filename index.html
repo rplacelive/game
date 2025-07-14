@@ -16,23 +16,24 @@
 	<link rel="stylesheet" href="/styles.css">
 	<link rel="stylesheet" href="/shared.css">
 	<!--Shared resources-->
-	<script type="module" src="/src/defaults.js"></script>
-	<script type="module" src="/src/shared.js"></script>
-	<script type="module" src="/src/shared-elements.js" defer></script>
+	<script type="module" src="/src/defaults.js" async></script>
+	<script type="module" src="/src/shared.js" async></script>
+	<script type="module" src="/src/shared-elements.js" async></script>
 	<!--Services-->
-	<script type="module" src="/src/services/account-manager.js" defer></script>
-	<script type="module" src="/src/services/quests-manager.js" defer></script>
+	<script type="module" src="/src/services/account-manager.js" async></script>
+	<script type="module" src="/src/services/quests-manager.js"></script> <!--TODO: Make async compatible-->
 	<!--Page scripts-->
-	<script type="module" src="/src/pages/index/event-timer.js" defer></script>
-	<script type="module" src="/src/pages/index/august21-event.js" defer></script>
-	<script type="module" src="/src/pages/index/captcha-canvas.js" defer></script>
-	<script type="module" src="/src/pages/index/darkplace.js" defer></script>
-	<script type="module" src="/src/pages/index/snowplace.js" defer></script>
-	<script type="module" src="/src/pages/index/game-elements.js" defer></script>
-	<script type="module" src="/src/pages/index/game-settings.js" defer></script>
-	<script type="module" src="/src/pages/index/game-defaults.js" defer></script>
-	<script type="module" src="/src/pages/index/secret-settings.js" defer></script>
-	<script type="module" src="/src/pages/index/board-renderer.js" defer></script>
+	<script type="module" src="/src/pages/index/loading-screen.js"></script> <!--TODO: Make async compatible-->
+	<script type="module" src="/src/pages/index/event-timer.js" async></script>
+	<script type="module" src="/src/pages/index/august21-event.js" async></script>
+	<script type="module" src="/src/pages/index/captcha-canvas.js"></script>
+	<script type="module" src="/src/pages/index/darkplace.js" async></script>
+	<script type="module" src="/src/pages/index/snowplace.js" async></script>
+	<script type="module" src="/src/pages/index/game-elements.js" async></script>
+	<script type="module" src="/src/pages/index/game-settings.js"></script> <!--TODO: Make async compatible-->
+	<script type="module" src="/src/pages/index/secret-settings.js"></script> <!--TODO: Make async compatible-->
+	<script type="module" src="/src/pages/index/game-defaults.js" async></script>
+	<script type="module" src="/src/pages/index/board-renderer.js" async></script>
 </head>
 	<body>
 		<div id="loadingScreen">
@@ -432,7 +433,7 @@
 				<h4 id="nicknameSubheading" style="color: lightgrey;" translate="pleaseBeRespectful">Please be respectful and try not to spam!</h4>
 				<br>
 				<div class="name-input-container">
-					<input id="nameInput" type="text" placeholder="Enter nickname..." translate="enterNickname" maxlength="16" value="">
+					<input id="nameInput" type="text" placeholder="Enter nickname..." maxlength="16"> <!--TODO: translate="enterNickname"-->
 					<button id="nameButton" type="button" title="Confirm name">
 						<img alt="✔️" src="/svg/green-checkmark.svg">
 					</button>
@@ -584,7 +585,7 @@
 		</div>
 		<iframe id="questsFrame" src="quests.html" title="quests" frameborder="0" style="display: none;"></iframe>
 	</body>
-	<script type="module" src="/src/pages/index/index.js" defer></script>
+	<script type="module" src="/src/pages/index/index.js"></script>
 	<% if (!isDev) { %>
 		<script src="https://cdn.jsdelivr.net/npm/disable-devtool" disable-devtool-auto disable-menu="false" md5="60961bf94b2a5d69f98efa9c2ab2caf9"></script>
 	<% } %>

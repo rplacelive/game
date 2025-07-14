@@ -14,8 +14,9 @@ function initOverlayMenu() {
 if (document.readyState !== "loading") {
 	initOverlayMenu();
 }
-document.addEventListener("DOMContentLoaded", initOverlayMenu);
-
+else {
+	document.addEventListener("DOMContentLoaded", initOverlayMenu);
+}
 
 export function openOverlayMenu() {
 	overlayMenu.showModal();
