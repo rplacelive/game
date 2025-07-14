@@ -174,34 +174,37 @@ async function fetchTranslations(lang) {
  * @param {string} key
  */
 export async function translate(key) {
-	let translations = TRANSLATIONS[lang]
+	let translations = TRANSLATIONS[lang];
 	if (!translations) {
-		translations = await fetchTranslations(lang)
+		translations = await fetchTranslations(lang);
 	}
-	return translations?.[key] ?? TRANSLATIONS["en"]?.[key] ?? key
+	return translations?.[key] ?? TRANSLATIONS["en"]?.[key] ?? key;
 }
 
 export async function translateAll() {
-	let translations = TRANSLATIONS[lang]
+	let translations = TRANSLATIONS[lang];
 	if (!translations) {
-		translations = await fetchTranslations(lang)
+		translations = await fetchTranslations(lang);
 	}
-	const elements = document.querySelectorAll("[translate]")
+	const elements = document.querySelectorAll("[translate]");
 	elements.forEach((element) => {
-		const key = element.getAttribute("translate")
-		const translation = translations?.[key] ?? TRANSLATIONS["en"]?.[key] ?? key
-		if (element.nodeName === "INPUT" || element.nodeName === "TEXTAREA") {
-			if (element.getAttribute("type") == "text") {
-				element.placeholder = translation || element.placeholder
+		const key = element.getAttribute("translate");
+		const translation = translations?.[key] ?? TRANSLATIONS["en"]?.[key] ?? key;
+		if (element instanceof HTMLInputElement) {
+			if (element.type === "text") {
+				element.placeholder = translation || element.placeholder;
 			}
 			else {
-				element.value = translation || element.value
+				element.value = translation || element.value;
 			}
 		}
-		else {
-			element.innerHTML = translation || element.innerHTML
+		else if (element instanceof HTMLTextAreaElement) {
+			element.placeholder = translation || element.placeholder;
 		}
-	})
+		else {
+			element.innerHTML = translation || element.innerHTML;
+		}
+	});
 }
 
 // Preload default language translations
@@ -742,6 +745,18 @@ export function base64ToBlob(base64, mimeType = "") {
 	const bytes = base64ToUint8Array(base64);
 	return new Blob([bytes], { type: mimeType });
 }
+
+/**
+ * @param {string} str
+ */
+export async function sha256(str) {
+	const encoder = new TextEncoder();
+	const data = encoder.encode(str);
+	const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+	const hashArray = Array.from(new Uint8Array(hashBuffer));
+	return hashArray.map(byte => byte.toString(16).padStart(2, "0")).join("");
+}
+
 
 /**
  * 

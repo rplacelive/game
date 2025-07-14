@@ -1,10 +1,9 @@
-import { LitElement, html } from "lit-element"
-import { styleMap } from "lit-html/directives/style-map.js"
-import { until } from "lit/directives/until.js"
-import { unsafeHTML } from "lit/directives/unsafe-html.js"
-import { CHAT_COLOURS, EMOJIS, CUSTOM_EMOJIS } from "../../defaults.js"
-import { sanitise, translate, hash, $, markdownParse } from "../../shared.js"
-import { chatMentionUser, chatModerate, chatReply, cMessages, currentChannel, onChatContext, pos, x, y, z, intIdNames, chatReport, chatReact } from "./index.js"
+import { LitElement, html } from "lit-element";
+import { styleMap } from "lit-html/directives/style-map.js";
+import { until } from "lit/directives/until.js";
+import { unsafeHTML } from "lit/directives/unsafe-html.js";
+import { CHAT_COLOURS, EMOJIS, CUSTOM_EMOJIS } from "../../defaults.js";
+import { sanitise, translate, hash, markdownParse } from "../../shared.js";
 
 export class PositionIndicator extends HTMLElement {
 	#root
@@ -15,9 +14,9 @@ export class PositionIndicator extends HTMLElement {
 	constructor() {
 		super();
 		this.#root = this.attachShadow({ mode: "closed" });
-		this.#x = x;
-		this.#y = y;
-		this.#zoom = z;
+		this.#x = localStorage.x;
+		this.#y = localStorage.y;
+		this.#zoom = localStorage.z;
 	}
 
 	/**
@@ -45,6 +44,62 @@ export class PositionIndicator extends HTMLElement {
 }
 customElements.define("r-position-indicator", PositionIndicator);
 
+export class LiveChatMouseEvent extends MouseEvent {
+	/**@type {number}*/#messageId;
+	/**@type {number}*/#senderId;
+
+	/**
+	 * @param {string} type
+	 * @param {number} messageId
+	 * @param {number} senderId
+	 * @param {MouseEventInit} [eventInitDict]
+	 */
+	constructor(type, messageId, senderId, eventInitDict = {}) {
+		super(type, eventInitDict);
+		this.#messageId = messageId;
+		this.#senderId = senderId;
+	}
+
+	/**
+	 * @param {MouseEvent} sourceEvent
+	 * @param {number} messageId
+	 * @param {number} senderId
+	 * @param {string} type
+	 */
+	static fromMouseEvent(sourceEvent, messageId, senderId, type) {
+		return new LiveChatMouseEvent(type, messageId, senderId, {
+			bubbles: sourceEvent.bubbles,
+			cancelable: sourceEvent.cancelable,
+			composed: sourceEvent.composed,
+			detail: sourceEvent.detail,
+			view: sourceEvent.view,
+			which: sourceEvent.which,
+			altKey: sourceEvent.altKey,
+			button: sourceEvent.button,
+			buttons: sourceEvent.buttons,
+			clientX: sourceEvent.clientX,
+			clientY: sourceEvent.clientY,
+			ctrlKey: sourceEvent.ctrlKey,
+			metaKey: sourceEvent.metaKey,
+			movementX: sourceEvent.movementX,
+			movementY: sourceEvent.movementY,
+			relatedTarget: sourceEvent.relatedTarget,
+			screenX: sourceEvent.screenX,
+			screenY: sourceEvent.screenY,
+			shiftKey: sourceEvent.shiftKey
+		});
+	}
+
+	get messageId() {
+		return this.#messageId;
+	}
+
+	get senderId() {
+		return this.#senderId;
+	}
+}
+
+
 export class LiveChatMessage extends LitElement {
 	static properties = {
 		messageId: { type: Number, reflect: true, attribute: "messageid" },
@@ -66,10 +121,10 @@ export class LiveChatMessage extends LitElement {
 		this.sendDate = null
 		/**@type {number|null}*/this.repliesTo = null
 		this.content = null
-		/**@type {Map<string, Set<number>>|null}*/ this.reactions = null
+		/**@type {Map<string, Set<{ intId: number, chatName: string|null }>>|null}*/ this.reactions = null
 		this.replyingMessage = null
 		this.openedReactionDetails = ""
-		this.addEventListener("contextmenu", this.#handleContextMenu)
+		this.addEventListener("contextmenu", this.#notifyContextMenu)
 	}
 
 	connectedCallback() {
@@ -109,7 +164,7 @@ export class LiveChatMessage extends LitElement {
 
 	/**
 	 * @param {string} message Raw message text
-	 * @returns {any} Lit HTML output
+	 * @returns {Promise<any>} Lit HTML output
 	 */
 	async #parseMessage(message) {
 		if (!message) {
@@ -153,7 +208,7 @@ export class LiveChatMessage extends LitElement {
 
 			const href = `${window.location.pathname}?x=${x}&y=${y}`
 			parts.push(html`<a href="${href}" @click=${(/**@type {MouseEvent}*/e) => 
-				this.#handleCoordinateClick(e, parseInt(x, 10), parseInt(y, 10))}>${x},${y}</a>`)
+				this.#notifyCoordinateClick(e, parseInt(x, 10), parseInt(y, 10))}>${x},${y}</a>`)
 
 			lastIndex = startIndex + fullMatch.length
 		}
@@ -170,11 +225,9 @@ export class LiveChatMessage extends LitElement {
 	 * @returns {{ name: string; content: string; fake?: boolean } | null}
 	 */
 	#findReplyingMessage() {
-		if (!cMessages.has(currentChannel)) {
-			return { name: "[ERROR]", content: "Channel not found", fake: true };
-		}
-
-		const message = cMessages.get(currentChannel)?.find(msg => msg.messageId === this.repliesTo)
+		// TODO: Find a better way to do this, traversing the DOM to try and find the message we belong to is insane
+		const message = /**@type {LiveChatMessage|undefined}*/(Array.from(this.parentElement?.children ?? [])
+			.find(msgEl => msgEl instanceof LiveChatMessage && msgEl.messageId === this.repliesTo));
 		if (!message) {
 			const fakeMessage = {
 				name: "[ERROR]",
@@ -204,67 +257,102 @@ export class LiveChatMessage extends LitElement {
 	 * @param {number} newX 
 	 * @param {number} newY 
 	 */
-	#handleCoordinateClick(e, newX, newY) {
+	#notifyCoordinateClick(e, newX, newY) {
 		e.preventDefault();
-		const params = new URLSearchParams(window.location.search);
-		params.set("x", String(x));
-		params.set("y", String(y));
-		const newUrl = `${window.location.pathname}?${params.toString()}`;
-		window.history.pushState({}, "", newUrl);
-		pos(newX, newY);
+		const coordinateClickEvent = new CustomEvent("coordinate-click", {
+			bubbles: true,
+			composed: true,
+			detail: { x: newX, y: newY }
+		});
+		this.dispatchEvent(coordinateClickEvent);
 	}
 
-	#handleNameClick() {
-		if (this.messageId > 0) {
-			chatMentionUser(this.senderId);
-		}
-	}
-	
-	#handleContextMenu(/**@type {MouseEvent}*/e) {
+	/**
+	 * @param {MouseEvent} e 
+	 */
+	#notifyNameClick(e) {
 		e.preventDefault();
-		if (this.messageId > 0) {
-			onChatContext(e, this.senderId, this.messageId);
-		}
+		const nameClickEvent = new CustomEvent("name-click", {
+			bubbles: true,
+			composed: true,
+			detail: { messageId: this.messageId, senderId: this.senderId }
+		});
+		this.dispatchEvent(nameClickEvent);
 	}
 	
-	#handleReply() {
-		chatReply(this.messageId, this.senderId);
-	}
-	
-	#handleReport() {
-		chatReport(this.messageId, this.senderId);
-	}
-	
-	#handleModerate() {
-		chatModerate("delete", this.senderId, this.messageId, this);
-	}
-
-	#handleReact() {
-		// Open react panel singleton element
-		const chatReactionsPanel = /**@type {HTMLElement}*/($("#chatReactionsPanel"));
-		chatReactionsPanel.setAttribute("open", "true");
-		
-		const bounds = this.getBoundingClientRect();
-		const panelHeight = chatReactionsPanel.offsetHeight;
-		const viewportHeight = window.innerHeight;
-		const topPosition = Math.min(bounds.y, viewportHeight - panelHeight - 8); // Ensure it stays on screen
-	
-		// Apply position
-		chatReactionsPanel.style.right = "8px";
-		chatReactionsPanel.style.top = `${Math.max(8, topPosition)}px`; // Ensure it doesn't go off the top
-	
-		// @ts-expect-error
-		chatReactionsPanel.addEventListener("emojiselection", (/**@type {CustomEvent}*/e) => {
-			this.#onReactEmojiSelected(e);
-			chatReactionsPanel.removeAttribute("open");
-		})
+	/**
+	 * @param {MouseEvent} e 
+	 */
+	#notifyContextMenu(e) {
+		e.preventDefault();
+		const contextMenuEvent = LiveChatMouseEvent.fromMouseEvent(e, this.messageId, this.senderId, "context-menu")
+		this.dispatchEvent(contextMenuEvent);
 	}
 
-	#onReactEmojiSelected(/**@type {CustomEvent}*/e) {
-		const { key } = e.detail;
-		if (chatReact) {
-			chatReact(this.messageId, key);
-		}
+	/**
+	 * @param {MouseEvent} e 
+	 */
+	#notifyReplyClick(e) {
+		e.preventDefault();
+		const replyClickEvent = new CustomEvent("reply-click", {
+			bubbles: true,
+			composed: true,
+			detail: {
+				messageId: this.messageId,
+				senderId: this.senderId
+			}
+		});
+		this.dispatchEvent(replyClickEvent);
+	}
+
+	/**
+	 * @param {MouseEvent} e 
+	 */
+	#notifyReportClick(e) {
+		e.preventDefault();
+		const reportClickEvent = new CustomEvent("report-click", {
+			bubbles: true,
+			composed: true,
+			detail: {
+				messageId: this.messageId,
+				senderId: this.senderId
+			}
+		});
+		this.dispatchEvent(reportClickEvent);
+	}
+
+	/**
+	 * @param {MouseEvent} e 
+	 */
+	#notifyModerateClick(e) {
+		e.preventDefault();
+		const moderateClickEvent = new CustomEvent("moderate-click", {
+			bubbles: true,
+			composed: true,
+			detail: {
+				messageId: this.messageId,
+				senderId: this.senderId,
+				messageElement: this
+			}
+		});
+		this.dispatchEvent(moderateClickEvent);
+	}
+
+	/**
+	 * @param {Event} e 
+	 */
+	#notifyReact(e) {
+		e.preventDefault();
+		const reactClickEvent = new CustomEvent("react-click", {
+			bubbles: true,
+			composed: true,
+			detail: {
+				messageId: this.messageId,
+				senderId: this.senderId,
+				messageElement: this
+			}
+		});
+		this.dispatchEvent(reactClickEvent);
 	}
 	
 	#renderName() {
@@ -276,7 +364,7 @@ export class LiveChatMessage extends LitElement {
 			<span 
 				class="name ${this.messageId === 0 ? "rainbow-glow" : ""}" style=${styleMap(nameStyle)}
 				title=${new Date(this.sendDate * 1000).toLocaleString()}
-				@click=${this.#handleNameClick}>[${this.name || ("#" + this.senderId)}]</span>`
+				@click=${this.#notifyNameClick}>[${this.name || ("#" + this.senderId)}]</span>`
 	}
 	
 	#renderReply() {
@@ -295,7 +383,7 @@ export class LiveChatMessage extends LitElement {
 			return null
 		}
 
-		const renderActionButton = async (/**@type {string}*/src, /**@type {string}*/ titleKey, /**@type {unknown}*/ clickHandler) => {
+		const renderActionButton = async (/**@type {string}*/src, /**@type {string}*/titleKey, /**@type {Function}*/clickHandler) => {
 			const title = await translate(titleKey)
 			return html`
 				<img class="action-button icon-image" src="${src}"
@@ -305,10 +393,10 @@ export class LiveChatMessage extends LitElement {
 
 		return html`
 			<div class="actions">
-				${until(renderActionButton("/svg/reply-action.svg", "replyTo", this.#handleReply), html`<span>...</span>`)}
-				${until(renderActionButton("/svg/react-action.svg", "addReaction", this.#handleReact), html`<span>...</span>`)}
-				${until(renderActionButton("/svg/report-action.svg", "report", this.#handleReport), html`<span>...</span>`)}
-				${localStorage.vip?.startsWith("!") ? until(renderActionButton("svg/moderate-action.svg", "Moderation options", this.#handleModerate), html`<span>Loading...</span>`) : null}
+				${until(renderActionButton("/svg/reply-action.svg", "replyTo", this.#notifyReplyClick), html`<span>...</span>`)}
+				${until(renderActionButton("/svg/react-action.svg", "addReaction", this.#notifyReact), html`<span>...</span>`)}
+				${until(renderActionButton("/svg/report-action.svg", "report", this.#notifyReportClick), html`<span>...</span>`)}
+				${localStorage.vip?.startsWith("!") ? until(renderActionButton("svg/moderate-action.svg", "Moderation options", this.#notifyModerateClick), html`<span>Loading...</span>`) : null}
 			</div>`
 	}
 
@@ -351,12 +439,11 @@ export class LiveChatMessage extends LitElement {
 									<hr>
 									<h3>Added by:</h3>
 									<ul class="reactors">
-										${reactors.entries().map(([reactorId]) => html`
-											<li class="reactor" title=${"User ID: #" + reactorId}>
-												${intIdNames.has(reactorId)
-													? intIdNames.get(reactorId)
-													: "#" + reactorId}
-											</li>`)}
+										${[...reactors].map((reactor) => html`
+											<li class="reactor" title=${"User ID: #" + reactor.intId}>
+												${reactor.chatName ?? "#" + reactor.intId}
+											</li>
+										`)}
 									</ul>
 								</div>
 							</details>
