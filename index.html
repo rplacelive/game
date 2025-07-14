@@ -15,25 +15,28 @@
 	<title>rplace</title>
 	<link rel="stylesheet" href="/styles.css">
 	<link rel="stylesheet" href="/shared.css">
+
 	<!--Shared resources-->
-	<script type="module" src="/src/defaults.js"></script> <!--async-->
-	<script type="module" src="/src/shared.js"></script> <!--async-->
-	<script type="module" src="/src/shared-elements.js"></script> <!--async-->
+	<script type="module" src="/src/defaults.js"></script>
+	<script type="module" src="/src/shared.js"></script>
+	<script type="module" src="/src/shared-elements.js"></script>
 	<!--Services-->
-	<script type="module" src="/src/services/account-manager.js"></script> <!--async-->
+	<script type="module" src="/src/services/account-manager.js"></script>
 	<script type="module" src="/src/services/quests-manager.js"></script> <!--TODO: Make async compatible-->
 	<!--Page scripts-->
 	<script type="module" src="/src/pages/index/loading-screen.js"></script> <!--TODO: Make async compatible-->
-	<script type="module" src="/src/pages/index/event-timer.js"></script> <!--async-->
-	<script type="module" src="/src/pages/index/august21-event.js"></script> <!--async-->
+	<script type="module" src="/src/pages/index/event-timer.js"></script>
+	<script type="module" src="/src/pages/index/august21-event.js"></script>
 	<script type="module" src="/src/pages/index/captcha-canvas.js"></script> <!--TODO: Make async compatible-->
-	<script type="module" src="/src/pages/index/darkplace.js"></script> <!--async-->
-	<script type="module" src="/src/pages/index/snowplace.js"></script> <!--async-->
-	<script type="module" src="/src/pages/index/game-elements.js"></script> <!--async-->
+	<script type="module" src="/src/pages/index/darkplace.js"></script>
+	<script type="module" src="/src/pages/index/snowplace.js"></script>
+	<script type="module" src="/src/pages/index/game-elements.js"></script>
 	<script type="module" src="/src/pages/index/game-settings.js"></script> <!--TODO: Make async compatible-->
 	<script type="module" src="/src/pages/index/secret-settings.js"></script> <!--TODO: Make async compatible-->
 	<script type="module" src="/src/pages/index/game-defaults.js"></script> <!--async-->
 	<script type="module" src="/src/pages/index/board-renderer.js"></script> <!--async-->
+	<!--Entrypoint-->
+	<script type="module" src="/src/pages/index/index.js"></script>
 </head>
 	<body>
 		<div id="loadingScreen">
@@ -52,7 +55,6 @@
 			<div id="bgWrapper" style="z-index: -1; position: absolute; pointer-events: none; left: 0; top: 0; width: 100%; height: 100%;">
 				<!--Special background effects or features can be rendered within here-->
 			</div>
-			<r-position-indicator id="positionIndicator"></r-position-indicator>
 			<div id="overlayMenuOld" noselect class="toast-menu">
 				<div style="display: flex;">
 					<h2 title="Make use of a canvas overlay image in order to help yourself better position your pixels" style="display: inline;flex-grow: 1;">Overlay:</h2>
@@ -214,7 +216,6 @@
 					<button id="modCancelButton" style="flex-grow: 1;">Cancel</button>
 				</div>
 			</div>
-			<button type="button" noselect id="closebtn" class="layout" title="More">...</button>
 			<canvas id="canvas" width="0" height="0" noselect></canvas>
 			<div id="canvparent1" noselect>
 				<img id="edge" height="226" width="290" src="images/snoo-edge.png" />
@@ -249,10 +250,18 @@
 				<a style="text-align: center;" href=".">(generate new captcha)</a>
 				<div id="captchaOptions"><!--clickable captcha answers--></div>
 			</div>
+
+			<!-- Layout/HUD Elements -->
+			<button type="button" noselect id="closebtn" class="layout" title="More">...</button>
+			<r-position-indicator id="positionIndicator"></r-position-indicator>
+			<button type="button" noselect id="helpbtn" class="layout" title="Help" onclick="if (modal.open) { modal.close() } else { modal.showModal() }">
+				<img class="icon-image" alt="?" src="/svg/help.svg">
+			</button>
 			<button type="button" id="place" translate="connecting" noselect>Connecting...</button>
 			<button type="button" id="chatbtn" class="layout" noselect>
 				<img alt="Chat" class="icon-image" src="/svg/chat.svg" style="width:16px; height:21px">
 			</button>
+
 			<dialog id="popup">
 				<div>
 					<r-close-icon onclick="localStorage.nopopup = Date.now(); popup.close()"></r-close-icon>
@@ -302,16 +311,6 @@
 					</div>-->
 				</div>
 			</dialog>
-			<button type="button" noselect id="helpbtn" class="layout" title="Help" onclick="
-				if (modal.open) {
-					modal.close()
-				}
-				else {
-					modal.showModal()
-				}
-			">
-				<img class="icon-image" alt="?" src="/svg/help.svg">
-			</button>
 			<dialog id="modal" class="modal">
 				<div class="modal-header">
 					<h2>Place</h2>
@@ -418,130 +417,130 @@
 					</div>
 				</div>
 			</div>
+			<div id="chatPanel" ontouchstart="chatContext.style.display = 'none'; channelDropParent.removeAttribute('open')"
+					onclick="chatContext.style.display = 'none'; channelDropParent.removeAttribute('open')">
+				<div id="namePanel">
+					<div class="name-panel-header">
+						<h2 id="namePanelHeader" translate="nicknameToContinue">Enter a nickname to continue:</h2>
+						<r-close-icon onclick="namePanel.style.visibility = 'hidden'" class="active"></r-close-icon>
+					</div>
+					<h4 id="nicknameSubheading" style="color: lightgrey;" translate="pleaseBeRespectful">Please be respectful and try not to spam!</h4>
+					<br>
+					<div class="name-input-container">
+						<input id="nameInput" type="text" placeholder="Enter nickname..." maxlength="16"> <!--TODO: translate="enterNickname"-->
+						<button id="nameButton" type="button" title="Confirm name">
+							<img alt="✔️" src="/svg/green-checkmark.svg">
+						</button>
+					</div>
+				</div>
+				<div class="chat-header" noselect>
+					<p style="white-space:nowrap" translate="liveChat" class="live-chat-header2">Live Chat:</p>
+					<h2 style="white-space:nowrap" translate="liveChat" class="live-chat-header1">Live Chat:</h2>
+					<div class="channels-options">
+						<span id="channelDropParent" style="opacity: 1;">
+							<button title="Change channel" class="channel-button" onclick="event.stopPropagation(); channelDropParent.toggleAttribute('open')">
+								<svg class="icon-image" style="vertical-align: bottom;" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24">
+									<path d="M480-345 240-585l43-43 197 198 197-197 43 43-240 239Z"/>
+								</svg>	
+							</button>
+							<div id="channelDrop" class="context-menu" ontouchstart="event.stopPropagation()">
+								<menu id="channelDropMenu"><!--Language channel options--></menu>
+							</div>
+						</span>
+						<button type="button" id="channelMineButton" class="channel-button">
+							<span id="channelMine" style="opacity: 0.5;">
+								<img id="channelMineImg" style="height: 20px; vertical-align:sub"><span id="channelMineName"></span>
+							</span>	
+						</button>
+						<button type="button" id="channelEnButton" class="channel-button">
+							<span id="channelEn" style="opacity: 0.5;">
+								<img src="/svg/flag-gb.svg" style="height: 20px; vertical-align:sub"><span>EN</span>
+							</span>	
+						</button>
+					</div>
+					<div class="chat-header-right">
+						<div id="onlinePanel" noselect>
+							<p id="onlineCounter">...</p>
+							<svg id="playerIcon" stroke-width="0" viewBox="0 0 448 512" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg" style="display: inline;">
+								<path d="M224 256c70.7 0 128-57.3 128-128S294.7 0 224 0 96 57.3 96 128s57.3 128 128 128zm89.6 32h-16.7c-22.2 10.2-46.9 16-72.9 16s-50.6-5.8-72.9-16h-16.7C60.2 288 0 348.2 0 422.4V464c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48v-41.6c0-74.2-60.2-134.4-134.4-134.4z"></path>
+							</svg>
+						</div>
+						<r-close-icon id="chatCloseButton" class="active"></r-close-icon>
+					</div>
+				</div>
+				<div id="chatContext" class="context-menu" style="display:none">
+					<menu>
+						<li style="font-size: 8px; display: none;" id="userNote"></li>
+						<li><button type="button" id="mentionUserButton" translate="mention">Mention user</button></li>
+						<li><button type="button" id="replyUserButton" translate="replyTo">Reply to user</button></li>
+						<li><button type="button" id="blockUserButton" translate="block">Block user</button></li>
+						<li style="display: none;">
+							<button type="button" id="changeMyNameButton">
+								<em translate="changeMyName">Change my name</em>
+							</button>
+						</li>
+					</menu>
+				</div>
+				<r-emoji-panel id="chatReactionsPanel" onclose="this.removeAttribute('open')"></r-emoji-panel>
+				<!-- If ad hidden by extension, fall back to standard chat ad -->
+				<a id="chatAd" target="_blank">
+					<button class="chat-ad-close" onclick="
+						chatAd.style.display = 'none'
+						localStorage.noad = Date.now()
+						adLabel.style.display = 'block'
+						adLabel.animate([
+							{ opacity: 1 },
+							{ scale: 1.1 }
+						], { duration: 1000, iterations: 1, })
+						setTimeout(() => adLabel.style.display = 'none', 1000)
+					">x</button>
+				</a>
+				<span id="adLabel" style="display: none; opacity: 0; align-self: center;" translate="adHidden">Ad hidden for 14 days!</span>
+				<button id="chatPreviousButton" type="button" class="horizontal-labeled-separator" noselect><hr><span>See previous messages</span><hr></button>
+				<div id="chatMessages"><!--Live chat messages--></div>
+				<div id="messageTypePanel" class="chat-input-panel" closed>
+					<input type="button" class="messageTypeBtn" title="Use the shortcut 'ctrl+enter' to send quickly" style="left: 5px;" translate="putOnCanvas" value="🫧 Put on canvas">
+					<input type="button" class="messageTypeBtn" title="Use the shortcut 'enter' to send quickly" style="right: 5px;" translate="sendInLiveChat" value="📨 Send in live chat">
+				</div>
+				<div id="messageEmojisPanel" class="chat-input-panel" closed><!--Message emoji suggestions--></div>
+				<div id="messageReplyPanel" class="chat-input-panel" closed>
+					<div id="messageReplyLabel">Replying to:</div>
+					<button type="button" id="messageCancelReplyButton" title="Cancel reply">
+						<svg class="icon-image" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" height="24" width="32">
+							<path d="m330-288 150-150 150 150 42-42-150-150 150-150-42-42-150 150-150-150-42 42 150 150-150 150 42 42ZM480-80q-82 0-155-31.5t-127.5-86Q143-252 111.5-325T80-480q0-83 31.5-156t86-127Q252-817 325-848.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 82-31.5 155T763-197.5q-54 54.5-127 86T480-80Zm0-60q142 0 241-99.5T820-480q0-142-99-241t-241-99q-141 0-240.5 99T140-480q0 141 99.5 240.5T480-140Zm0-340Z"></path>
+						</svg>
+					</button>
+				</div>
+				<div class="chat-bottom">
+					<div class="message-input-container">
+						<r-emoji-panel id="messageInputEmojiPanel" class="chat-bottom-panel" onclose="this.removeAttribute('open')"></r-emoji-panel>
+						<r-gif-panel id="messageInputGifPanel" class="chat-bottom-panel" onclose="this.removeAttribute('open')"></r-gif-panel>
+						<textarea id="messageInput" type="text" placeholder="Enter message..." translate="enterMessage" enterkeyhint="send" maxlength="200"></textarea>
+						<div class="message-input-actions">
+							<button type="button" title="Add emoji" onclick="messageInputEmojiPanel.toggleAttribute('open'); messageInputGifPanel.removeAttribute('open')">
+								<img alt="Add emoji" width="24" height="24" src="/svg/emoji.svg" class="icon-image">
+							</button>
+							<button type="button" title="Add gif" onclick="{
+									if (!messageInputGifPanel.getAttribute('open')) {
+										messageInputGifPanel.setAttribute('open', 'true');
+										messageInputEmojiPanel.removeAttribute('open')
+										messageInputGifPanel.fetchGifs();
+									}
+									else {
+										messageInputGifPanel.removeAttribute('open');
+									}
+								}">
+								<img alt="Add emoji" width="24" height="24" src="/svg/gif.svg" class="icon-image">
+							</button>
+						</div>
+					</div>
+					<button id="messageOptionsButton" class="message-options">...</button>
+				</div>
+			</div>
 		</div>
 		<div id="more" ontouchstart="event.stopPropagation()" ontouchend="event.stopPropagation()">
 			<button type="button" id="spaceFiller" title="Back to game"></button>
-			<iframe id="postsFrame" src="posts.html" title="posts" frameborder="0" scrolling="no"></iframe>
-		</div>
-		<div id="chatPanel" ontouchstart="chatContext.style.display = 'none'; channelDropParent.removeAttribute('open')"
-				onclick="chatContext.style.display = 'none'; channelDropParent.removeAttribute('open')">
-			<div id="namePanel">
-				<div class="name-panel-header">
-					<h2 id="namePanelHeader" translate="nicknameToContinue">Enter a nickname to continue:</h2>
-					<r-close-icon onclick="namePanel.style.visibility = 'hidden'" class="active"></r-close-icon>
-				</div>
-				<h4 id="nicknameSubheading" style="color: lightgrey;" translate="pleaseBeRespectful">Please be respectful and try not to spam!</h4>
-				<br>
-				<div class="name-input-container">
-					<input id="nameInput" type="text" placeholder="Enter nickname..." maxlength="16"> <!--TODO: translate="enterNickname"-->
-					<button id="nameButton" type="button" title="Confirm name">
-						<img alt="✔️" src="/svg/green-checkmark.svg">
-					</button>
-				</div>
-			</div>
-			<div class="chat-header" noselect>
-				<p style="white-space:nowrap" translate="liveChat" class="live-chat-header2">Live Chat:</p>
-				<h2 style="white-space:nowrap" translate="liveChat" class="live-chat-header1">Live Chat:</h2>
-				<div class="channels-options">
-					<span id="channelDropParent" style="opacity: 1;">
-						<button title="Change channel" class="channel-button" onclick="event.stopPropagation(); channelDropParent.toggleAttribute('open')">
-							<svg class="icon-image" style="vertical-align: bottom;" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24">
-								<path d="M480-345 240-585l43-43 197 198 197-197 43 43-240 239Z"/>
-							</svg>	
-						</button>
-						<div id="channelDrop" class="context-menu" ontouchstart="event.stopPropagation()">
-							<menu id="channelDropMenu"><!--Language channel options--></menu>
-						</div>
-					</span>
-					<button type="button" id="channelMineButton" class="channel-button">
-						<span id="channelMine" style="opacity: 0.5;">
-							<img id="channelMineImg" style="height: 20px; vertical-align:sub"><span id="channelMineName"></span>
-						</span>	
-					</button>
-					<button type="button" id="channelEnButton" class="channel-button">
-						<span id="channelEn" style="opacity: 0.5;">
-							<img src="/svg/flag-gb.svg" style="height: 20px; vertical-align:sub"><span>EN</span>
-						</span>	
-					</button>
-				</div>
-				<div class="chat-header-right">
-					<div id="onlinePanel" noselect>
-						<p id="onlineCounter">...</p>
-						<svg id="playerIcon" stroke-width="0" viewBox="0 0 448 512" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg" style="display: inline;">
-							<path d="M224 256c70.7 0 128-57.3 128-128S294.7 0 224 0 96 57.3 96 128s57.3 128 128 128zm89.6 32h-16.7c-22.2 10.2-46.9 16-72.9 16s-50.6-5.8-72.9-16h-16.7C60.2 288 0 348.2 0 422.4V464c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48v-41.6c0-74.2-60.2-134.4-134.4-134.4z"></path>
-						</svg>
-					</div>
-					<r-close-icon id="chatCloseButton" class="active"></r-close-icon>
-				</div>
-			</div>
-			<div id="chatContext" class="context-menu" style="display:none">
-				<menu>
-					<li style="font-size: 8px; display: none;" id="userNote"></li>
-					<li><button type="button" id="mentionUserButton" translate="mention">Mention user</button></li>
-					<li><button type="button" id="replyUserButton" translate="replyTo">Reply to user</button></li>
-					<li><button type="button" id="blockUserButton" translate="block">Block user</button></li>
-					<li style="display: none;">
-						<button type="button" id="changeMyNameButton">
-							<em translate="changeMyName">Change my name</em>
-						</button>
-					</li>
-				</menu>
-			</div>
-			<r-emoji-panel id="chatReactionsPanel" onclose="this.removeAttribute('open')"></r-emoji-panel>
-			<!-- If ad hidden by extension, fall back to standard chat ad -->
-			<a id="chatAd" target="_blank">
-				<button class="chat-ad-close" onclick="
-					chatAd.style.display = 'none'
-					localStorage.noad = Date.now()
-					adLabel.style.display = 'block'
-					adLabel.animate([
-						{ opacity: 1 },
-						{ scale: 1.1 }
-					], { duration: 1000, iterations: 1, })
-					setTimeout(() => adLabel.style.display = 'none', 1000)
-				">x</button>
-			</a>
-			<span id="adLabel" style="display: none; opacity: 0; align-self: center;" translate="adHidden">Ad hidden for 14 days!</span>
-			<button id="chatPreviousButton" type="button" class="horizontal-labeled-separator" noselect><hr><span>See previous messages</span><hr></button>
-			<div id="chatMessages"><!--Live chat messages--></div>
-			<div id="messageTypePanel" class="chat-input-panel" closed>
-				<input type="button" class="messageTypeBtn" title="Use the shortcut 'ctrl+enter' to send quickly" style="left: 5px;" translate="putOnCanvas" value="🫧 Put on canvas">
-				<input type="button" class="messageTypeBtn" title="Use the shortcut 'enter' to send quickly" style="right: 5px;" translate="sendInLiveChat" value="📨 Send in live chat">
-			</div>
-			<div id="messageEmojisPanel" class="chat-input-panel" closed><!--Message emoji suggestions--></div>
-			<div id="messageReplyPanel" class="chat-input-panel" closed>
-				<div id="messageReplyLabel">Replying to:</div>
-				<button type="button" id="messageCancelReplyButton" title="Cancel reply">
-					<svg class="icon-image" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" height="24" width="32">
-						<path d="m330-288 150-150 150 150 42-42-150-150 150-150-42-42-150 150-150-150-42 42 150 150-150 150 42 42ZM480-80q-82 0-155-31.5t-127.5-86Q143-252 111.5-325T80-480q0-83 31.5-156t86-127Q252-817 325-848.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 82-31.5 155T763-197.5q-54 54.5-127 86T480-80Zm0-60q142 0 241-99.5T820-480q0-142-99-241t-241-99q-141 0-240.5 99T140-480q0 141 99.5 240.5T480-140Zm0-340Z"></path>
-					</svg>
-				</button>
-			</div>
-			<div class="chat-bottom">
-				<div class="message-input-container">
-					<r-emoji-panel id="messageInputEmojiPanel" class="chat-bottom-panel" onclose="this.removeAttribute('open')"></r-emoji-panel>
-					<r-gif-panel id="messageInputGifPanel" class="chat-bottom-panel" onclose="this.removeAttribute('open')"></r-gif-panel>
-					<textarea id="messageInput" type="text" placeholder="Enter message..." translate="enterMessage" enterkeyhint="send" maxlength="200"></textarea>
-					<div class="message-input-actions">
-						<button type="button" title="Add emoji" onclick="messageInputEmojiPanel.toggleAttribute('open'); messageInputGifPanel.removeAttribute('open')">
-							<img alt="Add emoji" width="24" height="24" src="/svg/emoji.svg" class="icon-image">
-						</button>
-						<button type="button" title="Add gif" onclick="{
-								if (!messageInputGifPanel.getAttribute('open')) {
-									messageInputGifPanel.setAttribute('open', 'true');
-									messageInputEmojiPanel.removeAttribute('open')
-									messageInputGifPanel.fetchGifs();
-								}
-								else {
-									messageInputGifPanel.removeAttribute('open');
-								}
-							}">
-							<img alt="Add emoji" width="24" height="24" src="/svg/gif.svg" class="icon-image">
-						</button>
-					</div>
-				</div>
-				<button id="messageOptionsButton" class="message-options">...</button>
-			</div>
+			<iframe id="postsFrame" title="posts" frameborder="0" scrolling="no"></iframe>
 		</div>
 		<div id="timelapsePanel" noselect style="display: none;">
 			<h2>Timelapse Tool</h2>
@@ -583,9 +582,7 @@
 			</div>
 			<div class="progressbar"><!--progress bar--></div>
 		</div>
-		<iframe id="questsFrame" src="quests.html" title="quests" frameborder="0" style="display: none;"></iframe>
 	</body>
-	<script type="module" src="/src/pages/index/index.js"></script>
 	<% if (!isDev) { %>
 		<script src="https://cdn.jsdelivr.net/npm/disable-devtool" disable-devtool-auto disable-menu="false" md5="60961bf94b2a5d69f98efa9c2ab2caf9"></script>
 	<% } %>

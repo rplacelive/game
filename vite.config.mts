@@ -13,7 +13,8 @@ export default defineConfig({
 		strictPort: true,
 		watch: {
 			ignored: ["dist/**"]
-		}
+		},
+		hmr: false
 	},
 	build: {
 		outDir: "dist",
@@ -46,7 +47,7 @@ export default defineConfig({
 		},
 	},
 	esbuild: {
-		exclude: ["server/**/*"]
+		exclude: []
 	},
 	plugins: [
 		createHtmlPlugin({
