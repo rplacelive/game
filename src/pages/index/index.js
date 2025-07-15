@@ -1491,10 +1491,11 @@ function handlePixelPlace(e) {
 	const position = Math.floor(x) + Math.floor(y) * WIDTH;
 	sendIpcMessage(wsCapsule, "putPixel", { position, colour: PEN });
 
-	// We predict our cooldown end date and that the pixel went through - server will (in)validate after
-	cooldownEndDate = Date.now() + (localStorage.vip ? (localStorage.vip[0] === "!" ? 0 : COOLDOWN / 2) : COOLDOWN);
+	// We client-side predict our new cooldown and pixel place the pixel went through
+	// server will (in)validate after
+	setCooldown(COOLDOWN);
 	set(Math.floor(x), Math.floor(y), PEN)
-	
+
 	// Apply on client-side
 	hideIndicators();
 	placeOkButton.classList.remove("enabled")
