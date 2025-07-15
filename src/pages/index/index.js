@@ -3085,7 +3085,7 @@ overlayYInput.addEventListener("change", function() {
 });
 const overlayOpacity = /**@type {HTMLInputElement}*/($("#overlayOpacity"));
 overlayOpacity.addEventListener("change", function() {
-	overlayInfo.opacity = (+this.value || 80) / 100;
+	overlayInfo.opacity = (+this.value ?? 80) / 100;
 	templateImage.style.opacity = String(overlayInfo.opacity);
 });
 
