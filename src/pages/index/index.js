@@ -939,6 +939,10 @@ document.body.addEventListener("keydown", function(/**@type {KeyboardEvent}*/e) 
 			e.preventDefault();
 			overlayMenuOld.toggleAttribute("open");
 		}
+		else if (e.key == "M" && e.shiftKey && localStorage.vip?.startsWith("!")) {
+			e.preventDefault();
+			moderationMenu.toggleAttribute("open");
+		}
 		else if (e.key === "/") {
 			e.preventDefault();
 			openChatPanel();
