@@ -194,7 +194,7 @@ const themeDropName = /**@type {HTMLElement}*/($("#themeDropName"));
 const themeDropParent = /**@type {HTMLElement}*/($("#themeDropParent"));
 
 // WS & State variables
-/**@type {Map<number, string>}*/ export const intIdNames = new Map(); // intId : name
+/**@type {Map<number, string>}*/ const intIdNames = new Map(); // intId : name
 /**@type {Map<number, number>}*/ let intIdPositions = new Map(); // position : intId
 /**@type {any|null}*/ let account = null;
 /**@type {number|null}*/ let intId = null;
@@ -277,10 +277,10 @@ function handlePalette({ palette, paletteUsableRegion }) {
 addIpcMessageHandler("handlePalette", handlePalette);
 /**
  * Used by both legacy & RplaceServer
- * @param {{ endDate: number, cooldown: number }} param 
+ * @param {{ endDate: Date, cooldown: number }} param 
  */
 function handleCooldownInfo({ endDate, cooldown }) {
-	setCooldown(endDate);
+	setCooldown(endDate.getTime());
 	COOLDOWN = cooldown;
 }
 addIpcMessageHandler("handleCooldownInfo", handleCooldownInfo);
@@ -304,7 +304,7 @@ addIpcMessageHandler("handleCanvasInfo", handleCanvasInfo);
  * @param {DataView<ArrayBuffer>} changes 
  */
 async function handleChanges(changes) {
-	const board = await preloadedBoard
+	const board = await preloadedBoard;
 	if (board) {
 		runLengthChanges(changes, board);
 		hideLoadingScreen();
@@ -370,18 +370,18 @@ function handlePixels(pixels) {
 }
 addIpcMessageHandler("handlePixels", handlePixels);
 /**
- * @param {{ endDate: number, position: number, colour: number }} param 
+ * @param {{ endDate: Date, position: number, colour: number }} param 
  */
 function handleRejectedPixel({ endDate, position, colour }) {
-	setCooldown(endDate);
+	setCooldown(endDate.getTime());
 	seti(position, colour);
 }
 addIpcMessageHandler("handleRejectedPixel", handleRejectedPixel);
 /**
- * @param {{ endDate: number }} param0 
+ * @param {{ endDate: Date }} param0 
  */
 function handleCooldown({ endDate }) {
-	setCooldown(endDate);
+	setCooldown(endDate.getTime());
 }
 addIpcMessageHandler("handleCooldown", handleCooldown);
 /**
@@ -409,7 +409,7 @@ function addLiveChatMessage({ message, channel }) {
 		cMessages.set(channel, []);
 	}
 
-	const newMessage = createLiveChatMessage(
+	const newMessage = createLiveChatMessageElement(
 		message.messageId,
 		message.txt,
 		message.senderIntId,
@@ -419,82 +419,8 @@ function addLiveChatMessage({ message, channel }) {
 		message.reactions
 	);
 
-	// Register event handlers
-	newMessage.addEventListener("coordinate-click", (/**@type {CustomEvent}*/e) => {
-		const newX = e.detail.x ?? x;
-		const newY = e.detail.y ?? y;
-
-		const params = new URLSearchParams(window.location.search);
-		params.set("x", String(newX));
-		params.set("y", String(newY));
-		const newUrl = `${window.location.pathname}?${params.toString()}`;
-		window.history.pushState({}, "", newUrl);
-		pos(newX, newY);
-	});
-	newMessage.addEventListener("name-click", (/**@type {CustomEvent}*/e) => {
-		const { messageId, senderId } = e.detail;
-		if (messageId > 0) {
-			chatMentionUser(senderId);
-		}
-	});
-	newMessage.addEventListener("context-menu", (/**@type {import("./game-elements.js").LiveChatMouseEvent}*/e) => {
-		if (e.messageId > 0) {
-			onChatContext(e, e.senderId, e.messageId);
-		}
-	});
-	newMessage.addEventListener("report-click", (/**@type {CustomEvent}*/e) => {
-		const { messageId, senderId } = e.detail;
-		chatReport(messageId, senderId);
-	});
-	newMessage.addEventListener("reply-click", (/**@type {CustomEvent}*/e) => {
-		const { messageId, senderId } = e.detail;
-		chatReply(messageId, senderId);
-	});
-	newMessage.addEventListener("react-click", (/**@type {CustomEvent}*/e) => {
-		const { messageId, messageElement } = e.detail;
-
-		// Open react panel singleton element
-		const chatReactionsPanel = /**@type {HTMLElement}*/($("#chatReactionsPanel"));
-		chatReactionsPanel.setAttribute("open", "true");
-		
-		const bounds = messageElement.getBoundingClientRect();
-		const panelHeight = chatReactionsPanel.offsetHeight;
-		const viewportHeight = window.innerHeight;
-		const topPosition = Math.min(bounds.y, viewportHeight - panelHeight - 8); // Ensure it stays on screen
-	
-		// Apply position
-		chatReactionsPanel.style.right = "8px";
-		chatReactionsPanel.style.top = `${Math.max(8, topPosition)}px`; // Ensure it doesn't go off the top
-	
-		// @ts-expect-error
-		chatReactionsPanel.addEventListener("emojiselection", (/**@type {CustomEvent}*/e) => {
-			const { key } = e.detail;
-			if (chatReact) {
-				chatReact(messageId, key);
-			}
-			chatReactionsPanel.removeAttribute("open");
-		})
-	});
-	newMessage.addEventListener("moderate-click", (/**@type {CustomEvent}*/e) => {
-		const { senderId, messageId, messageElement } = e.detail;
-		chatModerate("delete", senderId, messageId, messageElement);
-	});
-
-	// Apply user blocking
-	if (message.senderIntId !== 0 && blockedUsers.includes(message.senderIntId)) {
-		newMessage.style.color = "transparent";
-		newMessage.style.textShadow = "0px 0px 6px black";
-	}
-
-	// Handle mentions
-	if (message.txt.includes("@" + chatName) ||
-		message.txt.includes("@#" + intId) ||
-		message.txt.includes("@everyone")) {
-		newMessage.setAttribute("mention", "true");
-		if (channel === currentChannel) {
-			runAudio(AUDIOS.closePalette);
-		}
-	}
+	// Apply interactivity to message element
+	applyLiveChatMessageInteractivity(newMessage, channel);
 
 	const atScrollBottom = chatMessages.scrollTop + chatMessages.offsetHeight + 64 >= chatMessages.scrollHeight;
 
@@ -979,9 +905,9 @@ function screenToCanvas(clientX, clientY) {
 
 
 // Essential game variable definitions
-export let x = 0;
-export let y = 0;
-export let z = 0;
+let x = 0;
+let y = 0;
+let z = 0;
 let minZoom = 0;
 /**@type {Uint8Array|null}*/let BOARD = null;
 
@@ -1099,7 +1025,7 @@ document.body.addEventListener("keydown", function(/**@type {KeyboardEvent}*/e) 
  * @param {number} w
  * @param {number} h
  */
-export function setSize(w, h = w) {
+function setSize(w, h = w) {
 	canvas.width = WIDTH = w;
 	canvas.height = HEIGHT = h;
 	canvParent1.style.width = w + "px";
@@ -1153,10 +1079,10 @@ function onMainContentResize() {
 }
 
 // Mouse input handling
-export let lastMouseMove = 0
-export let mouseDown = 0
-export let mx = 0
-export let my = 0
+let lastMouseMove = 0
+let mouseDown = 0
+let mx = 0
+let my = 0
 
 viewport.addEventListener("mousemove", function(/** @type {{ target: any; clientX: number; clientY: number; }} */ e) {
 	lastMouseMove = Date.now();
@@ -1212,7 +1138,7 @@ function setPlaceContextPosition(px, py, z) {
 	}
 }
 
-export function pos(newX=x, newY=y, newZ=z) {
+function pos(newX=x, newY=y, newZ=z) {
 	newX = x = Math.max(Math.min(newX, WIDTH - 1), 0);
 	newY = y = Math.max(Math.min(newY, HEIGHT - 1), 0);
 	newZ = z = Math.min(Math.max(newZ, minZoom), 1);
@@ -1296,8 +1222,8 @@ if (enableWebglCanvas) { // localStorage.useLegacyRenderer !== "true"
 	}
 }
 
-export let boardAlreadyRendered = false
-export function renderAll() {
+let boardAlreadyRendered = false
+function renderAll() {
 	const img = new ImageData(canvas.width, canvas.height)
 	const data = new Uint32Array(img.data.buffer)
 	if (BOARD) {
@@ -1324,7 +1250,7 @@ export function renderAll() {
  * @param {number} y
  * @param { number} colour
  */
-export function set(x, y, colour) {
+function set(x, y, colour) {
 	if (!BOARD) {
 		return;
 	}
@@ -1407,7 +1333,7 @@ function clicked(clientX, clientY) {
 	if (clientX == Math.floor(x) + 0.5 && clientY == Math.floor(y) + 0.5) {
 		clientX -= 0.5;
 		clientY -= 0.5;
-		if ((cooldownEndDate||0) < Date.now()) {
+		if ((cooldownEndDate ?? 0) < Date.now()) {
 			zoomIn();
 			showPalette();
 		}
@@ -1416,7 +1342,7 @@ function clicked(clientX, clientY) {
 		}
 		return;
 	}
-	runAudio((cooldownEndDate||0) > Date.now() ? AUDIOS.invalid : AUDIOS.highlight);
+	runAudio((cooldownEndDate ?? 0) > Date.now() ? AUDIOS.invalid : AUDIOS.highlight);
 	anim = setInterval(function() {
 		x += (clientX - x) / 10;
 		y += (clientY - y) / 10;
@@ -1480,7 +1406,7 @@ function handlePixelPlace(e) {
 	if (!(e instanceof Event) || !e.isTrusted) {
 		return
 	}
-	if (!focused || connectStatus !== "connected" || (cooldownEndDate && cooldownEndDate > Date.now())) {
+	if (!focused || connectStatus !== "connected" || (cooldownEndDate !== null && cooldownEndDate > Date.now())) {
 		return;
 	}
 	if (!placeOkButton.classList.contains("enabled")) {
@@ -1521,7 +1447,7 @@ function handlePlaceButtonClicked(e) {
 		return;
 	}
 
-	if (connectStatus === "connected" && (cooldownEndDate && cooldownEndDate < Date.now())) {
+	if (connectStatus === "connected" && (cooldownEndDate !== null && cooldownEndDate < Date.now())) {
 		zoomIn()
 		showPalette()
 
@@ -1764,7 +1690,7 @@ colours.addEventListener("touchstart", handleColourClicked);
  * @param {DataView<ArrayBuffer>} data - Canges packet data
  * @param {any} buffer - Fetched board from git server
  */
-export function runLengthChanges(data, buffer) {
+function runLengthChanges(data, buffer) {
 	let i = 9;
 	let boardI = 0;
 	const w = data.getUint32(1);
@@ -1790,7 +1716,7 @@ export function runLengthChanges(data, buffer) {
  * @param {ArrayBuffer} data
  * @param {number} length
  */
-export function runLengthDecodeBoard(data, length) {
+function runLengthDecodeBoard(data, length) {
 	const dataArr = new Uint8Array(data)
 	BOARD = new Uint8Array(length)
 	let boardI = 0
@@ -1827,13 +1753,13 @@ if (!webGLSupported) {
 const mobile = window.matchMedia("(orientation: portrait)").matches
 
 let extraLanguage = (lang == "en" ? "tr" : lang);
-/** @type {Map<string, import("./game-elements.js").LiveChatMessage[]>} */export const cMessages = new Map([
+/** @type {Map<string, import("./game-elements.js").LiveChatMessage[]>} */const cMessages = new Map([
 	[extraLanguage, []],
 	["en", []]
 ]);
 let chatPreviousLoadDebounce = false;
 let chatPreviousAutoLoad = false;
-export let currentChannel = lang;
+let currentChannel = lang;
 let fetchCooldown = 50;
 /**@type {Timer|null}*/let fetchFailTimeout = null;
 extraChannel(extraLanguage);
@@ -1864,13 +1790,13 @@ async function fetchBoard() {
 
 // We don't await this yet, when the changes (old server) / canvas width & height (new server) packet
 // comes through, it will await this unawaited state until it is fulfilled, so we are sure we have all the data
-/**@type {Promise<ArrayBuffer|null>}*/export let preloadedBoard = fetchBoard()
+/**@type {Promise<ArrayBuffer|null>}*/let preloadedBoard = fetchBoard()
 
 /**
  * @param {number} i
  * @param {number} b
  */
-export function seti(i, b) {
+function seti(i, b) {
 	if (!BOARD) {
 		return;
 	}
@@ -1917,7 +1843,7 @@ function rebindIndicator(e, i) {
 /**
  * @param {string} keybinds
  */
-export function generateIndicators(keybinds) {
+function generateIndicators(keybinds) {
 	for (let c = 0; c < colours.children.length; c++) {
 		const indicator = /**@type {HTMLElement}*/(colours.children[c].firstChild);
 		indicator.textContent = keybinds.charAt(c)
@@ -2044,7 +1970,7 @@ function switchLanguageChannel(selected) {
  * @param {Map<string, Set<number>>|null} reactions
  * @returns {import("./game-elements.js").LiveChatMessage}
  */
-export function createLiveChatMessage(messageId, txt, senderId, sendDate, name = null, repliesTo = null, reactions = null) {
+function createLiveChatMessageElement(messageId, txt, senderId, sendDate, name = null, repliesTo = null, reactions = null) {
 	const message = /**@type {import("./game-elements.js").LiveChatMessage}*/(document.createElement("r-live-chat-message"));
 	message.messageId = messageId;
 	message.content = txt;
@@ -2060,6 +1986,93 @@ export function createLiveChatMessage(messageId, txt, senderId, sendDate, name =
 	) : null;
 	return message;
 }
+
+/**
+ * @param {import("./game-elements.js").LiveChatMessage} message
+ * @param {string} channel
+ * @return {import("./game-elements.js").LiveChatMessage}
+ */
+function applyLiveChatMessageInteractivity(message, channel = "") {
+	// Register event handlers
+	message.addEventListener("coordinate-click", (/**@type {CustomEvent}*/e) => {
+		const newX = e.detail.x ?? x;
+		const newY = e.detail.y ?? y;
+
+		const params = new URLSearchParams(window.location.search);
+		params.set("x", String(newX));
+		params.set("y", String(newY));
+		const newUrl = `${window.location.pathname}?${params.toString()}`;
+		window.history.pushState({}, "", newUrl);
+		pos(newX, newY);
+	});
+	message.addEventListener("name-click", (/**@type {CustomEvent}*/e) => {
+		const { messageId, senderId } = e.detail;
+		if (messageId > 0) {
+			chatMentionUser(senderId);
+		}
+	});
+	message.addEventListener("context-menu", (/**@type {import("./game-elements.js").LiveChatMouseEvent}*/e) => {
+		if (e.messageId > 0) {
+			onChatContext(e, e.senderId, e.messageId);
+		}
+	});
+	message.addEventListener("report-click", (/**@type {CustomEvent}*/e) => {
+		const { messageId, senderId } = e.detail;
+		chatReport(messageId, senderId);
+	});
+	message.addEventListener("reply-click", (/**@type {CustomEvent}*/e) => {
+		const { messageId, senderId } = e.detail;
+		chatReply(messageId, senderId);
+	});
+	message.addEventListener("react-click", (/**@type {CustomEvent}*/e) => {
+		const { messageId, messageElement } = e.detail;
+
+		// Open react panel singleton element
+		const chatReactionsPanel = /**@type {HTMLElement}*/($("#chatReactionsPanel"));
+		chatReactionsPanel.setAttribute("open", "true");
+		
+		const bounds = messageElement.getBoundingClientRect();
+		const panelHeight = chatReactionsPanel.offsetHeight;
+		const viewportHeight = window.innerHeight;
+		const topPosition = Math.min(bounds.y, viewportHeight - panelHeight - 8); // Ensure it stays on screen
+	
+		// Apply position
+		chatReactionsPanel.style.right = "8px";
+		chatReactionsPanel.style.top = `${Math.max(8, topPosition)}px`; // Ensure it doesn't go off the top
+	
+		// @ts-expect-error
+		chatReactionsPanel.addEventListener("emojiselection", (/**@type {CustomEvent}*/e) => {
+			const { key } = e.detail;
+			if (chatReact) {
+				chatReact(messageId, key);
+			}
+			chatReactionsPanel.removeAttribute("open");
+		})
+	});
+	message.addEventListener("moderate-click", (/**@type {CustomEvent}*/e) => {
+		const { senderId, messageId, messageElement } = e.detail;
+		chatModerate("delete", senderId, messageId, messageElement);
+	});
+
+	// Apply user blocking
+	if (message.senderId !== 0 && blockedUsers.includes(message.senderId)) {
+		message.style.color = "transparent";
+		message.style.textShadow = "0px 0px 6px black";
+	}
+
+	// Handle mentions
+	if (message.content.includes("@" + chatName) ||
+		message.content.includes("@#" + intId) ||
+		message.content.includes("@everyone")) {
+		message.setAttribute("mention", "true");
+		if (channel === currentChannel) {
+			runAudio(AUDIOS.closePalette);
+		}
+	}
+
+	return message;
+}
+
 
 nameInput.addEventListener("keydown", function(e) {
 	if (e.key == "Enter") {
@@ -2086,7 +2099,7 @@ nameButton.addEventListener("click", function() {
  * @param {string} command
  * @param {string} message
  */
-export function handleLiveChatCommand(command, message) {
+function handleLiveChatCommand(command, message) {
 	switch (command) {
 		case "name": {
 			namePanel.style.visibility = "visible";
@@ -2121,7 +2134,7 @@ export function handleLiveChatCommand(command, message) {
 			break;
 		}
 		case "help": {
-			const newMessage = createLiveChatMessage(0, `
+			const newMessage = createLiveChatMessageElement(0, `
 # Chat Styling Guide ✨
 Text in rplace chat can be styled using a simplified version of markdown:
 **bold**, *italic*, ||spoilers||, __underline__, \`code\` & ~strikethrough~.
@@ -2172,30 +2185,31 @@ To create a separator, create a blank line (Shift + Enter on keyboard) and inser
 /**
  * @param {LiveChatHistoryPacket} params - The parameters for adding chat messages.
  */
-function addChatMessages({ channel, messages, before }) {
+function addLiveChatMessages({ channel, messages, before }) {
 	if (channel !== currentChannel) {
 		return;
 	}
 
-	/** @type {HTMLElement|null} */const chatMessages = document.getElementById('chatMessages');
-	if (!chatMessages) throw new Error('Chat messages container not found');
+	if (!chatMessages) throw new Error("Chat messages container not found");
 
-	const newChatScroll = chatMessages.scrollTop;
 	/** @type {Promise<void>[]} */
 	const messageRenderPromises = [];
 
 	messages.forEach(msgData => {
-		const name = intIdNames.get(msgData.senderIntId) || null;
+		const chatName = intIdNames.get(msgData.senderIntId) || null;
 		/** @type {import("./game-elements.js").LiveChatMessage}*/
-		const newMessage = createLiveChatMessage(
+		const newMessage = createLiveChatMessageElement(
 			msgData.messageId,
 			msgData.txt,
 			msgData.senderIntId,
 			msgData.sendDate,
-			name,
+			chatName,
 			msgData.repliesTo,
 			msgData.reactions
 		);
+
+		// Apply interactivity to message element
+		applyLiveChatMessageInteractivity(newMessage, channel);
 
 		const channelMessages = cMessages.get(currentChannel);
 		if (before) {
@@ -2220,7 +2234,7 @@ function addChatMessages({ channel, messages, before }) {
 		chatPreviousLoadDebounce = false;
 	});
 }
-addIpcMessageHandler("addChatMessages", addChatMessages);
+addIpcMessageHandler("addLiveChatMessages", addLiveChatMessages);
 
 chatMessages.addEventListener("scroll", () => {
 	if (chatMessages.scrollTop < 64) {
@@ -2275,7 +2289,7 @@ messageInput.addEventListener("focus", openChatPanel);
 /**
  * @param {string} text
  */
-export function chatInsertText(text) {
+function chatInsertText(text) {
 	const [ start, end ] = [ messageInput.selectionStart, messageInput.selectionEnd ]
 	messageInput.setRangeText(text, start || 0, end || 0, "end")
 	messageInput.focus()
@@ -2284,7 +2298,7 @@ export function chatInsertText(text) {
 /**
  * @param {number} senderId
  */
-export function chatMentionUser(senderId) {
+function chatMentionUser(senderId) {
 	let mentionText = "@"
 	const identifier = intIdNames.get(senderId) || ("#" + senderId)
 	if (typeof identifier === "string") {
@@ -2339,7 +2353,7 @@ function sendPlaceChatMsg(message) {
  * @param {number|null} replyId 
  * @returns 
  */
-function sendLiveChatMsg(message, channel=currentChannel, replyId=currentReply) {
+function sendLiveChatMsg(message, channel=currentChannel, replyId=currentReplyId) {
 	// Execute live chat commands
 	for (const [command] of COMMANDS) {
 		if (message.startsWith(":" + command)) {
@@ -2362,11 +2376,11 @@ function sendLiveChatMsg(message, channel=currentChannel, replyId=currentReply) 
  * @param {any} messageId
  * @param {number} senderId
  */
-export async function chatReply(messageId, senderId) {
+async function chatReply(messageId, senderId) {
 	for (const messageEl of cMessages.get(currentChannel) || []) {
 		messageEl.removeAttribute("reply")
 	}
-	currentReply = messageId
+	currentReplyId = messageId
 
 	// HACK: Ensure no overlap between reply and send features
 	messageTypePanel.style.height = "calc(var(--message-input-height) + 92px)"
@@ -2385,7 +2399,7 @@ export async function chatReply(messageId, senderId) {
  * @param {number} messageId 
  * @param {number} senderId 
  */
-export function chatReport(messageId, senderId) {
+function chatReport(messageId, senderId) {
 	const reason = prompt("Enter the reason for why you are reporting this message (max 280 chars)\n\n" +
 		`Additional info:\nMessage ID: ${messageId}\nSender ID: ${senderId}\n`)?.trim();
 	if (reason === null) {
@@ -2399,15 +2413,15 @@ export function chatReport(messageId, senderId) {
  * @param {number} messageId 
  * @param {string} reactKey 
  */
-export function chatReact(messageId, reactKey) {
+function chatReact(messageId, reactKey) {
 	sendIpcMessage(wsCapsule, "chatReact", { messageId, reactKey });
 }
 
-export function chatCancelReplies() {
+function chatCancelReplies() {
 	for (const messageEl of cMessages.get(currentChannel) || []) {
 		messageEl.removeAttribute("reply")
 	}
-	currentReply = null
+	currentReplyId = null
 	// TODO: Use CSS classes / find a better solution
 	// HACK: Ensure no overlap between reply and send features
 	messageTypePanel.style.height = "calc(var(--message-input-height) + 62px)"
@@ -2486,7 +2500,7 @@ modMessageId.addEventListener("input", async function(e) {
 				const chatName = message.sender.chatName ?? null;
 
 				// Use createLiveChatMessage to build the HTML element
-				const messageElement = createLiveChatMessage(message.id, message.message, message.senderIntId,
+				const messageElement = createLiveChatMessageElement(message.id, message.message, message.senderIntId,
 					message.date * 1000, chatName, message.repliesTo, null);
 
 				modMessagePreview.innerHTML = "";
@@ -2564,7 +2578,7 @@ modCancelButton.addEventListener("click", closeChatModerate);
  * @param {number|null} senderId
  * @param {import("./game-elements.js").LiveChatMessage|null} messageElement
  */
-export function chatModerate(mode, senderId, messageId = null, messageElement = null) {
+function chatModerate(mode, senderId, messageId = null, messageElement = null) {
 	clearChatModerate()
 	modUserId.value = String(senderId);
 	modMessageId.value = String(messageId);
@@ -2787,7 +2801,7 @@ function server(serverAddress, boardAddress, vip = "", storage = localStorage) {
  * @param {string|null} forceVariant
  * @param {string|null} forceEffects
  */
-export async function forceTheme(forceTheme, forceVariant = null , forceEffects = null) {
+async function forceTheme(forceTheme, forceVariant = null , forceEffects = null) {
 	const currentThemeSet = document.documentElement.dataset.theme
 	const currentVariant = document.documentElement.dataset.variant
 	if (currentThemeSet != forceTheme || currentVariant != forceVariant) {
@@ -3076,11 +3090,11 @@ overlayOpacity.addEventListener("change", function() {
 });
 
 // Chat management
-let blockedUsers = localStorage.blocked?.split(",") || []
-/**@type {number|null}*/let targetedIntId = null
-/**@type {number|null}*/let targetedMsgId = null
-export let currentReply = null
-let openedChat = false
+let blockedUsers = localStorage.blocked?.split(",") || [];
+/**@type {number|null}*/let targetedIntId = null;
+/**@type {number|null}*/let targetedMsgId = null;
+/**@type {number|null}*/let currentReplyId = null;
+let openedChat = false;
 
 function openChatPanel() {
 	chatPanel.setAttribute("open", "true")
@@ -3141,7 +3155,7 @@ spaceFiller.addEventListener("click", openGame);
  * @param {number} senderId
  * @param {any} msgId
  */
-export async function onChatContext(e, senderId, msgId) {
+async function onChatContext(e, senderId, msgId) {
 	e.preventDefault();
 
 	if (chatContext.style.display == "block") {

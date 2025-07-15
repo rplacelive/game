@@ -1131,7 +1131,7 @@ body[eventphase="3"] .coverer-title {
 	display: flex;
 	flex-direction: column;
 	row-gap: 8px;
-	z-index: 3;
+	z-index: 4;
 }
 #moderationMenu[mode="delete"] > #modUserIdForm {
 	display: none;
