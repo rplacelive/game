@@ -4,6 +4,8 @@
 export const DEFAULT_SERVER = "wss://server.rplace.live"
 /**
  * @constant {string} DEFAULT_BOARD
+ * TODO: Potentially introduce a fallback system, such that failure to source from the
+ * server directly will fall back to pulling from git or vice versa (mirrors system).
  */
 export const DEFAULT_BOARD = "https://server.rplace.live/public/place"
 /**
