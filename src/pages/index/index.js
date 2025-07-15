@@ -1406,7 +1406,6 @@ document.addEventListener("visibilitychange", () => {
 
 /**
  * @param {Event} e
- * @returns
  */
 function handlePixelPlace(e) {
 	if (!(e instanceof Event) || !e.isTrusted) {
@@ -1443,7 +1442,6 @@ function handlePixelPlace(e) {
 		PEN = -1
 	}
 }
-placeOkButton.addEventListener("touchstart", handlePixelPlace);
 placeOkButton.addEventListener("click", handlePixelPlace);
 /**
  * @param {Event} e
@@ -1470,10 +1468,15 @@ function handlePlaceButtonClicked(e) {
 		runAudio(AUDIOS.invalid)
 	}
 }
-placeButton.addEventListener("touchstart", handlePlaceButtonClicked);
 placeButton.addEventListener("click", handlePlaceButtonClicked);
+/**
+ * @param {Event} e 
+ */
+function handlePlaceCancelClicked(e) {
+	if (!(e instanceof Event) || !e.isTrusted) {
+		return;
+	}
 
-placeCancelButton.addEventListener("click", function(e) {
 	runAudio(AUDIOS.closePalette);
 	canvSelect.style.background = "";
 	palette.style.transform = "translateY(100%)";
@@ -1486,7 +1489,8 @@ placeCancelButton.addEventListener("click", function(e) {
 	canvSelect.style.outline = "";
 	canvSelect.style.boxShadow = "";
 	hideIndicators();
-})
+}
+placeCancelButton.addEventListener("click", handlePlaceCancelClicked);
 
 // Cooldown handling
 /**@type {Timer|null}*/let cooldownInterval = null;
@@ -1690,7 +1694,6 @@ function handleColourClicked(e) {
 	hideIndicators();
 }
 colours.addEventListener("click", handleColourClicked);
-colours.addEventListener("touchstart", handleColourClicked);
 
 /**
  * @param {DataView<ArrayBuffer>} data - Canges packet data
