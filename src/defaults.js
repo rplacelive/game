@@ -1,11 +1,11 @@
 /**
  * @constant {string} DEFAULT_SERVER
  */
-export const DEFAULT_SERVER = "wss://server.rplace.live:443"
+export const DEFAULT_SERVER = "wss://server.rplace.live"
 /**
  * @constant {string} DEFAULT_BOARD
  */
-export const DEFAULT_BOARD = "https://raw.githubusercontent.com/rplacelive/canvas1/main/place"
+export const DEFAULT_BOARD = "wss://server.rplace.live/public/place"
 /**
  * @constant {string} DEFAULT_AUTH
  */
