@@ -121,9 +121,11 @@
 			<r-clipboard-copy title="Copy canvas URL to clipbaord"
 				href="https://rplace.live/?server=wss://server.rplace.live:443&board=https://raw.githubusercontent.com/rplacelive/canvas1/main/place"></r-clipboard-copy>
 		</div>
+	<% if (isDev) { %>
 		<r-post id="accountPost" class="post" style="cursor: pointer;" novotes="true" title="My Account"
 			description="Login or signup to an rplace.live account, access special features and host your own custom canvases"
 			coverimageurl="images/account-profile.png"></r-post>
+	<% } %>
 		<!--<r-post onclick="window.open('https:\/\/lamda.count.land/', '_blank')" class="post" novotes="true" title="Lamda" description="Chat anonymously with strangers online. Start random voice calls and meet others!"
 			coverimageurl="images/lamda.png"></r-post>
 		<r-post onclick="toggleTlPanel()" class="post" style="opacity: 0.6; pointer-events: none;" novotes="true" title="Timelapse tool" description="Combine a sequence from the history of the canvas to create your own timelapse video!"
