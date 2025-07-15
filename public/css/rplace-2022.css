@@ -46,7 +46,7 @@ select {
 	color: #747474;
 }
 
-input, button, textarea {
+input, button, textarea, .labelled-slider {
 	color: unset;
 	font: unset;
 	background-color: var(--ui-panel-bg);
@@ -83,7 +83,11 @@ input[type="checkbox"] {
 	height: min-content;
 }
 
-input[type=file]::file-selector-button {
+input:focus-visible, button:focus-visible, textarea:focus-visible {
+	outline: auto;
+}
+
+input[type="file"]::file-selector-button {
 	border-radius: 5px;
 	background-color: var(--ui-panel-bg);
 	border: 0px solid black;
@@ -92,32 +96,15 @@ input[type=file]::file-selector-button {
 	color: var(--ui-text);
 }
 
-input[type=range]::-moz-range-thumb {
-	position: relative;
-	appearance: none;
-	width: 25px;
-	height: 25px;
-	box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.5);
-	border: 1px solid darkgray;
-	border-radius: 5px;
-	background: var(--ui-panel-bg);
-	cursor: pointer;
+.labelled-slider {
+	padding: 17.5px;
 }
-
-input[type=range]::-webkit-slider-thumb {
-	position: relative;
-	appearance: none;
-	width: 25px;
-	height: 25px;
+.labelled-slider .slider-value {
+    width: 30px;
+    height: 30px;
 	box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.5);
-	border: 1px solid darkgray;
-	border-radius: 5px;
 	background: var(--ui-panel-bg);
-	cursor: pointer;
-}
-
-input:focus-visible, button:focus-visible, textarea:focus-visible {
-	outline: auto;
+	border-radius: 10px;
 }
 
 a {
@@ -355,10 +342,16 @@ r-live-chat-message .emoji-reactors-count {
 }
 
 .toast-menu {
-	padding: 10px;
-	line-height: 17px;
 	background: var(--ui-panel-bg);
 	border-radius: 15px;
+	line-height: 17px;
+}
+.toast-menu .toast-header {
+	background: var(--ui-panel-bg);
+    padding: 10px;
+}
+.toast-menu .toast-body {
+	padding: 10px;
 }
 
 .modal-inner-container {

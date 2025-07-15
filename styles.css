@@ -1096,7 +1096,21 @@ body[eventphase="3"] .coverer-title {
 	left: 50%;
 	width: 380px;
 	z-index: 5;
-	transform: translateX(-50%)
+	transform: translateX(-50%);
+	overflow: auto;
+    max-height: calc(100% - 120px);
+}
+
+.toast-menu .toast-header {
+	position: sticky;
+	display: flex;
+	top: 0;
+}
+
+.toast-menu .toast-body {
+	display: flex;
+    flex-direction: column;
+	row-gap: 8px;
 }
 
 .toast-menu[open] {
@@ -1166,6 +1180,54 @@ body[eventphase="3"] .coverer-title {
 
 #overlayMenuInnerBox {
 	overflow: clip;
+}
+
+.labelled-slider {
+	position: relative;
+	width: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+.labelled-slider .slider {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	opacity: 0;
+	cursor: pointer;
+}
+.labelled-slider .slider-label {
+	position: absolute;
+	left: 8px;
+	top: 50%;
+	transform: translateY(-50%);
+	opacity: 0.6;
+	pointer-events: none;
+}
+.labelled-slider .slider-track {
+	position: relative;
+	pointer-events: none;
+	height: 0;
+	flex-grow: 1;
+}
+.labelled-slider .slider-value {
+	position: absolute;
+	top: 0;
+	left: 0;
+    height: 100%;
+	aspect-ratio: 1/1;
+	text-align: center;
+	pointer-events: none;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	left: calc(var(--value));
+	transform: translate(-50%, -50%);
+}
+.slider-value::after {
+	content: attr(data-value);
 }
 
 .mod-form {

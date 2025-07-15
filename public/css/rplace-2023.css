@@ -50,6 +50,20 @@ input[type="button"]:disabled, button:disabled {
 	background-color: lightgray;
 }
 
+.labelled-slider {
+	border: var(--pixel-border);
+	background-color: lightgray;
+	cursor: pointer;
+	padding: 19.5px;
+}
+.labelled-slider .slider-value {
+	width: 36px;
+	height: 36px;
+	box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.5);
+	background: var(--ui-panel-bg);
+	border: var(--pixel-border);
+}
+
 input:focus-visible, button:focus-visible, textarea:focus-visible {
 	outline: auto;
 }
@@ -353,8 +367,14 @@ r-close-icon {
 .toast-menu {
 	border: var(--pixel-border);
 	box-shadow: var(--pixel-box-shadow);
-	padding: 21px;
 	background-color: white;
+}
+.toast-menu .toast-header {
+	background-color: white;
+	padding: 3px;
+}
+.toast-menu .toast-body {
+	padding: 21px;
 }
 
 .modal-inner-container {

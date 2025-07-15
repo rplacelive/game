@@ -219,27 +219,37 @@
 
 			<!-- Popups and dialogs -->
 			<div id="overlayMenuOld" noselect class="toast-menu">
-				<div style="display: flex;">
+				<div class="toast-header">
 					<h2 title="Make use of a canvas overlay image in order to help yourself better position your pixels" style="display: inline;flex-grow: 1;">Overlay:</h2>
 					<r-close-icon onclick="overlayMenuOld.removeAttribute('open')" class="active"></r-close-icon>
 				</div>
-				<br><br>
-				<input id="overlayInput" type="file" style="width: 100%;"/> <br><br>
-				<input value="" id="overlayXInput" type="number" placeholder="Image X" style="width: calc(50% - 5px); margin-right: 5px;"/>
-				<input value="" id="overlayYInput" type="number" placeholder="Image Y" style="width: calc(50% - 5px)"/> <br><br>
-				<div style="width: 100%; position: relative;">
-					<input id="overlayOpacity" type="range" min="0" value="80" max="100" style="width: 100%;" oninput="
-						overlaySliderValue.textContent = Math.min(this.value, 99);
-						overlaySliderValue.style.left = `calc(${this.value / 100} * 90%)`;
-					"/>
-					<label for="overlayOpacity" style="position: absolute;left: 8px;top: 50%;transform: translateY(-50%);opacity: 0.6;">Opacity</label>
-					<span id="overlaySliderValue" style="position: absolute; white-space: pre-wrap; left: calc(0.8 * 90%); transform: translateX(10px); bottom: 12.5px; pointer-events: none; width: 16px; text-align: center;">80</span>
-				</div>
-				<br>
-				<div id="overlayCopyButton" style="position: relative; display: flex;" title="Copy canvas link">
-					<img class="icon-image" src="/svg/clipboard.svg">
-					<span style="align-self: center; margin-right: 8px;cursor: pointer;">Copy overlay URL</span>
-					<span style="opacity: 0; align-self: center;">Copied to clipboard!</span>
+				<div class="toast-body">
+					<input id="overlayInput" type="file" style="width: 100%;"/>
+					<label>
+						Image X:
+						<input value="" id="overlayXInput" type="number" placeholder="Enter Image X" style="width: calc(50% - 5px); margin-right: 5px;"/>
+					</label>
+					<label>
+						Image Y:
+						<input value="" id="overlayYInput" type="number" placeholder="Enter Image Y" style="width: calc(50% - 5px)"/>
+					</label>
+					<label>
+						Image Opacity:
+					</label>
+					<div class="labelled-slider">
+						<input id="overlayOpacity" type="range" class="slider" min="0" value="80" max="100" oninput="
+							overlaySliderValue.style.setProperty('--value', `${this.value}%`);
+							overlaySliderValue.dataset.value = this.value;">
+						<label for="overlayOpacity" class="slider-label">Adjust opacity</label>
+						<div class="slider-track">
+						<div id="overlaySliderValue" class="slider-value" data-value="80" style="--value: 80%;"></div>
+						</div>
+					</div>
+					<div id="overlayCopyButton" style="position: relative; display: flex;" title="Copy canvas link">
+						<img class="icon-image" src="/svg/clipboard.svg">
+						<span style="align-self: center; margin-right: 8px;cursor: pointer;">Copy overlay URL</span>
+						<span style="opacity: 0; align-self: center;">Copied to clipboard!</span>
+					</div>
 				</div>
 			</div>
 			<dialog id="overlayMenu" class="dialog-modal" noselect>
@@ -304,79 +314,85 @@
 				<div id="turnstileContainer"></div>
 			</div>
 			<div id="punishmentMenu" class="toast-menu">
-				<h2>Punishment notice:</h2>
-				<p id="punishmentNote"></p>
-				<div class="punishment-notice">
-					<header class="punishment-header">
-						<time id="punishmentStartDate" datetime="1970-01-01T00:00:00"></time>
-						<hr>
-						<time id="punishmentEndDate" datetime="1970-01-01T00:00:00"></time>
-					</header>
-					<div class="punishment-content">
-						<p id="punishmentUserId"></p>
-						<p id="punishmentReason"></p>
-						<p id="punishmentAppeal"></p>
+				<div class="toast-header">
+					<h2>Punishment notice:</h2>
+				</div>
+				<div class="toast-body">
+					<p id="punishmentNote"></p>
+					<div class="punishment-notice">
+						<header class="punishment-header">
+							<time id="punishmentStartDate" datetime="1970-01-01T00:00:00"></time>
+							<hr>
+							<time id="punishmentEndDate" datetime="1970-01-01T00:00:00"></time>
+						</header>
+						<div class="punishment-content">
+							<p id="punishmentUserId"></p>
+							<p id="punishmentReason"></p>
+							<p id="punishmentAppeal"></p>
+						</div>
 					</div>
 				</div>
 			</div>
 			<div id="moderationMenu" noselect="" mode="delete" class="toast-menu">
-				<div style="display: flex;margin-bottom: 8px;">
+				<div class="toast-header">
 					<h2 style="display: inline;flex-grow: 1;">Moderation options:</h2>
 					<r-close-icon id="modCloseButton"></r-close-icon>
 				</div>
-				<h2>Manage:</h2>
-				<div id="modMessageIdForm" class="mod-form">
-					<label>
-						Message ID:
-						<input type="number" id="modMessageId" title="Message ID" placeholder="Enter Message ID">
+				<div class="toast-body">
+					<h2>Manage:</h2>
+					<div id="modMessageIdForm" class="mod-form">
+						<label>
+							Message ID:
+							<input type="number" id="modMessageId" title="Message ID" placeholder="Enter Message ID">
+						</label>
+						<div id="modMessagePreview">Message not found</div>
+					</div>
+					<label id="modUserIdForm">
+						User ID:
+						<input type="number" id="modUserId" title="User ID" placeholder="Enter User ID">
 					</label>
-					<div id="modMessagePreview">Message not found</div>
-				</div>
-				<label id="modUserIdForm">
-					User ID:
-					<input type="number" id="modUserId" title="User ID" placeholder="Enter User ID">
-				</label>
-				<h2>Action:</h2>
-				<div id="modActionForm" class="mod-form">
-					<div onclick="moderationMenu.setAttribute('mode', 'delete')">
-						<input type="radio" id="modActionDelete" name="modaction" />
-						<label for="modActionDelete">Delete message</label>
+					<h2>Action:</h2>
+					<div id="modActionForm" class="mod-form">
+						<div onclick="moderationMenu.setAttribute('mode', 'delete')">
+							<input type="radio" id="modActionDelete" name="modaction" />
+							<label for="modActionDelete">Delete message</label>
+						</div>
+						<div onclick="moderationMenu.setAttribute('mode', 'kick')">
+							<input type="radio" id="modActionKick" name="modaction" />
+							<label for="modActionKick">Kick</label>
+						</div>
+						<div onclick="moderationMenu.setAttribute('mode', 'mute')">
+							<input type="radio" id="modActionMute" name="modaction" />
+							<label for="modActionMute">Mute</label>
+						</div>
+						<div onclick="moderationMenu.setAttribute('mode', 'ban')">
+							<input type="radio" id="modActionBan" name="modaction" />
+							<label for="modActionBan">Ban</label>
+						</div>
+						<div onclick="moderationMenu.setAttribute('mode', 'captcha')">
+							<input type="radio" id="modActionCaptcha" name="modaction" />
+							<label for="modActionCaptcha">Captcha</label>
+						</div>
 					</div>
-					<div onclick="moderationMenu.setAttribute('mode', 'kick')">
-						<input type="radio" id="modActionKick" name="modaction" />
-						<label for="modActionKick">Kick</label>
+					<div id="modDuration">
+						<input id="modDurationH" type="number" style="display: inline;height: auto;width: 80px;" placeholder="Hours" min="0">
+						<span>:</span>
+						<input id="modDurationM" type="number" style="display: inline;height: auto;width: 80px;" placeholder="Minutes" min="0">
+						<span>:</span>
+						<input id="modDurationS" type="number" style="display: inline;height: auto;width: 80px;" placeholder="Seconds" min="1">
 					</div>
-					<div onclick="moderationMenu.setAttribute('mode', 'mute')">
-						<input type="radio" id="modActionMute" name="modaction" />
-						<label for="modActionMute">Mute</label>
+					<div id="modAffectsAllForm" class="mod-form">
+						<div>
+							<input type="checkbox" id="modAffectsAll" style="height: auto; width: 12px;" value="affectsall" />
+							<label for="modAffectsAll">Apply to all players</label>
+						</div>
 					</div>
-					<div onclick="moderationMenu.setAttribute('mode', 'ban')">
-						<input type="radio" id="modActionBan" name="modaction" />
-						<label for="modActionBan">Ban</label>
+					<em>All moderation actions are logged by the server and reports sent to all other staff. Follow the moderation rules. Do not abuse power.</em>
+					<input id="modReason" type="text" placeholder="Reason" oninput="modOptionsButton.disabled = !this.value">
+					<div style="display: flex; column-gap: 8px;">
+						<button style="flex-grow: 1;" id="modOptionsButton" disabled="true">Submit</button>
+						<button id="modCancelButton" style="flex-grow: 1;">Cancel</button>
 					</div>
-					<div onclick="moderationMenu.setAttribute('mode', 'captcha')">
-						<input type="radio" id="modActionCaptcha" name="modaction" />
-						<label for="modActionCaptcha">Captcha</label>
-					</div>
-				</div>
-				<div id="modDuration">
-					<input id="modDurationH" type="number" style="display: inline;height: auto;width: 80px;" placeholder="Hours" min="0">
-					<span>:</span>
-					<input id="modDurationM" type="number" style="display: inline;height: auto;width: 80px;" placeholder="Minutes" min="0">
-					<span>:</span>
-					<input id="modDurationS" type="number" style="display: inline;height: auto;width: 80px;" placeholder="Seconds" min="1">
-				</div>
-				<div id="modAffectsAllForm" class="mod-form">
-					<div>
-						<input type="checkbox" id="modAffectsAll" style="height: auto; width: 12px;" value="affectsall" />
-						<label for="modAffectsAll">Apply to all players</label>
-					</div>
-				</div>
-				<em>All moderation actions are logged by the server and reports sent to all other staff. Follow the moderation rules. Do not abuse power.</em>
-				<input id="modReason" type="text" placeholder="Reason" oninput="modOptionsButton.disabled = !this.value">
-				<div style="display: flex; column-gap: 8px;">
-					<button style="flex-grow: 1;" id="modOptionsButton" disabled="true">Submit</button>
-					<button id="modCancelButton" style="flex-grow: 1;">Cancel</button>
 				</div>
 			</div>
 			<div noselect id="captchaPopup" style="display: none;">
