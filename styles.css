@@ -1137,23 +1137,25 @@ body[eventphase="3"] .coverer-title {
 	row-gap: 8px;
 	z-index: 4;
 }
-#moderationMenu[mode="delete"] > #modUserIdForm {
+#moderationMenu[mode="delete"] #modUserIdForm {
 	display: none;
 }
 #modMessageIdForm {
 	display: none;
 }
-#moderationMenu[mode="delete"] > #modMessageIdForm {
+#moderationMenu[mode="delete"] #modMessageIdForm {
 	display: flex;
 }
-#moderationMenu[mode="delete"] > #modDuration, #moderationMenu[mode="captcha"] > #modDuration, #moderationMenu[mode="kick"] > #modDuration {
+#moderationMenu[mode="delete"] #modDuration,
+#moderationMenu[mode="captcha"] #modDuration,
+#moderationMenu[mode="kick"] #modDuration {
 	display: none;
 }
 #modAffectsAllForm {
 	display: none;
 	flex-direction: column;
 }
-#moderationMenu[mode="captcha"] > #modAffectsAllForm {
+#moderationMenu[mode="captcha"] #modAffectsAllForm {
 	display: flex;
 }
 #modMessagePreview {
