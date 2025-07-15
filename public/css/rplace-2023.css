@@ -210,7 +210,32 @@ r-close-icon {
 
 #palette {
 	background: white;
-	box-shadow: 0 0 10px black;
+	border-top: var(--pixel-border);
+}
+#colours div.sel {
+	margin: 0;
+	border: var(--pixel-border);
+	box-sizing: content-box;
+	box-shadow: var(--pixel-box-shadow);
+	z-index: 1;
+}
+.pcancel, .pok {
+	border: var(--pixel-border);
+	border-radius: 0;
+}
+.pok {
+	background-color: var(--gray-color);
+	transition: .2s background-color;
+}
+.pok.enabled {
+	background-color: #ff5500;
+}
+.pok > svg {
+	fill: black;
+	transition: .2s fill;
+}
+.pok.enabled > svg {
+	fill: white;
 }
 
 #namePanel {

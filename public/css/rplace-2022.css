@@ -394,6 +394,20 @@ r-live-chat-message .emoji-reactors-count {
 	background: var(--ui-panel-bg);
 	box-shadow: 0 0 10px black;
 }
+#colours div.sel {
+	margin: 0;
+	border: 2px white solid;
+	box-shadow: rgb(0 0 0 / 50%) 0px 4px 10px;
+	box-sizing: content-box;
+}
+.pcancel, .pok {
+	border-radius: 50px;
+	border: 1px #d4d7d9 solid;
+	box-shadow: none;
+}
+.pok.enabled {
+	border: 4px #ff5500 solid;
+}
 
 #namePanel {
 	background-color: var(--ui-panel-bg);

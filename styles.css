@@ -395,7 +395,7 @@ r-close-icon {
 	background: #ffffffd4;
 }
 
-#palette .buttons{
+#palette .buttons {
 	display: flex;
 	flex-direction: row;
 	justify-content: center;
@@ -403,43 +403,33 @@ r-close-icon {
 	padding: 14px 16px 16px 16px;
 }
 
-.pcancel, .pok{
+.pcancel, .pok {
 	width: 100px;
+	min-width: 162px;
 	height: 40px;
-	border-radius: 50px;
-	border: 1px #d4d7d9 solid;
 	padding: 9px;
 	text-align: center;
 	cursor: pointer;
-	min-width: 162px;
 }
-.pok{
+.pok {
 	border: 4px #f1f1f1 solid;
 	cursor: not-allowed;
 	padding: 6px;
 }
-.pcancel svg, .pok svg{
+.pcancel svg, .pok svg {
 	height: 100%;
 }
-.pok.enabled{
-	border: 4px #ff5500 solid;
+.pok.enabled {
 	cursor: pointer;
 }
 
-#colours div{
+#colours div {
 	height: 32px;
 	flex-grow: 1;
 	width: 24px;
 	flex-shrink: 0;
 	margin: 2px;
 	cursor: pointer;
-}
-
-#colours div.sel{
-	margin: 0;
-	border: 2px white solid;
-	box-shadow: rgb(0 0 0 / 50%) 0px 4px 10px;
-	box-sizing: content-box;
 }
 
 /*Palette indicators*/
