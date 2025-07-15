@@ -438,10 +438,6 @@ r-spoiler[hidden]:hover {
 	background-color: lightgray;
 }
 
-placechat {
-	border: var(--pixel-border);
-}
-
 #placeChatButton {
 	margin-left: 0;
 }

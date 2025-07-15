@@ -100,6 +100,7 @@ const postsFrame = /**@type {HTMLIFrameElement}*/($("#postsFrame"));
 const more = /**@type {HTMLElement}*/($("#more"));
 const spaceFiller = /**@type {HTMLElement}*/($("#spaceFiller"));
 const mainContent = /**@type {HTMLElement}*/($("#maincontent"));
+const viewport = /**@type {HTMLElement}*/($("#viewport"));
 const canvParent1 = /**@type {HTMLElement}*/($("#canvparent1"));
 const canvParent2 = /**@type {HTMLElement}*/($("#canvparent2"));
 const canvSelect = /**@type {HTMLElement}*/($("#canvselect"));
@@ -791,7 +792,7 @@ more.addEventListener("scroll", function(/**@type {any}*/ e) {
 }, { passive: true })
 
 // Game input handling && overrides
-mainContent.addEventListener("touchstart", function(/**@type {TouchEvent}*/ e) {
+viewport.addEventListener("touchstart", function(/**@type {TouchEvent}*/ e) {
 	e.preventDefault()
 	for (let i = 0; i < e.changedTouches.length; i++) {
 		const touch = e.changedTouches[i];
@@ -807,7 +808,7 @@ mainContent.addEventListener("touchstart", function(/**@type {TouchEvent}*/ e) {
 		}
 	}
 })
-mainContent.addEventListener("touchend", function(/**@type {TouchEvent}*/ e) {
+viewport.addEventListener("touchend", function(/**@type {TouchEvent}*/ e) {
 	if (!e.isTrusted) {
 		return;
 	}
@@ -828,7 +829,7 @@ mainContent.addEventListener("touchend", function(/**@type {TouchEvent}*/ e) {
 				// Check touchMoveDistance and if target is inside canvParent2
 				if (touchMoveDistance > 0 && e.target instanceof Node && canvParent2.contains(e.target)) {
 					// Ensure target is valid
-					if (e.target !== mainContent && !canvParent2.contains(e.target)) {
+					if (e.target !== viewport && !canvParent2.contains(e.target)) {
 						break assign2;
 					}
 					clicked(t.clientX, t.clientY);
@@ -856,7 +857,7 @@ mainContent.addEventListener("touchend", function(/**@type {TouchEvent}*/ e) {
 	}
 	e.preventDefault();
 });
-mainContent.addEventListener("mousedown", function(/**@type {MouseEvent}*/ e) {
+viewport.addEventListener("mousedown", function(/**@type {MouseEvent}*/ e) {
 	moved = 3;
 	mouseDown = e.button + 1;
 
@@ -864,8 +865,8 @@ mainContent.addEventListener("mousedown", function(/**@type {MouseEvent}*/ e) {
 		placeContext.style.display = "none";
 	}
 });
-mainContent.addEventListener("mouseup", function(/**@type {MouseEvent}*/ e) {
-	if (e.target != mainContent && !canvParent2.contains(e.target)) {
+viewport.addEventListener("mouseup", function(/**@type {MouseEvent}*/ e) {
+	if (e.target != viewport && !canvParent2.contains(e.target)) {
 		return (moved = 3, mouseDown = 0);
 	}
 
@@ -891,7 +892,7 @@ placeContextInfoButton.addEventListener("click", function(e) {
 	const py = Number(placeContext.dataset.y);
 	showPlacerInfo(px, py);
 });
-mainContent.addEventListener("contextmenu", function(e) {
+viewport.addEventListener("contextmenu", function(e) {
 	placeContext.style.display = "block";
 	const canvasPos = screenToCanvas(e.clientX, e.clientY);
 	placeContext.dataset.x = String(canvasPos.x);
@@ -951,7 +952,7 @@ function transform() {
 	const width = z * canvas.width * 50;
 	const height = z * canvas.height * 50;
 
-	canvParent1.style.transform = `translate(${translateX + innerWidth / 2}px, ${translateY + mainContent.offsetHeight / 2}px) scale(${scale})`;
+	canvParent1.style.transform = `translate(${translateX + innerWidth / 2}px, ${translateY + viewport.offsetHeight / 2}px) scale(${scale})`;
 	canvParent2.style.transform = canvParent1.style.transform;
 	canvSelect.style.transform = `translate(${Math.floor(x)}px, ${Math.floor(y)}px) scale(0.01)`;
 	canvas.style.width = `${width}px`;
@@ -971,7 +972,7 @@ function screenToCanvas(clientX, clientY) {
 	const translateY = y * z * -50;
 
 	const canvasX = (clientX - innerWidth / 2 - translateX) / scale;
-	const canvasY = (clientY - mainContent.offsetHeight / 2 - translateY) / scale;
+	const canvasY = (clientY - viewport.offsetHeight / 2 - translateY) / scale;
 
 	return { x: canvasX, y: canvasY };
 }
@@ -1147,7 +1148,7 @@ export function setSize(w, h = w) {
 }
 
 function onMainContentResize() {
-	minZoom = Math.min(innerWidth / canvas.width, mainContent.offsetHeight / canvas.height) / 100;
+	minZoom = Math.min(innerWidth / canvas.width, viewport.offsetHeight / canvas.height) / 100;
 	pos();
 }
 
@@ -1157,14 +1158,14 @@ export let mouseDown = 0
 export let mx = 0
 export let my = 0
 
-mainContent.addEventListener("mousemove", function(/** @type {{ target: any; clientX: number; clientY: number; }} */ e) {
+viewport.addEventListener("mousemove", function(/** @type {{ target: any; clientX: number; clientY: number; }} */ e) {
 	lastMouseMove = Date.now();
-	if (e.target != mainContent && !canvParent2.contains(e.target)) {
+	if (e.target != viewport && !canvParent2.contains(e.target)) {
 		return;
 	}
 	moved--;
 	let dx = -(mx - (mx = e.clientX - innerWidth / 2));
-	let dy = -(my - (my = e.clientY - mainContent.offsetHeight / 2));
+	let dy = -(my - (my = e.clientY - viewport.offsetHeight / 2));
 	if (dx != dx || dy != dy) {
 		return;
 	}
@@ -1178,8 +1179,8 @@ mainContent.addEventListener("mousemove", function(/** @type {{ target: any; cli
 	}
 })
 
-mainContent.addEventListener("wheel", function(/** @type {{ target: any; deltaY: number; }} */ e) {
-	if (e.target != mainContent && !canvParent2.contains(e.target)) {
+viewport.addEventListener("wheel", function(/** @type {{ target: any; deltaY: number; }} */ e) {
+	if (e.target != viewport && !canvParent2.contains(e.target)) {
 		return
 	}
 	const d = Math.max(minZoom / z, Math.min(3 ** Math.max(-0.5, Math.min(0.5, e.deltaY * -0.01)), 1 / z));
@@ -1205,7 +1206,7 @@ function setPlaceContextPosition(px, py, z) {
 		const translateX = x * z * -50;
 		const translateY = y * z * -50;
 		const screenX = (px * scale) + translateX + innerWidth / 2;
-		const screenY = (py * scale) + translateY + mainContent.offsetHeight / 2;
+		const screenY = (py * scale) + translateY + viewport.offsetHeight / 2;
 		placeContext.style.left = `${screenX}px`;
 		placeContext.style.top = `${screenY}px`;
 	}
@@ -1336,7 +1337,7 @@ export function set(x, y, colour) {
 	}
 }
 
-mainContent.addEventListener("touchmove", function(/**@type {TouchEvent}*/ e) {
+viewport.addEventListener("touchmove", function(/**@type {TouchEvent}*/ e) {
 	if (!e.target) {
 		return;
 	}
@@ -1354,7 +1355,7 @@ mainContent.addEventListener("touchmove", function(/**@type {TouchEvent}*/ e) {
 		// Single touch move
 		if (!touch2 && touch1 && touch1.identifier == touch.identifier) {
 			touchMoveDistance -= Math.abs(touch.clientY - touch1.clientY) + Math.abs(touch.clientX - touch1.clientX)
-			if (e.target != mainContent && !canvParent2.contains(touchTarget)) {
+			if (e.target != viewport && !canvParent2.contains(touchTarget)) {
 				break
 			}
 			x -= (touch.clientX - touch1.clientX) / (z * 50)
@@ -1364,7 +1365,7 @@ mainContent.addEventListener("touchmove", function(/**@type {TouchEvent}*/ e) {
 
 		// Multi-touch move
 		else if (touch1 && touch2) {
-			if (e.target != mainContent && !canvParent2.contains(touchTarget)) {
+			if (e.target != viewport && !canvParent2.contains(touchTarget)) {
 				break
 			}
 			let currentTouch = touch1.identifier == touch.identifier ? touch1 : (touch2.identifier == touch.identifier ? touch2 : null)
@@ -1402,7 +1403,7 @@ function clicked(clientX, clientY) {
 	}
 
 	clientX = Math.floor(x + (clientX - innerWidth / 2) / z / 50) + 0.5;
-	clientY = Math.floor(y + (clientY - mainContent.offsetHeight / 2) / z / 50) + 0.5;
+	clientY = Math.floor(y + (clientY - viewport.offsetHeight / 2) / z / 50) + 0.5;
 	if (clientX == Math.floor(x) + 0.5 && clientY == Math.floor(y) + 0.5) {
 		clientX -= 0.5;
 		clientY -= 0.5;
@@ -3247,8 +3248,8 @@ checkVerifiedAppStatus().then(status => {
 
 	function blockAccess() {
 		window.location.replace("https://rplace.live/fakeapp");
-		mainContent.style.opacity = "0.6";
-		mainContent.style.pointerEvents = "none";
+		viewport.style.opacity = "0.6";
+		viewport.style.pointerEvents = "none";
 		//alert("Error: App failed verification - game is being accessed via an unofficial or unauthorised site or app\n" +
 		//	"Please report to developers or visit the game online at https://rplace.live");
 	}
@@ -3279,7 +3280,7 @@ if (!mobile) {
 	}
 	window.addEventListener("wheel", function(e) {
 		const targetElement = /**@type {HTMLElement}*/(e.target);
-		if (e.target == mainContent || canvParent2.contains(targetElement)) {
+		if (e.target == viewport || canvParent2.contains(targetElement)) {
 			e.preventDefault()
 		}
 	}, { passive: false })

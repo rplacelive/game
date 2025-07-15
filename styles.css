@@ -1,7 +1,6 @@
 * {
 	margin: 0;
 	padding: 0;
-	touch-action: none
 }
 
 *, *::before, *::after {
@@ -96,7 +95,7 @@ body {
 }
 
 #placeContext {
-	z-index: 2;
+	z-index: 3;
 }
 
 .loading-logo {
@@ -170,6 +169,15 @@ btn{
 	transform: scale(1.2) rotate(-10deg);
 }
 
+/** Main game viewport elements*/
+#viewport {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	touch-action: none;
+}
 #canvparent1 {
 	position: absolute;
 	font-size: 0;
@@ -822,10 +830,6 @@ body[eventphase="3"] .coverer-title {
 	flex-grow: 1;
 }
 
-#chatMessages, #chatMessages * {
-	touch-action: pan-y;
-}
-
 #chatMessages > .message {
 	position: relative;
 	display: block;
@@ -1272,10 +1276,6 @@ kbd {
 	display: block;
 }
 
-/* TODO: Classify  to generealise functionality */
-#themeDrop, #themeDrop *, #channelDrop, #channelDrop * {
-	touch-action: pan-y;
-}
 #channelDrop {
 	overflow-y: scroll;
 	max-height: 400px;
@@ -1396,10 +1396,6 @@ kbd {
 	display: flex;
 	visibility: hidden;
 	overflow: auto;
-	touch-action: pan-y;
-}
-#more * {
-	touch-action: pan-y;
 }
 #out #closebtn {
 	display: none;
@@ -1501,21 +1497,6 @@ postcopy span {
 	max-height: 90vh;
 }
 
-.august21-popup-content {
-	display: flex;
-	flex-direction: column;
-	row-gap: 16px;
-	touch-action: pan-y;
-	overflow-y: auto;
-}
-
-.hidden-question {
-	display: block;
-	cursor: pointer;
-	font-size: 8px;
-	opacity: 0.3;
-}
-
 /* TODO: Clean up and separate out into theme specific CSS files */
 r-live-chat-message r-emoji-panel {
 	right: 5px;
@@ -1615,7 +1596,6 @@ r-live-chat-message .reaction-body {
 	display: flex;
 	flex-direction: column;
 	row-gap: 4px;
-	touch-action: pan-y;
 }
 r-live-chat-message .reaction-details[open] {
 	border-radius: 4px;
@@ -1643,9 +1623,6 @@ r-live-chat-message .reactor {
 	resize: vertical;
 	min-height: 120px;
 	padding: 0;
-}
-.context-panel, .context-panel * {
-	touch-action: pan-y;
 }
 .context-panel[open] {
 	display: block;
@@ -1780,8 +1757,7 @@ r-gif video {
 
 #editLocalStorageList {
 	overflow-y: auto;
-    max-height: 256px;
-    touch-action: pan-y;
+	max-height: 256px;
 	display: flex;
 	flex-direction: column;
 	row-gap: 5px;

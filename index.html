@@ -52,9 +52,50 @@
 			</div>
 		</div>
 		<div id="maincontent">
+			<!-- Special effects background -->
 			<div id="bgWrapper" style="z-index: -1; position: absolute; pointer-events: none; left: 0; top: 0; width: 100%; height: 100%;">
 				<!--Special background effects or features can be rendered within here-->
 			</div>
+
+			<!-- Main game viewport -->
+			<div id="viewport" noselect>
+				<canvas id="canvas" width="0" height="0" noselect></canvas>
+				<div id="canvparent1" noselect>
+					<img id="edge" height="226" width="290" src="images/snoo-edge.png" />
+				</div>
+				<canvas id="viewportCanvas"></canvas>
+				<div id="canvparent2" noselect>
+					<div id="canvselect">
+						<img theme="pixelselect" src="/svg/pixel-select-2022.svg" style="position: absolute; top: -10%; left: -10%; width: 120%; height: 120%" ondragstart="return false">
+					</div>
+					<img id="templateImage" width="auto" height="auto" ondrag="return">
+					<placechat id="idPosition" style="display: none;">
+						<span translate="placedBy">Placed by:</span>
+						<span><!--placer name||id--></span>
+					</placechat>
+				</div>
+
+				<div id="placeContext" class="context-menu" style="display:none">
+					<menu>
+						<li><button type="button" id="placeContextReportButton" disabled>Report here</button></li>
+						<li><button type="button" id="placeContextInfoButton">Show pixel placer info</button></li>
+						<li id="placeContextModItem"><button type="button" id="placeContextModButton" disabled>Moderate here</button></li>
+					</menu>
+				</div>
+			</div>
+
+			<!-- Game layout/HUD Elements -->
+			<button type="button" noselect id="closebtn" class="layout" title="More">...</button>
+			<r-position-indicator id="positionIndicator"></r-position-indicator>
+			<button type="button" noselect id="helpbtn" class="layout" title="Help" onclick="if (modal.open) { modal.close() } else { modal.showModal() }">
+				<img class="icon-image" alt="?" src="/svg/help.svg">
+			</button>
+			<button type="button" id="place" translate="connecting" noselect>Connecting...</button>
+			<button type="button" id="chatbtn" class="layout" noselect>
+				<img alt="Chat" class="icon-image" src="/svg/chat.svg" style="width:16px; height:21px">
+			</button>
+
+			<!-- Popups and dialogs -->
 			<div id="overlayMenuOld" noselect class="toast-menu">
 				<div style="display: flex;">
 					<h2 title="Make use of a canvas overlay image in order to help yourself better position your pixels" style="display: inline;flex-grow: 1;">Overlay:</h2>
@@ -216,30 +257,6 @@
 					<button id="modCancelButton" style="flex-grow: 1;">Cancel</button>
 				</div>
 			</div>
-			<canvas id="canvas" width="0" height="0" noselect></canvas>
-			<div id="canvparent1" noselect>
-				<img id="edge" height="226" width="290" src="images/snoo-edge.png" />
-			</div>
-			<canvas id="viewportCanvas"></canvas>
-			<div id="canvparent2" noselect>
-				<div id="canvselect">
-					<img theme="pixelselect" src="/svg/pixel-select-2022.svg" style="position: absolute; top: -10%; left: -10%; width: 120%; height: 120%" ondragstart="return false">
-				</div>
-				<img id="templateImage" width="auto" height="auto" ondrag="return">
-				<placechat id="idPosition" style="display: none;">
-					<span translate="placedBy">Placed by:</span>
-					<span><!--placer name||id--></span>
-				</placechat>
-			</div>
-
-			<div id="placeContext" class="context-menu" style="display:none">
-				<menu>
-					<li><button type="button" id="placeContextReportButton" disabled>Report here</button></li>
-					<li><button type="button" id="placeContextInfoButton">Show pixel placer info</button></li>
-					<li id="placeContextModItem"><button type="button" id="placeContextModButton" disabled>Moderate here</button></li>
-				</menu>
-			</div>
-
 			<div noselect id="captchaPopup" style="display: none;">
 				<canvas id="captchaCanvas" width="500" height="800"></canvas>
 				<h1 noselect style="color: grey;">🤔 Sorry for interrupting, but</h1>
@@ -250,65 +267,11 @@
 				<a style="text-align: center;" href=".">(generate new captcha)</a>
 				<div id="captchaOptions"><!--clickable captcha answers--></div>
 			</div>
-
-			<!-- Layout/HUD Elements -->
-			<button type="button" noselect id="closebtn" class="layout" title="More">...</button>
-			<r-position-indicator id="positionIndicator"></r-position-indicator>
-			<button type="button" noselect id="helpbtn" class="layout" title="Help" onclick="if (modal.open) { modal.close() } else { modal.showModal() }">
-				<img class="icon-image" alt="?" src="/svg/help.svg">
-			</button>
-			<button type="button" id="place" translate="connecting" noselect>Connecting...</button>
-			<button type="button" id="chatbtn" class="layout" noselect>
-				<img alt="Chat" class="icon-image" src="/svg/chat.svg" style="width:16px; height:21px">
-			</button>
-
 			<dialog id="popup">
 				<div>
 					<r-close-icon onclick="localStorage.nopopup = Date.now(); popup.close()"></r-close-icon>
-					<span noselect style="font-size: 1.2em; font-weight: bold;" translate="specialEventTitle">Special event - August 21st!</span>
-					<!-- Popup content -->
-					<!--<img src="images/discord-popup.png" style="width: 100%;position: absolute;bottom: 0;cursor: pointer;"
-							onclick="window.open('https:\/\/www.reddit.com/r/place/?screenmode=fullscreen&amp;cx=585&amp;cy=362&amp;px=20')">-->
-					<!--<iframe id="timelapseEmbed" src="https://www.youtube-nocookie.com/embed/H67q2HfYl7s" title="YouTube video player"
-						frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-						allowfullscreen="true" width="100%" height="100%"></iframe>-->
-					<!--<div class="august21-popup-content">
-						<div>
-							<h1>HAPPY AUGUST 21st 🪑‍🔥🪑‍🔥 Δ ΔΔ</h1>
-							<em>A day of chaos and destruction, randomness and all things <strong>Mad.</strong></em>
-							<a class="hidden-question" href="javascript:alert('Doesn\'t matter, August 21st is forever...')">It's not August 21st though?</a>
-						</div>
-						<h2>What was that countdown thing though?</h2>
-						<p>
-							A game, canon to the site's history, community and  other memes, titled August 21st
-							and developed by Zekiah-A was planned to release as part of the August 21st event,
-							due to some very <abbr title="Context: Zekiah found out that you can't spend 25 hours per day on development (he was very surprised)">
-							random and unexpected events</abbr>, the game is expected to become available
-							to all players some time between 21/08/24 and September 11th...
-						</p>
-						<div style="position: relative;">
-							<img src="images/august21-cover.png" style="width: 100%;height: 100%;flex-grow: 1;border-radius: 4px;">
-							<span id="august21PopupLabel" style="border-radius: 100px; height: 24px; background: var(--ui-panel-bg); display: flex; column-gap: 4px;position: absolute;left: 50%;top: 50%;transform: translate(-50%);padding: 5px;line-height: 15px;background: white;">
-								<img src="/svg/lock.svg" height="16" width="16">
-								Coming soon!
-								<span id="august21PopupTimer"></span>
-							</span>
-							<button id="august21PopupButton" onclick="startAugust21Event()" style="display: none; position: absolute;left: 50%;top: 50%;transform: translate(-50%, -50%);font-size: 36px;border: 6px solid #cdcdcd;padding: 16px;height: fit-content;background: linear-gradient(to bottom right, #d6c275 0%, #cfbc6e 26%, #e5cd84 38%, #f0d990 49%, #f0d990 63%, #b9a563 100%);box-shadow: 0px 0px 16px #00000070;color: white;-webkit-text-stroke: 1px black;font-family: bold;font-weight: 800;">
-								Play now!
-							</button>
-						</div>
-						<h2>Community content:</h2>
-						<p>
-							Discover the lore, learn more, get involved, spread it everywhere. See what others have
-							made for August 21st...
-						</p>
-						<iframe src="https://www.youtube-nocookie.com/embed/opk9bwZczS8?si=Pem-cNwy7YN-8tLY" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-						<iframe src="https://www.youtube-nocookie.com/embed/92cLXnRCIZw?si=YRCyHUc08AxDFNK5" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-						<h2>So what now?</h2>
-						<p>
-							You wait. You look. Turn your eye. Look to andromeda. Do you see it?
-						</p>
-					</div>-->
+					<span noselect style="font-size: 1.2em; font-weight: bold;" translate="popupTitle"></span>
+					<!--<iframe id="popupEmbed" src="">< !-- Popup content -- ></iframe>-->
 				</div>
 			</dialog>
 			<dialog id="modal" class="modal">

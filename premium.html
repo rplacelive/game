@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Premium | rplace</title>
+	<link rel="stylesheet" href="/misc-page.css">
+	<link rel="stylesheet" href="/premium.css">
+	<script type="module" src="/src/pages/premium/premium.js"></script>
+</head>
+<body>
+	<header>
+		<a href="https://rplace.live" target="_blank" rel="noopener noreferrer">
+			<img src="/images/rplace.png" style="height: 100%;" alt="place logo">
+		</a>
+		<h1>Join rplace premium</h1>
+	</header>
+	<canvas id="backgroundPixelsCanvas" class="background-pixels-canvas"></canvas>
+<% if (isDev) { %>
+	<main class="container">
+		<div class="header">
+			<div class="premium-badge"><img src="/images/rplace.png" alt="place logo"> BRONZE TIER</div>
+			<h1>RPLACE PREMIUM</h1>
+			<p class="hero-subtitle">Join the canvas league, upgrade your pixels, and build an empire.</p>
+		</div>
+
+		<div class="features-grid">
+			<div class="feature-card fade-in">
+				<span class="feature-icon">🎨</span>
+				<h2 class="feature-title">Custom Canvas Vanity URLs</h2>
+				<p class="feature-description">
+					Claim your turf: <code>rplace.live/yourname</code>. Because <em>canvas4573</em> isn't cool. Yourname is.
+				</p>
+			</div>
+
+			<div class="feature-card fade-in highlight">
+				<span class="feature-icon">💸</span>
+				<h2 class="feature-title">Get Paid to Play</h2>
+				<p class="feature-description">
+					Make canvases. People join. You get credits. You're basically an entrepreneur now. Congrats.
+				</p>
+			</div>
+
+			<div class="feature-card fade-in">
+				<span class="feature-icon">🌈</span>
+				<h2 class="feature-title">Premium Palettes & VIP Cooldowns</h2>
+				<p class="feature-description">
+					Exclusive colours. Faster cooldowns. More tools. Less waiting, more painting. Pixels bow to you.
+				</p>
+			</div>
+
+			<div class="feature-card fade-in">
+				<span class="feature-icon">😎</span>
+				<h2 class="feature-title">Badges, Emojis & VIP Canvases</h2>
+				<p class="feature-description">
+					Look important in chat. Flex with custom emojis. Access secret premium & VIP canvases.
+				</p>
+			</div>
+
+			<div class="feature-card fade-in">
+				<span class="feature-icon">💬</span>
+				<h2 class="feature-title">Your Own Forums, Your Rules</h2>
+				<p class="feature-description">
+					Make a forum. Ban whoever you want. Start weird cults. Or just chill. It's your kingdom.
+				</p>
+			</div>
+
+			<div class="feature-card fade-in highlight">
+				<span class="feature-icon">🚀</span>
+				<h2 class="feature-title">Early Access & Beta Features</h2>
+				<p class="feature-description">
+					First dibs on new stuff. Access and test out new features and experiences.
+				</p>
+			</div>
+
+			<div class="feature-card fade-in">
+				<span class="feature-icon">📢</span>
+				<h2 class="feature-title">Boost Your Canvas, Run Ads</h2>
+				<p class="feature-description">
+					Get your canvas seen. Run ads for whatever you want across the site.
+					Push your stuff to the top and promote yourself to the masses!
+				</p>
+			</div>
+
+			<div class="feature-card fade-in">
+				<span class="feature-icon">👥</span>
+				<h2 class="feature-title">Bigger Factions. More players. More everything!</h2>
+				<p class="feature-description">
+					Player limits? Not Anymore. Enjoy bigger factions that can span across canvases,
+					Custom canvases that can allow for hundreds of players and more!
+				</p>
+			</div>
+
+			<div class="feature-card fade-in highlight">
+				<span class="feature-icon">⭐</span>
+				<h2 class="feature-title">Monthly Credits Included</h2>
+				<p class="feature-description">
+					Every month, we just give you credits. Use them on ads, boosts, whatever. Stack 'em if you want. No rules. Just pixels.
+				</p>
+			</div>
+		</div>
+
+		<div class="cta-section">
+			<a href="#" class="cta-button">👉 Upgrade to Rplace Premium 👈</a>
+			<p class="pricing-hint">Starting at $2.00/month • Cancel anytime</p>
+		</div>
+	</main>
+<% } else { %>
+	<h1>You're here too early!</h1>
+	<p>This feature is still in development. Check back on this space later to see what's new!</p>
+<% } %>
+</body>
+</html>
