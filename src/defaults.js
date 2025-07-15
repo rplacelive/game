@@ -5,7 +5,7 @@ export const DEFAULT_SERVER = "wss://server.rplace.live"
 /**
  * @constant {string} DEFAULT_BOARD
  */
-export const DEFAULT_BOARD = "wss://server.rplace.live/public/place"
+export const DEFAULT_BOARD = "https://server.rplace.live/public/place"
 /**
  * @constant {string} DEFAULT_AUTH
  */
