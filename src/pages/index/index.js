@@ -650,10 +650,11 @@ function handleDisconnect({ code, reason }) {
 	localStorage.lastDisconnect = Date.now();
 	console.log("Disconnected from server with code:", code, `(${reason})`);
 	// TODO: Look into if this logic is still necessary
-	//if (code === 1006 && !sessionStorage.err) {
-	//	sessionStorage.err = "1";
-	//	window.location.reload();
-	//}
+	if (code === 1006 && !sessionStorage.loadError) {
+		sessionStorage.loadError = "1";
+		window.location.reload();
+		console.log("Unexpected disconnect code 10006: Attempting automated reload");
+	}
 
 	connectStatus = "disconnected";
 	showLoadingScreen("disconnected", reason);
