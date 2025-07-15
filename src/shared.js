@@ -53,7 +53,6 @@ export const TRANSLATIONS = {
 		placedBy: "Placed by:",
 		lockMessage: "This canvas is locked... You can't place pixels here anymore",
 		adHidden: "Ad hidden for 14 days!",
-		specialEventTitle: "Special event - August 21st!",
 		copiedToClipboard: "Copied to clipboard!",
 		
 		// Posts
