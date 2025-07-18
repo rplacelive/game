@@ -11,7 +11,7 @@
 	<link rel="stylesheet" href="/posts.css">
 	<!--Shared resources-->
 	<script type="module" src="/src/shared.js"></script>
-	<script type="module" src="/src/shared-elements.js" defer></script>
+	<script type="module" src="/src/shared-elements.js"></script>
 	<!--Services-->
 	<script type="module" src="/src/services/account-manager.js" defer></script>
 	<script type="module" src="/src/services/posts-manager.js" defer></script>
@@ -31,27 +31,7 @@
 			placeholder="Search keyword">
 		<div><!--Spacer--></div>
 	</header>
-	<div id="sidebar" class="sidebar">
-		<a type="button" href="/posts" style="column-gap: 8px;">
-			<svg fill="currentColor" icon-name="home-fill" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"
-				width="24" height="24">
-				<path
-					d="m19.724 6.765-9.08-6.11A1.115 1.115 0 0 0 9.368.647L.276 6.765a.623.623 0 0 0 .35 1.141h.444v10.001c.001.278.113.544.31.74.196.195.462.304.739.303h5.16a.704.704 0 0 0 .706-.707v-4.507c0-.76 1.138-1.475 2.02-1.475.882 0 2.02.715 2.02 1.475v4.507a.71.71 0 0 0 .707.707h5.16c.274-.001.538-.112.732-.307.195-.195.305-.46.306-.736v-10h.445a.618.618 0 0 0 .598-.44.625.625 0 0 0-.25-.702Z">
-				</path>
-			</svg>
-			Posts
-		</a>
-		<a type="button" href="/">
-			<img alt="rplace.live" src="/svg/rplace.svg" width="24" height="24">
-			Game
-		</a>
-		<div class="sidebar-footer">
-			<a href="https://rplace.live">rplace.live</a> |
-			<a href="./disclaimer.html">disclaimer</a> |
-			<a href="https://github.com/rplacelive">github</a>
-		</div>
-	</div>
-	<div id="sidebarBackground" class="sidebar-background"></div>
+	<r-sidebar id="sidebar" mode="inline"></r-sidebar>
 	<div id="contents">
 		<div class="posts-side-panel">
 			<div class="posts-extern-buttons">

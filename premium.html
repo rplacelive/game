@@ -6,25 +6,24 @@
 	<title>Premium | rplace</title>
 	<link rel="stylesheet" href="/misc-page.css">
 	<link rel="stylesheet" href="/premium.css">
+	<link rel="stylesheet" href="/shared.css">
+	<script type="module" src="/src/shared-elements.js"></script>
+	<script type="module" src="/src/services/account-manager.js"></script>
 	<script type="module" src="/src/pages/premium/premium.js"></script>
 </head>
 <body>
-	<header>
-		<a href="https://rplace.live" target="_blank" rel="noopener noreferrer">
-			<img src="/images/rplace.png" style="height: 100%;" alt="place logo">
-		</a>
-		<h1>Join rplace premium</h1>
-	</header>
 	<canvas id="backgroundPixelsCanvas" class="background-pixels-canvas"></canvas>
+	<header is="r-header" title="Join rplace premium" short-title="premium"></header>
+	<r-sidebar id="sidebar" mode="overlay"></r-sidebar>
 <% if (isDev) { %>
 	<main class="container">
-		<div class="header">
+		<section class="header">
 			<div class="premium-badge"><img src="/images/rplace.png" alt="place logo"> BRONZE TIER</div>
 			<h1>RPLACE PREMIUM</h1>
 			<p class="hero-subtitle">Join the canvas league, upgrade your pixels, and build an empire.</p>
-		</div>
+		</section>
 
-		<div class="features-grid">
+		<section class="features-grid">
 			<div class="feature-card fade-in">
 				<span class="feature-icon">🎨</span>
 				<h2 class="feature-title">Custom Canvas Vanity URLs</h2>
@@ -98,12 +97,12 @@
 					Every month, we just give you credits. Use them on ads, boosts, whatever. Stack 'em if you want. No rules. Just pixels.
 				</p>
 			</div>
-		</div>
+		</section>
 
-		<div class="cta-section">
+		<section class="cta-section">
 			<a href="#" class="cta-button">👉 Upgrade to Rplace Premium 👈</a>
 			<p class="pricing-hint">Starting at $2.00/month • Cancel anytime</p>
-		</div>
+		</section>
 	</main>
 <% } else { %>
 	<h1>You're here too early!</h1>

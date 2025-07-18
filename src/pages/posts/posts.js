@@ -5,48 +5,11 @@ import { getAccount, openAccountFrame } from "../../services/account-manager.js"
 import { addIpcMessageHandler, handleIpcMessage, sendIpcMessage, makeIpcRequest } from "shared-ipc";
 
 //  Main
-const sidebar = /**@type {HTMLElement}*/($("#sidebar"));
-const sidebarBackground = /**@type {HTMLElement}*/($("#sidebarBackground"));
-let sidebarDragLastX = 0, sidebarDragStartX = 0, sidebarDragStartY = 0,
-	sidebarOpen = 0, sidebarDrag = 0, sidebarDragging = false
-
-const sidebarButton = /**@type {HTMLButtonElement}*/($("#sidebarButton"));
-sidebarButton.addEventListener("click", openSidebar);
-
-function openSidebar() {
-	sidebarOpen = 1;
-	sidebarDragging = false;
-	sidebar.tabIndex = 0;
-	transitionSidebar();
-}
-function closeSidebar() {
-	sidebarOpen = 0;
-	sidebarDrag = 0;
-	sidebarDragging = false;
-	sidebar.tabIndex = -1;
-	transformSidebar();
-}
-function transitionSidebar() {
-	sidebarDrag = lerp(sidebarDrag, sidebarOpen, 0.3)
-	if ((!sidebarOpen && sidebarDrag < 0.05) || (sidebarOpen && sidebarDrag > 0.95)) {
-		sidebarDrag = Math.round(sidebarDrag)
-	}
-	else {
-		requestAnimationFrame(transitionSidebar)
-	}
-	transformSidebar()
-}
-function transformSidebar() {
-	if (window.innerWidth < 1200) {
-		sidebarBackground.style.background = `rgba(0, 0, 0, ${0.2 * sidebarDrag})`
-		sidebar.style.transform = `translateX(${(sidebarDrag - 1) * 100}%)`
-	}
-	else {
-		sidebarBackground.style.background = `rgba(0, 0, 0, 0)`
-		sidebar.style.transform = `translateX(0%)`
-	}
-}
-transformSidebar()
+const sidebar = /**@type {import("../../shared-elements.js").Sidebar}*/($("#sidebar"));
+const sidebarButton = /**@type {HTMLElement}*/($("#sidebarButton"));
+sidebarButton.addEventListener("click", function(/**@type {Event}*/e) {
+	sidebar.open();
+});
 
 const postsSearchbar = /**@type {HTMLInputElement}*/($("#postsSearchbar"));
 postsSearchbar.addEventListener("change", function(/**@type {Event}*/e) {
@@ -266,34 +229,6 @@ window.addEventListener("DOMContentLoaded", async function() {
 				tryLoadBottomPosts();
 			}
 		}, { passive: true })
-	
-		// Sidebar navigation
-		contents.addEventListener("touchstart", (/**@type {TouchEvent}*/ e) => {
-			sidebarDragging = true;
-			sidebarDragStartX = sidebarDragLastX = e.touches[0].clientX;
-			sidebarDragStartY = e.touches[0].clientY;
-			transformSidebar();
-		})
-		contents.addEventListener("touchmove", (/**@type {TouchEvent}*/ e) => {
-			if (!sidebarDragging) {
-				return;
-			}
-			const deltaY = sidebarDragStartY - e.touches[0].clientY;
-			if (deltaY > 16 && sidebarDrag < 0.1) {
-				closeSidebar();
-			}
-			const deltaX = e.touches[0].clientX - sidebarDragLastX;
-			sidebarDrag = Math.max(0, Math.min(sidebarDrag + (deltaX / sidebar.offsetWidth), 1));
-			transformSidebar();
-			sidebarDragLastX = e.touches[0].clientX;
-		})
-		contents.addEventListener("touchend", (/** @type {any} */ e) => {
-			sidebarOpen = sidebarDrag > 0.3 ? 0 : 1;
-			sidebarDragging = false;
-			requestAnimationFrame(transitionSidebar);
-		})
-		contents.addEventListener("click", closeSidebar);
-		window.addEventListener("resize", transformSidebar);
 	}	
 });
 

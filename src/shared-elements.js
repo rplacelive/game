@@ -1,7 +1,9 @@
 import { LitElement, html } from "lit-element"
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
+import { styleMap } from "lit/directives/style-map.js";
 import { DEFAULT_SERVER, EMOJIS, CUSTOM_EMOJIS } from "./defaults.js";
-import { translate } from "./shared.js";
+import { lerp, translate } from "./shared.js";
+import { openAccountFrame } from "./services/account-manager.js";
 
 class Spoiler extends HTMLElement {
 	constructor() {
@@ -33,8 +35,8 @@ class Gif extends LitElement {
 
 	constructor() {
 		super()
-		this.source = ''
-		this.key = ''
+		this.source = ""
+		this.key = ""
 		this.gifData = null
 		this.isLoading = true
 	}
@@ -50,7 +52,7 @@ class Gif extends LitElement {
 
 	updated(changedProperties) {
 		super.updated(changedProperties)
-		if (changedProperties.has('source') || changedProperties.has('key')) {
+		if (changedProperties.has("source") || changedProperties.has("key")) {
 			this.fetchGifData()
 		}
 	}
@@ -545,7 +547,7 @@ export class EditList extends LitElement {
 
 		this.data = { ...this.data, [newKey]: "" };
 		this.dispatchEvent(new CustomEvent("change", { detail: this.data }));
-		this.dispatchEvent(new CustomEvent('itemadd', {
+		this.dispatchEvent(new CustomEvent("itemadd", {
 			detail: { key: newKey, value: "" },
 			bubbles: true,
 			composed: true
@@ -574,3 +576,184 @@ export class EditList extends LitElement {
 }
 customElements.define("r-edit-list", EditList);
 
+export class Sidebar extends LitElement {
+	static properties = {
+		sidebarOpen: { type: Number, state: true },
+		sidebarDrag: { type: Number, state: true },
+		sidebarDragging: { type: Boolean, state: true },
+		mode: { type: String, attribute: "mode" }
+	};
+
+	constructor() {
+		super();
+		this.sidebarDragLastX = 0;
+		this.sidebarDragStartX = 0;
+		this.sidebarDragStartY = 0;
+		this.sidebarOpen = 0;
+		this.sidebarDrag = 0;
+		this.sidebarDragging = false;
+		// "overlay" | "inline-overlay" | "inline"
+		this.mode = "inline-overlay";
+	}
+
+	createRenderRoot() {
+		return this;
+	}
+
+	connectedCallback() {
+		super.connectedCallback();
+
+		document.body.addEventListener("touchstart", (e) => {
+			this.sidebarDragging = true;
+			this.sidebarDragStartX = this.sidebarDragLastX = e.touches[0].clientX;
+			this.sidebarDragStartY = e.touches[0].clientY;
+		});
+
+		document.body.addEventListener("touchmove", (e) => {
+			if (!this.sidebarDragging) {
+				return;
+			}
+			const deltaX = this.sidebarDragStartX - e.touches[0].clientX;
+			if (deltaX > 15) {
+				this.close();
+			}
+			const deltaY = this.sidebarDragStartY - e.touches[0].clientY;
+			if (deltaY > 16 && this.sidebarDrag < 0.1) {
+				this.close();
+			}
+			const sidebar = /**@type {HTMLElement}*/(this.querySelector(".sidebar"));
+			if (sidebar) {
+				const deltaX = e.touches[0].clientX - this.sidebarDragLastX;
+				this.sidebarDrag = Math.max(0, Math.min(this.sidebarDrag + (deltaX / sidebar.offsetWidth), 1));
+				this.sidebarDragLastX = e.touches[0].clientX;
+				this.requestUpdate();
+			}
+		});
+
+		document.body.addEventListener("touchend", () => {
+			this.sidebarOpen = this.sidebarDrag > 0.3 ? 1 : 0;
+			this.sidebarDragging = false;
+			requestAnimationFrame(() => this.#transition());
+		});
+
+		window.addEventListener("resize", () => this.requestUpdate(), {
+			passive: true
+		});
+	}
+
+	render() {
+		const sidebarStyles = styleMap({
+			transform: (this.mode === "overlay" || window.innerWidth < 1200) ? `translateX(${(this.sidebarDrag - 1) * 100}%)` : "translateX(0%)",
+			tabIndex: this.sidebarOpen ? "0" : "-1"
+		});
+
+		const backgroundStyles = styleMap({
+			background: (this.mode === "overlay" || window.innerWidth < 1200) ? `rgba(0, 0, 0, ${0.2 * this.sidebarDrag})` : "rgba(0, 0, 0, 0)",
+			pointerEvents: this.sidebarOpen ? "auto" : "none"
+		});
+
+		return html`
+			<nav class="sidebar" style=${sidebarStyles}>
+				<a type="button" href="/posts" style="column-gap: 8px;">
+					<svg fill="currentColor" icon-name="home-fill" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"
+						width="24" height="24">
+						<path
+							d="m19.724 6.765-9.08-6.11A1.115 1.115 0 0 0 9.368.647L.276 6.765a.623.623 0 0 0 .35 1.141h.444v10.001c.001.278.113.544.31.74.196.195.462.304.739.303h5.16a.704.704 0 0 0 .706-.707v-4.507c0-.76 1.138-1.475 2.02-1.475.882 0 2.02.715 2.02 1.475v4.507a.71.71 0 0 0 .707.707h5.16c.274-.001.538-.112.732-.307.195-.195.305-.46.306-.736v-10h.445a.618.618 0 0 0 .598-.44.625.625 0 0 0-.25-.702Z">
+						</path>
+					</svg>
+					Posts
+				</a>
+				<a type="button" href="/">
+					<img alt="rplace.live" src="/svg/rplace.svg" width="24" height="24">
+					Game
+				</a>
+				<a type="button" href="/premium">
+					<img alt="star" src="/svg/premium.svg" width="24" height="24">
+					Premium
+				</a>
+				<nav class="sidebar-footer">
+					<a href="https://rplace.live">rplace.live</a> |
+					<a href="./disclaimer.html">disclaimer</a> |
+					<a href="https://github.com/rplacelive">github</a>
+				</nav>
+			</nav>
+			<div class="sidebar-background" style=${backgroundStyles} @click=${this.close} @touchstart=${this.close}></div>`;
+	}
+
+	open() {
+		this.sidebarOpen = 1;
+		this.sidebarDragging = false;
+		this.#transition();
+		this.requestUpdate();
+	}
+
+	close() {
+		this.sidebarOpen = 0;
+		this.sidebarDrag = 0;
+		this.sidebarDragging = false;
+		this.requestUpdate();
+	}
+
+	#transition() {
+		this.sidebarDrag = lerp(this.sidebarDrag, this.sidebarOpen, 0.3);
+		if ((!this.sidebarOpen && this.sidebarDrag < 0.05) || (this.sidebarOpen && this.sidebarDrag > 0.95)) {
+			this.sidebarDrag = Math.round(this.sidebarDrag);
+		}
+		else {
+			requestAnimationFrame(() => this.#transition());
+		}
+
+		this.requestUpdate();
+	}
+}
+customElements.define("r-sidebar", Sidebar);
+
+class Header extends LitElement {
+	static properties = {
+		title: { type: String },
+		scrolled: { type: Boolean, state: true }
+	};
+
+	constructor() {
+		super();
+		this.title = "rplace.live";
+	}
+
+	createRenderRoot() {
+		return this;
+	}
+
+	connectedCallback() {
+		super.connectedCallback();
+
+		document.addEventListener("scroll", (e) => {
+			if (window.scrollY > 0) {
+				this.classList.add("scrolled");
+			}
+			else {
+				this.classList.remove("scrolled");
+			}
+		}, { passive: true });
+	}
+
+	render() {
+		// @ts-ignore
+		const sidebarPresent = typeof window.sidebar !== "undefined";
+
+		return html`
+			${sidebarPresent ? html`
+				<button id="sidebarButton" type="button" class="header-menu" onclick="sidebar?.open()">
+					<img src="./svg/menu.svg" alt="Menu" width="36" height="36">
+				</button>` : html``}
+			<img src="./images/rplace.png" alt="Rplace logo">
+			<h1>${this.title}</h1>
+			<button type="button" id="accountButton" class="header-account" @click=${this.#handleAccountButtonClick}>
+				<img src="/svg/account.svg" alt="Menu" width="36" height="36">
+			</button>`;
+	}
+
+	#handleAccountButtonClick() {
+		openAccountFrame();
+	}
+}
+customElements.define("r-header", Header, { extends: "header" });

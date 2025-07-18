@@ -1,3 +1,5 @@
+import { openAccountFrame } from "../../services/account-manager.js";
+
 // Canvas setup
 const canvas = /**@type {HTMLCanvasElement}*/(document.getElementById("backgroundPixelsCanvas"));
 const ctx = /**@type {CanvasRenderingContext2D}*/(canvas.getContext("2d"));
@@ -12,7 +14,7 @@ function resizeCanvas() {
 resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
 
-// Pixel colors
+// Pixel colours
 const colours = [
 	"rgba(255, 255, 255, 0.1)",
 	"rgba(255, 107, 107, 0.3)",

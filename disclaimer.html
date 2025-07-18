@@ -5,12 +5,13 @@
 	<title>Disclaimer | rplace</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<link rel="stylesheet" href="/misc-page.css">
+	<link rel="stylesheet" href="/shared.css">
+	<script type="module" src="/src/shared-elements.js"></script>
+	<script type="module" src="/src/services/account-manager.js"></script>
 </head>
 <body>
-	<header>
-		<img src="./images/rplace.png" alt="Rplace logo">
-		<h1>rplace.live disclaimer</h1>
-	</header>
+	<header is="r-header" title="Disclaimer"></header>
+	<r-sidebar id="sidebar" mode="overlay"></r-sidebar>
 	<section class="reddit-cards-container">
 		<article>
 			<div>

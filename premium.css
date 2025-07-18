@@ -21,6 +21,13 @@ body {
 	    font-family: "IBM Plex Sans", sans-serif;
 }
 
+header, .sidebar {
+	z-index: 12 !important;
+}
+.sidebar-background {
+	z-index: 11 !important;
+}
+
 .container {
 	max-width: 1200px;
 	margin: 0 auto;

@@ -8,7 +8,8 @@
 	}
 }
 /* Elements */
-* {
+*, *::before, *::after {
+	box-sizing: border-box;
 	touch-action: auto !important;
 }
 dialog {
@@ -585,52 +586,8 @@ html[embedded="false"] .posts-extern-buttons {
 html[embedded="true"] header {
 	display: none;
 }
-.sidebar-background {
-	position: fixed;
-	background: rgba(0, 0, 0, 0.2);
-	width: 100%;
-	height: 100%;
-	top: 64px;
-	z-index: 1;
-	pointer-events: none;
-}
-.sidebar {
-	position: fixed;
-	top: 64px;
-	left: 0;
-	width: var(--sidebar-width);
-	height: calc(100% - 64px);
-	background: white;
-	z-index: 2;
-	border-left: 1px solid white;
-	display: flex;
-	flex-direction: column;
-	row-gap: 8px;
-	padding: 8px;
-}
 html[embedded="true"] .sidebar {
 	display: none;
-}
-.sidebar-footer {
-	margin-top: auto;
-	text-align: center;
-	display: flex;
-	justify-content: space-between;
-	padding-left: 16px;
-	padding-right: 16px;
-}
-.sidebar > a {
-	height: 48px;
-	padding: 8px;
-	display: flex;
-	align-items: center;
-	text-decoration: none;
-	color: black;
-	border-radius: 8px;
-	column-gap: 8px;
-}
-.sidebar > a:hover {
-	background: #F6F8F9;
 }
 .post-input {
 	background-color: #F6F7F8;
