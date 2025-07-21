@@ -912,7 +912,12 @@ let x = 0;
 let y = 0;
 let z = 0;
 let minZoom = 0;
+// Composited board with changes and socket pixels
 /**@type {Uint8Array|null}*/let BOARD = null;
+// Raw board, changes and socket pixels layers
+/**@type {Uint8Array|null}*/let CHANGES = null;
+/**@type {Uint8Array|null}*/let RAW_BOARD = null;
+/**@type {Uint8Array|null}*/let SOCKET_PIXELS = null;
 
 
 // Prompt user if they want to install site as PWA if they press the modal button
@@ -1238,7 +1243,10 @@ function renderAll() {
 			data[i] = PALETTE[BOARD[i]]
 		}
 
-		boardRenderer?.setSources(BOARD, new Uint32Array(PALETTE), WIDTH, HEIGHT);
+		// Pass data to WebGL board renderer
+		if (RAW_BOARD && CHANGES && SOCKET_PIXELS) {
+			boardRenderer?.setSources(RAW_BOARD, CHANGES, SOCKET_PIXELS, new Uint32Array(PALETTE), WIDTH, HEIGHT);
+		}
 	}
 	if (canvasCtx) {
 		canvasCtx.putImageData(img, 0, 0);
@@ -1258,12 +1266,26 @@ function renderAll() {
  * @param { number} colour
  */
 function set(x, y, colour) {
-	if (!BOARD) {
+	const index = x % canvas.width + (y % canvas.height) * canvas.width;
+	seti(index, colour);
+}
+
+/**
+ * @param {number} index
+ * @param {number} colour
+ */
+function seti(index, colour) {
+	if (!BOARD || !SOCKET_PIXELS) {
+		console.error("Could not set pixel: Board or socket pixels was null");
 		return;
 	}
-	BOARD[x % canvas.width + (y % canvas.height) * canvas.width] = colour
-	u32Colour[0] = PALETTE[colour]
+
+	BOARD[index] = colour;
+	SOCKET_PIXELS[index] = colour;
+	u32Colour[0] = PALETTE[colour];
 	if (canvasCtx) {
+		const x = index % WIDTH;
+		const y = Math.floor(index / WIDTH);
 		canvasCtx.fillStyle = "#" + (u8ArrColour[0] < 16 ? "0" : "") + u8ArrColour[0].toString(16) + (u8ArrColour[1] < 16 ? "0" : "") + u8ArrColour[1].toString(16) + (u8ArrColour[2] < 16 ? "0" : "") + u8ArrColour[2].toString(16) + (u8ArrColour[3] < 16 ? "0" : "") + u8ArrColour[3].toString(16);
 		canvasCtx.clearRect(x, y, 1, 1);
 		canvasCtx.fillRect(x, y, 1, 1);
@@ -1708,7 +1730,12 @@ function runLengthChanges(data, buffer) {
 	if (w != WIDTH || h != HEIGHT) {
 		setSize(w, h);
 	}
-	BOARD = new Uint8Array(buffer);
+
+	RAW_BOARD = new Uint8Array(buffer);
+	BOARD = new Uint8Array(RAW_BOARD);
+	CHANGES = new Uint8Array(w * h).fill(255);
+	SOCKET_PIXELS = new Uint8Array(2 * h).fill(255);
+
 	while (i < data.byteLength) {
 		let cell = data.getUint8(i++);
 		let c = cell >> 6;
@@ -1716,11 +1743,15 @@ function runLengthChanges(data, buffer) {
 		else if (c == 2) c = data.getUint16(i++), i++;
 		else if (c == 3) c = data.getUint32(i++), i += 3;
 		boardI += c;
-		BOARD[boardI++] = cell & 63;
+		
+		// Update both the working board and mark changes
+		BOARD[boardI] = cell & 63;
+		CHANGES[boardI] = cell & 63;
+		
+		boardI++;
 	}
 	renderAll();
 }
-
 // The new server's equivalent for run length changes, based upon run length encoding
 /**
  * @param {ArrayBuffer} data
@@ -1801,23 +1832,6 @@ async function fetchBoard() {
 // We don't await this yet, when the changes (old server) / canvas width & height (new server) packet
 // comes through, it will await this unawaited state until it is fulfilled, so we are sure we have all the data
 /**@type {Promise<ArrayBuffer|null>}*/let preloadedBoard = fetchBoard()
-
-/**
- * @param {number} i
- * @param {number} b
- */
-function seti(i, b) {
-	if (!BOARD) {
-		return;
-	}
-
-	BOARD[i] = b
-	u32Colour[0] = PALETTE[b]
-	if (canvasCtx) {
-		canvasCtx.fillStyle = "#" + (u8ArrColour[0] < 16 ? "0" : "") + u8ArrColour[0].toString(16) + (u8ArrColour[1] < 16 ? "0" : "") + u8ArrColour[1].toString(16) + (u8ArrColour[2] < 16 ? "0" : "") + u8ArrColour[2].toString(16) + (u8ArrColour[3] < 16 ? "0" : "") + u8ArrColour[3].toString(16)
-		canvasCtx.fillRect(i % WIDTH, Math.floor(i / WIDTH), 1, 1)
-	}
-}
 
 // TODO: A CSS class on colours could handle this
 function hideIndicators() {
@@ -2792,6 +2806,7 @@ function defaultServer() {
  * @param {Storage} storage
  */
 function server(serverAddress, boardAddress, vip = "", storage = localStorage) {
+	// TODO: This is outdated and dumb
 	if (!serverAddress) {
 		storage.vip = storage.vip2
 		delete storage.vip2
