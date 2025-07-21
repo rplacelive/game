@@ -47,8 +47,8 @@ select {
 }
 
 input, button, textarea, .labelled-slider {
-	color: unset;
-	font: unset;
+	color: var(--ui-text);
+	font-family: bold;
 	background-color: var(--ui-panel-bg);
 	border-radius: 10px;
 	font-size: 16px;
@@ -64,6 +64,7 @@ input, button, textarea, .labelled-slider {
 
 button, input[type="button"] {
 	cursor: pointer;
+	user-select: none;
 }
 
 input[type="button"]:disabled, button:disabled {

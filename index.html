@@ -221,23 +221,35 @@
 			<div id="advancedViewMenu" class="toast-menu">
 				<div class="toast-header">
 					<h2>Advanced view options:</h2>
+					<r-close-icon onclick="advancedViewMenu.removeAttribute('open')" class="active"></r-close-icon>
 				</div>
 				<div class="toast-body">
-					<h3>Enabled layers:</h3>
-					<form id="viewLayersForm" class="noselect" style="display: flex; flex-direction: column;">
-						<label>
-							Canvas layer:
-							<input type="checkbox" id="viewCanvasLayer" checked="true">
-						</label>
-						<label>
-							Changes layer:
-							<input type="checkbox" id="viewChangesLayer" checked="true">
-						</label>
-						<label>
-							Pixels layer:
-							<input type="checkbox" id="viewSocketPixelsLayer" checked="true">
-						</label>
-					</form>
+					<h3>Selection mode:</h3>
+					<button type="button" disabled>+ Create a selection</button>
+					<h3>Render layers:</h3>
+					<p>
+						Control what board layers are being rendered by the game:
+					</p>
+					<ul class="avm-view-layers noselect">
+						<li>
+							<label>
+								Canvas layer:
+								<input type="checkbox" id="viewCanvasLayer" checked="true">
+							</label>
+						</li>
+						<li>
+							<label>
+								Changes layer:
+								<input type="checkbox" id="viewChangesLayer" checked="true">
+							</label>
+						</li>
+						<li>
+							<label>
+								Pixels layer:
+								<input type="checkbox" id="viewSocketPixelsLayer" checked="true">
+							</label>
+						</li>
+					</ul>
 				</div>
 			</div>
 			<div id="overlayMenuOld" noselect class="toast-menu">

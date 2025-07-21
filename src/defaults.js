@@ -189,8 +189,8 @@ export const LANG_INFOS = new Map([
  * @constant {Map<string, ThemeInfo>} DEFAULT_THEMES
  */
 export const DEFAULT_THEMES = new Map([
-	["r/place 2022", { id: "r/place 2022", css: "/css/rplace-2022.css", cssVersion: "20", pixelselect: "/svg/pixel-select-2022.svg" }],
-	["r/place 2023", { id: "r/place 2023", css: "/css/rplace-2023.css", cssVersion: "20", pixelselect: "/svg/pixel-select-2023.svg" }]
+	["r/place 2022", { id: "r/place 2022", css: "/css/rplace-2022.css", cssVersion: "21", pixelselect: "/svg/pixel-select-2022.svg" }],
+	["r/place 2023", { id: "r/place 2023", css: "/css/rplace-2023.css", cssVersion: "21", pixelselect: "/svg/pixel-select-2023.svg" }]
 ])
 
 /**

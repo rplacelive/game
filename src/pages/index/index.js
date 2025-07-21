@@ -193,7 +193,6 @@ const themeDrop = /**@type {HTMLElement}*/($("#themeDrop"));
 const themeDropName = /**@type {HTMLElement}*/($("#themeDropName"));
 const themeDropParent = /**@type {HTMLElement}*/($("#themeDropParent"));
 const advancedViewMenu = /**@type {HTMLElement}*/($("#advancedViewMenu"));
-const viewLayersForm = /**@type {HTMLFormElement}*/($("#viewLayersForm"));
 const viewCanvasLayer = /**@type {HTMLInputElement}*/($("#viewCanvasLayer"));
 const viewChangesLayer = /**@type {HTMLInputElement}*/($("#viewChangesLayer"));
 const viewSocketPixelsLayer = /**@type {HTMLInputElement}*/($("#viewSocketPixelsLayer"));
@@ -2800,9 +2799,6 @@ messageInputEmojiPanel.addEventListener("emojiselection", (/**@type {CustomEvent
 
 
 // Advanced view menu
-viewLayersForm.addEventListener("submit", function(e) {
-	e.preventDefault();
-});
 viewCanvasLayer.addEventListener("change", function() {
 	boardRenderer?.setLayerEnabled(0, viewCanvasLayer.checked);
 });

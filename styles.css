@@ -1096,8 +1096,13 @@ body[eventphase="3"] .coverer-title {
 
 .toast-menu .toast-header {
 	position: sticky;
-	display: flex;
 	top: 0;
+	display: flex;
+	justify-content: space-between;
+}
+
+.toast-menu .toast-header r-close-icon {
+	margin-left: auto;
 }
 
 .toast-menu .toast-body {
@@ -1237,6 +1242,22 @@ body[eventphase="3"] .coverer-title {
 
 .mod-form label {
 	flex-grow: 1;
+}
+
+.avm-view-layers {
+	display: flex;
+	flex-direction: column;
+}
+
+.avm-view-layers label {
+	display: flex;
+	column-gap: 4px;
+	height: min-content;
+    align-items: center;
+}
+
+.avm-view-layers > li {
+	margin-left: 32px;
 }
 
 #serverInput {
