@@ -955,7 +955,7 @@ document.body.addEventListener("keydown", function(/**@type {KeyboardEvent}*/e) 
 			e.preventDefault();
 			moderationMenu.toggleAttribute("open");
 		}
-		else if (e.key === "V" && e.shiftKey && localStorage.vip?.startsWith("!")) {
+		else if (e.key === "V" && e.shiftKey && boardRenderer) {
 			e.preventDefault();
 			advancedViewMenu.toggleAttribute("open");
 		}
