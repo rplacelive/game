@@ -217,13 +217,27 @@ export const ADS = [
  */
 
 /**
- * @constant {PunishmentState} PUNISHMENT_STATE
+ * @enum {number} PUNISHMENT_STATE
+ * @property {number} mute - User is muted.
+ * @property {number} ban - User is banned.
+ * @property {number} appealRejected - User's appeal was rejected.
  */
-export const PUNISHMENT_STATE = {
+export const PUNISHMENT_STATE = Object.freeze({
 	mute: 0,
 	ban: 1,
 	appealRejected: 2
-}
+});
+/**
+ * @enum {number}
+ * @property {number} selectPixel - Allow selecting pixels with cursor and keyboard navigation.
+ * @property {number} selectPixelMouseOnly - Only allow cursor navigation in order to select pixels.
+ * @property {number} freeDraw - Freehand drawing mode.
+ */
+export const PLACEMENT_MODE = Object.freeze({
+	selectPixel: 0,
+	selectPixelMouseOnly: 1,
+	freeDraw: 2
+});
 
 /**
  * @constant {number} MAX_CHANNEL_MESSAGES

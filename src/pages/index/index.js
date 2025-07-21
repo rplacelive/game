@@ -1,4 +1,4 @@
-import { DEFAULT_BOARD, DEFAULT_SERVER, ADS, CHAT_COLOURS, COMMANDS, CUSTOM_EMOJIS, DEFAULT_HEIGHT, DEFAULT_PALETTE_KEYS, DEFAULT_THEMES, DEFAULT_WIDTH, EMOJIS, LANG_INFOS, MAX_CHANNEL_MESSAGES, PUNISHMENT_STATE, DEFAULT_PALETTE_USABLE_REGION, DEFAULT_PALETTE, DEFAULT_COOLDOWN } from "../../defaults.js";
+import { DEFAULT_BOARD, DEFAULT_SERVER, ADS, CHAT_COLOURS, COMMANDS, CUSTOM_EMOJIS, DEFAULT_HEIGHT, DEFAULT_PALETTE_KEYS, DEFAULT_THEMES, DEFAULT_WIDTH, EMOJIS, LANG_INFOS, MAX_CHANNEL_MESSAGES, PUNISHMENT_STATE, DEFAULT_PALETTE_USABLE_REGION, DEFAULT_PALETTE, DEFAULT_COOLDOWN, PLACEMENT_MODE } from "../../defaults.js";
 import { lang, translate, translateAll, hash, $, stringToHtml, blobToBase64, base64ToBlob }  from "../../shared.js";
 import { showLoadingScreen, hideLoadingScreen } from "./loading-screen.js";
 //import { enableDarkplace, disableDarkplace } from "./darkplace.js";
@@ -202,6 +202,7 @@ const themeDropParent = /**@type {HTMLElement}*/($("#themeDropParent"));
 /**@type {"connecting"|"connected"|"disconnected"}*/ let connectStatus = "connecting";
 /**@type {boolean}*/ let canvasLocked = false;
 /**@type {TurnstileWidget|null}*/let currentTurnstileWidget = null;
+/**@type {PLACEMENT_MODE}*/let placementMode = PLACEMENT_MODE.selectPixel;
 
 // Readonly WS & State variables
 let PALETTE_USABLE_REGION = DEFAULT_PALETTE_USABLE_REGION;
@@ -993,7 +994,7 @@ document.body.addEventListener("keydown", function(/**@type {KeyboardEvent}*/e) 
 	}
 
 	//Begin palette commands
-	if (onCooldown || canvasLocked) {
+	if (onCooldown || canvasLocked || placementMode !== PLACEMENT_MODE.selectPixel) {
 		return;
 	}
 
