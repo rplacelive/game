@@ -1,5 +1,5 @@
 import { DEFAULT_BOARD, DEFAULT_SERVER, ADS, CHAT_COLOURS, COMMANDS, CUSTOM_EMOJIS, DEFAULT_HEIGHT, DEFAULT_PALETTE_KEYS, DEFAULT_THEMES, DEFAULT_WIDTH, EMOJIS, LANG_INFOS, MAX_CHANNEL_MESSAGES, PUNISHMENT_STATE, DEFAULT_PALETTE_USABLE_REGION, DEFAULT_PALETTE, DEFAULT_COOLDOWN, PLACEMENT_MODE } from "../../defaults.js";
-import { lang, translate, translateAll, hash, $, stringToHtml, blobToBase64, base64ToBlob }  from "../../shared.js";
+import { lang, translate, translateAll, hash, $, stringToHtml, blobToBase64, base64ToBlob, lerp }  from "../../shared.js";
 import { showLoadingScreen, hideLoadingScreen } from "./loading-screen.js";
 //import { enableDarkplace, disableDarkplace } from "./darkplace.js";
 //import { enableWinter, disableWinter } from "./snowplace.js";
@@ -196,6 +196,10 @@ const advancedViewMenu = /**@type {HTMLElement}*/($("#advancedViewMenu"));
 const viewCanvasLayer = /**@type {HTMLInputElement}*/($("#viewCanvasLayer"));
 const viewChangesLayer = /**@type {HTMLInputElement}*/($("#viewChangesLayer"));
 const viewSocketPixelsLayer = /**@type {HTMLInputElement}*/($("#viewSocketPixelsLayer"));
+const spectateMenu = /**@type {HTMLElement}*/($("#spectateMenu"));
+const spectateCloseButton = /**@type {HTMLElement}*/($("#spectateCloseButton"));
+const spectateUserIdInput = /**@type {HTMLInputElement}*/($("#spectateUserIdInput"));
+const spectateStatusLabel = /**@type {HTMLElement}*/($("#spectateStatusLabel"));
 
 // WS & State variables
 /**@type {Map<number, string>}*/ const intIdNames = new Map(); // intId : name
@@ -207,6 +211,9 @@ const viewSocketPixelsLayer = /**@type {HTMLInputElement}*/($("#viewSocketPixels
 /**@type {boolean}*/ let canvasLocked = false;
 /**@type {TurnstileWidget|null}*/let currentTurnstileWidget = null;
 /**@type {PLACEMENT_MODE}*/let placementMode = PLACEMENT_MODE.selectPixel;
+/**@type {Set<number>}*/const spectators = new Set(); // Spectator int Id
+/**@type {number|null}*/let spectatingIntId = null;
+/**@type {{ x: number, y: number, z: number }|null}*/let spectateStartState = null;
 
 // Readonly WS & State variables
 let PALETTE_USABLE_REGION = DEFAULT_PALETTE_USABLE_REGION;
@@ -354,23 +361,33 @@ addIpcMessageHandler("handleSetIntId", handleSetIntId);
 /**
  * @param {{ locked: boolean, reason: string|null }} params 
  */
-function setCanvasLocked({ locked, reason }) {
-	canvasLocked = locked;
-	canvasLock.style.display = locked ? "flex" : "none";
-	// TODO: Find a more elegant solution
-	if (reason) {
+function handleSetCanvasLocked({ locked, reason }) {
+	setCanvasLocked(locked);
+
+	// TODO: This is a UX nightmare ind a more elegant solution
+	if (typeof reason === "string" && reason !== "") {
 		alert(reason);
 	}
 }
-addIpcMessageHandler("setCanvasLocked", setCanvasLocked);
+addIpcMessageHandler("setCanvasLocked", handleSetCanvasLocked);
 /**
  * @param {{ position: number, colour: number, placer:number|undefined }[]} pixels 
  */
 function handlePixels(pixels) {
 	for (const pixel of pixels) {
+		
 		seti(pixel.position, pixel.colour);
 		if (pixel.placer) {
-			intIdPositions.set(pixel.position, pixel.placer)
+			// Update positions cache
+			intIdPositions.set(pixel.position, pixel.placer);
+
+			// Spectate
+			if (pixel.placer === spectatingIntId) {
+				const x = pixel.position % WIDTH;
+				const y = Math.floor(pixel.position / WIDTH);
+				zoomIn();
+				moveTo(x, y);
+			}
 		}
 	}
 }
@@ -681,6 +698,41 @@ async function handleChallenge({ source, input }) {
 	sendIpcMessage(wsCapsule, "sendChallengeResult", result);
 }
 addIpcMessageHandler("handleChallenge", handleChallenge);
+/**
+ * @param {number} userIntId
+ */
+function handleSpectating(userIntId) {
+	spectatingIntId = userIntId;
+	startedSpectating(userIntId);
+}
+addIpcMessageHandler("handleSpectating", handleSpectating);
+/**
+ * @param {{ unspectatingIntId: number, reason:string }} arg0 
+ */
+function handleUnspectating({ unspectatingIntId, reason }) {
+	if (spectatingIntId === unspectatingIntId) {
+		spectatingIntId = null;
+	}
+
+	console.log("DEBUG:", unspectatingIntId, reason);
+
+	stoppedSpectating(unspectatingIntId, reason);
+}
+addIpcMessageHandler("handleUnspectating", handleUnspectating);
+/**
+ * @param {number} spectatorIntId
+ */
+function handleSpectated(spectatorIntId) {
+	spectators.add(spectatorIntId);
+}
+addIpcMessageHandler("handleSpectated", handleSpectated);
+/**
+ * @param {number} spectatorIntId
+ */
+function handleUnspectated(spectatorIntId) {
+	spectators.delete(spectatorIntId);
+}
+addIpcMessageHandler("handleUnspectated", handleUnspectated);
 
 // Touch & mouse canvas event handling
 let moved = 3
@@ -959,6 +1011,10 @@ document.body.addEventListener("keydown", function(/**@type {KeyboardEvent}*/e) 
 			e.preventDefault();
 			advancedViewMenu.toggleAttribute("open");
 		}
+		else if (e.key === "S" && e.shiftKey && localStorage.vip?.startsWith("!")) {
+			e.preventDefault();
+			spectateMenu.toggleAttribute("open");
+		}
 		else if (e.key === "/") {
 			e.preventDefault();
 			openChatPanel();
@@ -1042,6 +1098,21 @@ document.body.addEventListener("keydown", function(/**@type {KeyboardEvent}*/e) 
 });
 
 /**
+ * @param {boolean} locked 
+ */
+function setCanvasLocked(locked) {
+	canvasLocked = locked;
+	canvasLock.style.display = locked ? "flex" : "none";
+	if (locked) {
+		placeOkButton.classList.remove("enabled");
+	}
+	else {
+		placeOkButton.classList.add("enabled");
+	}
+	placeOkButton.disabled = locked;
+}
+
+/**
  * @param {number} w
  * @param {number} h
  */
@@ -1119,8 +1190,8 @@ viewport.addEventListener("mousemove", function(/** @type {{ target: any; client
 		x -= dx / (z * 50);
 		y -= dy / (z * 50);
 		pos();
-		if (anim) {
-			clearInterval(anim);
+		if (zoomAnim) {
+			clearInterval(zoomAnim);
 		}
 	}
 })
@@ -1208,7 +1279,7 @@ function pos(newX=x, newY=y, newZ=z) {
 			let id = intIdPositions.get(intX + intY * WIDTH);
 			if (id === undefined || id === null) {
 				// Request 16x16 region of pixel placers from server (fine tune if necessary)
-				const placersRadius = 16;
+				const placersRadius = 15;
 				const centreX = Math.floor(Math.max(intX - placersRadius / 2, 0));
 				const centreY = Math.floor(Math.max(intY - placersRadius / 2));
 				const width = Math.min(placersRadius, WIDTH - intX);
@@ -1268,6 +1339,7 @@ function renderAll() {
 /**@type {Uint32Array}*/const u32Colour = new Uint32Array(1);
 /**@type {Uint8Array}*/const u8ArrColour = new Uint8Array(u32Colour.buffer);
 
+
 /**
  * @param {number} x
  * @param {number} y
@@ -1283,6 +1355,7 @@ function set(x, y, colour) {
  * @param {number} colour
  */
 function seti(index, colour) {
+	// TODO: Make set() dominant since pixel X and Y are required in so many more locations
 	if (!BOARD || !SOCKET_PIXELS) {
 		console.error("Could not set pixel: Board or socket pixels was null");
 		return;
@@ -1315,8 +1388,8 @@ viewport.addEventListener("touchmove", function(/**@type {TouchEvent}*/ e) {
 		if (!touch) {
 			continue;
 		}
-		if (anim) {
-			clearInterval(anim);
+		if (zoomAnim) {
+			clearInterval(zoomAnim);
 		}
 		const touchTarget = /**@type {HTMLElement}*/(e.target);
 
@@ -1359,15 +1432,15 @@ viewport.addEventListener("touchmove", function(/**@type {TouchEvent}*/ e) {
 	}
 })
 
-/**@type {Timer|null}*/let anim = null
+/**@type {Timer|null}*/let zoomAnim = null
 
 /**
  * @param {number} clientX
  * @param {number} clientY
  */
 function clicked(clientX, clientY) {
-	if (anim) {
-		clearInterval(anim);
+	if (zoomAnim) {
+		clearInterval(zoomAnim);
 	}
 
 	clientX = Math.floor(x + (clientX - innerWidth / 2) / z / 50) + 0.5;
@@ -1385,29 +1458,57 @@ function clicked(clientX, clientY) {
 		return;
 	}
 	runAudio((cooldownEndDate ?? 0) > Date.now() ? AUDIOS.invalid : AUDIOS.highlight);
-	anim = setInterval(function() {
+	zoomAnim = setInterval(function() {
 		x += (clientX - x) / 10;
 		y += (clientY - y) / 10;
 		pos();
 
-		if (anim && Math.abs(clientX - x) + Math.abs(clientY - y) < 0.1) {
-			clearInterval(anim);
+		if (zoomAnim && Math.abs(clientX - x) + Math.abs(clientY - y) < 0.1) {
+			clearInterval(zoomAnim);
 		}
 	}, 15);
 }
+function moveTo(newX = x, newY = y, newZ = z, durationMs = 300) {
+	const startX = x;
+	const startY = y;
+	const startZ = z;
+	const startTime = Date.now();
+
+	const easeFunc = setInterval(() => {
+		const elapsed = Date.now() - startTime;
+		let t = elapsed / durationMs;
+		if (t >= 1) {
+			t = 1;
+		}
+
+		const currentX = lerp(startX, newX, t);
+		const currentY = lerp(startY, newY, t);
+		const currentZ = lerp(startZ, newZ, t);
+		pos(currentX, currentY, currentZ);
+
+		if (t >= 1) {
+			clearInterval(easeFunc);
+			x = newX;
+			y = newY;
+			z = newZ;
+		}
+	}, 16);
+}
 
 function zoomIn() {
-	if (z >= 0.4) return
-	if (anim) {
-		clearInterval(anim)
+	if (z >= 0.4) {
+		return
+	}
+	if (zoomAnim) {
+		clearInterval(zoomAnim)
 	}
 	let dz = 0.005
-	anim = setInterval(function() {
+	zoomAnim = setInterval(function() {
 		if (dz < 0.2) dz *= 1.1
 		z *= 1 + dz
 		pos()
-		if (anim && z >= 0.4) {
-			clearInterval(anim)
+		if (zoomAnim && z >= 0.4) {
+			clearInterval(zoomAnim)
 		}
 	}, 15)
 }
@@ -2797,7 +2898,6 @@ messageInputEmojiPanel.addEventListener("emojiselection", (/**@type {CustomEvent
 	}
 });
 
-
 // Advanced view menu
 viewCanvasLayer.addEventListener("change", function() {
 	boardRenderer?.setLayerEnabled(0, viewCanvasLayer.checked);
@@ -2808,6 +2908,53 @@ viewChangesLayer.addEventListener("change", function() {
 viewSocketPixelsLayer.addEventListener("change", function() {
 	boardRenderer?.setLayerEnabled(2, viewSocketPixelsLayer.checked);
 });
+
+// Spectation
+spectateCloseButton.addEventListener("click", function(e) {
+	spectateMenu.removeAttribute("open");
+	sendIpcMessage(wsCapsule, "unspectateUser", undefined);
+});
+spectateUserIdInput.addEventListener("change", function(e) {
+	const spectateUserId = Number(spectateUserIdInput.value);
+	if (spectateUserId == intId) {
+		alert("Can't spectate user " + spectateUserId);
+		return;
+	}
+	sendIpcMessage(wsCapsule, "spectateUser", spectateUserId);
+});
+
+/**
+ * @param {number} userIntId 
+ */
+function startedSpectating(userIntId) {
+	spectateStartState = { x, y, z };
+	const spectatingChatName = intIdNames.get(userIntId);
+	spectateStatusLabel.textContent = "Spectating " + (spectatingChatName
+		? `${spectatingChatName} (#${userIntId})`
+		: `#${userIntId}`);
+	setCanvasLocked(true);
+}
+/**
+ * @param {string} userIntId
+ * @param {string} reason
+ */
+function stoppedSpectating(userIntId, reason) {
+	const startState = spectateStartState ?? { x: WIDTH / 2, y: HEIGHT / 2, z: 0 };
+	const transitionDuration = 300;
+
+	if (typeof reason === "string" && reason !== "") {
+		alert(`Stopped spectating ${userIntId}: ${reason}`);
+	}
+
+	// Move back to original position before releasing canvas controls
+	moveTo(startState.x, startState.y, startState.z, transitionDuration);
+	setTimeout(() => {
+		spectateUserIdInput.value = "";
+		spectateStatusLabel.textContent = "";
+		setCanvasLocked(false);
+	}, transitionDuration);
+}
+
 
 // Server configuration & themes
 function defaultServer() {
