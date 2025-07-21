@@ -218,6 +218,28 @@
 			</div>
 
 			<!-- Popups and dialogs -->
+			<div id="advancedViewMenu" class="toast-menu">
+				<div class="toast-header">
+					<h2>Advanced view options:</h2>
+				</div>
+				<div class="toast-body">
+					<h3>Enabled layers:</h3>
+					<form id="viewLayersForm" class="noselect" style="display: flex; flex-direction: column;">
+						<label>
+							Canvas layer:
+							<input type="checkbox" id="viewCanvasLayer" checked="true">
+						</label>
+						<label>
+							Changes layer:
+							<input type="checkbox" id="viewChangesLayer" checked="true">
+						</label>
+						<label>
+							Pixels layer:
+							<input type="checkbox" id="viewSocketPixelsLayer" checked="true">
+						</label>
+					</form>
+				</div>
+			</div>
 			<div id="overlayMenuOld" noselect class="toast-menu">
 				<div class="toast-header">
 					<h2 title="Make use of a canvas overlay image in order to help yourself better position your pixels" style="display: inline;flex-grow: 1;">Overlay:</h2>
@@ -390,21 +412,23 @@
 					<em>All moderation actions are logged by the server and reports sent to all other staff. Follow the moderation rules. Do not abuse power.</em>
 					<input id="modReason" type="text" placeholder="Reason" oninput="modOptionsButton.disabled = !this.value">
 					<div style="display: flex; column-gap: 8px;">
-						<button style="flex-grow: 1;" id="modOptionsButton" disabled="true">Submit</button>
-						<button id="modCancelButton" style="flex-grow: 1;">Cancel</button>
+						<button type="button" style="flex-grow: 1;" id="modOptionsButton" disabled="true">Submit</button>
+						<button type="button" id="modCancelButton" style="flex-grow: 1;">Cancel</button>
 					</div>
 				</div>
 			</div>
-			<div noselect id="captchaPopup" style="display: none;">
-				<canvas id="captchaCanvas" width="500" height="800"></canvas>
-				<h1 noselect style="color: grey;">🤔 Sorry for interrupting, but</h1>
-				<p noselect translate="captchaPrompt"><em>Solve this small captcha to help keep rplace.live fun for all...</em></p>
-				<hr>
-				<h2 id="captchaLabel">Please click the button containing the emoji you see below</h2>
-				<div id="captchaImagePosition"><!--captcha canvas image space--></div>
-				<a style="text-align: center;" href=".">(generate new captcha)</a>
-				<div id="captchaOptions"><!--clickable captcha answers--></div>
-			</div>
+			<dialog id="captchaPopup" class="modal">
+				<div>
+					<canvas id="captchaCanvas" width="500" height="800"></canvas>
+					<h1 noselect style="color: grey;">🤔 Sorry for interrupting, but</h1>
+					<p noselect translate="captchaPrompt"><em>Solve this small captcha to help keep rplace.live fun for all...</em></p>
+					<hr>
+					<h2 id="captchaLabel">Please click the button containing the emoji you see below</h2>
+					<div id="captchaImagePosition"><!--captcha canvas image space--></div>
+					<a style="text-align: center;" href=".">(generate new captcha)</a>
+					<div id="captchaOptions"><!--clickable captcha answers--></div>
+				</div>
+			</dialog>
 			<dialog id="popup">
 				<div>
 					<r-close-icon onclick="localStorage.nopopup = Date.now(); popup.close()"></r-close-icon>
@@ -412,7 +436,7 @@
 					<!--<iframe id="popupEmbed" src="">< !-- Popup content -- ></iframe>-->
 				</div>
 			</dialog>
-			<dialog id="modal" class="modal">
+			<dialog id="modal" class="modal about-modal">
 				<div class="modal-header">
 					<h2>Place</h2>
 					<r-close-icon id="modalCloseButton" onclick="modal.close()"></r-close-icon>

@@ -158,7 +158,7 @@ const modAffectsAll = /**@type {HTMLInputElement}*/($("#modAffectsAll"));
 const modReason = /**@type {HTMLInputElement}*/($("#modReason"));
 const modCloseButton = /**@type {HTMLButtonElement}*/$("#modCloseButton");
 const modCancelButton = /**@type {HTMLButtonElement}*/$("#modCancelButton");
-const captchaPopup = /**@type {HTMLElement}*/($("#captchaPopup"));
+const captchaPopup = /**@type {HTMLDialogElement}*/($("#captchaPopup"));
 const modActionDelete = /**@type {HTMLInputElement}*/($("#modActionDelete"));
 const modActionKick = /**@type {HTMLInputElement}*/($("#modActionKick"));
 const modActionMute = /**@type {HTMLInputElement}*/($("#modActionMute"));
@@ -192,6 +192,11 @@ const messageOptionsButton = /**@type {HTMLAnchorElement}*/($("#messageOptionsBu
 const themeDrop = /**@type {HTMLElement}*/($("#themeDrop"));
 const themeDropName = /**@type {HTMLElement}*/($("#themeDropName"));
 const themeDropParent = /**@type {HTMLElement}*/($("#themeDropParent"));
+const advancedViewMenu = /**@type {HTMLElement}*/($("#advancedViewMenu"));
+const viewLayersForm = /**@type {HTMLFormElement}*/($("#viewLayersForm"));
+const viewCanvasLayer = /**@type {HTMLInputElement}*/($("#viewCanvasLayer"));
+const viewChangesLayer = /**@type {HTMLInputElement}*/($("#viewChangesLayer"));
+const viewSocketPixelsLayer = /**@type {HTMLInputElement}*/($("#viewSocketPixelsLayer"));
 
 // WS & State variables
 /**@type {Map<number, string>}*/ const intIdNames = new Map(); // intId : name
@@ -528,7 +533,7 @@ function handleTextCaptcha({ options, imageData }) {
 			captchaOptions.style.pointerEvents = "none";
 		})
 	}
-	captchaPopup.style.display = "flex";
+	captchaPopup.showModal();
 	captchaOptions.style.pointerEvents = "all";
 
 	const imageBlob = new Blob([imageData], { type: "image/png" });
@@ -577,7 +582,7 @@ function handleEmojiCaptcha({ options, imageData }) {
 		emojiImg.addEventListener("touchend", submitCaptcha);
 	}
 
-	captchaPopup.style.display = "flex";
+	captchaPopup.showModal();
 	captchaOptions.style.pointerEvents = "all";
 	const imageBlob = new Blob([imageData], { type: "image/png" });
 	if (webGLSupported) {
@@ -665,7 +670,7 @@ function handleDisconnect({ code, reason }) {
 }
 addIpcMessageHandler("handleDisconnect", handleDisconnect);
 function handleCaptchaSuccess() {
-	captchaPopup.style.display = "none";
+	captchaPopup.close();
 }
 addIpcMessageHandler("handleCaptchaSuccess", handleCaptchaSuccess);
 /**
@@ -947,9 +952,13 @@ document.body.addEventListener("keydown", function(/**@type {KeyboardEvent}*/e) 
 			e.preventDefault();
 			overlayMenuOld.toggleAttribute("open");
 		}
-		else if (e.key == "M" && e.shiftKey && localStorage.vip?.startsWith("!")) {
+		else if (e.key === "M" && e.shiftKey && localStorage.vip?.startsWith("!")) {
 			e.preventDefault();
 			moderationMenu.toggleAttribute("open");
+		}
+		else if (e.key === "V" && e.shiftKey && localStorage.vip?.startsWith("!")) {
+			e.preventDefault();
+			advancedViewMenu.toggleAttribute("open");
 		}
 		else if (e.key === "/") {
 			e.preventDefault();
@@ -2787,8 +2796,24 @@ messageInputEmojiPanel.addEventListener("emojiselection", (/**@type {CustomEvent
 	else {
 		chatInsertText(e.detail.value)
 	}
-})
+});
 
+
+// Advanced view menu
+viewLayersForm.addEventListener("submit", function(e) {
+	e.preventDefault();
+});
+viewCanvasLayer.addEventListener("change", function() {
+	boardRenderer?.setLayerEnabled(0, viewCanvasLayer.checked);
+});
+viewChangesLayer.addEventListener("change", function() {
+	boardRenderer?.setLayerEnabled(1, viewChangesLayer.checked);
+});
+viewSocketPixelsLayer.addEventListener("change", function() {
+	boardRenderer?.setLayerEnabled(2, viewSocketPixelsLayer.checked);
+});
+
+// Server configuration & themes
 function defaultServer() {
 	delete localStorage.board;
 	delete localStorage.server;

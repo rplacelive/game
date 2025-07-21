@@ -22,7 +22,7 @@ html {
 	-webkit-touch-callout: none;
 }
 
-[noselect] {
+.noselect, [noselect] {
 	user-select: none;
 	-webkit-user-select: none;
 }
@@ -255,6 +255,10 @@ btn{
 	height: calc(100% + 48px);
 }
 
+.about-modal {
+	z-index: 7;
+}
+
 .modal {
 	position: absolute;
 	top: 50%;
@@ -262,7 +266,6 @@ btn{
 	transform: translate(-50%, -50%);
 	flex-direction: column;
 	overflow: visible;
-	z-index: 7;
 }
 
 .modal[open] {
@@ -911,13 +914,13 @@ body[eventphase="3"] .coverer-title {
 
 #captchaPopup {
 	width: 450px;
-	z-index: 3;
-	position: absolute;
-	top: 50%;
-	left: 50%;
-	transform: translateY(-50%) translateX(-50%);
 	height: fit-content;
-	overflow: hidden;
+	overflow-y: auto;
+	z-index: 3;
+}
+
+#captchaPopup > div {
+	display: flex;
 	flex-direction: column;
 	row-gap: 16px;
 }

@@ -9,7 +9,7 @@ const renderer = new BoardRenderer(overlayMenuCanvas);
 function initOverlayMenu() {
 	const defaultBoard = new Uint8Array(16384);
 	const defaultPalette = new Uint32Array(DEFAULT_PALETTE);
-	renderer.setSources(defaultBoard, defaultPalette, 128, 128);
+	//renderer.setSources(defaultBoard, defaultPalette, 128, 128);
 }
 if (document.readyState !== "loading") {
 	initOverlayMenu();
