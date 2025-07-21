@@ -20,7 +20,7 @@ export class BoardRenderer {
 
 	/**@type {WebGLProgram}*/#program
 	/**@type {WebGLVertexArrayObject}*/#vao
-	/**@type {WebGLTexture}*/#boardTex
+	/**@type {WebGLTexture}*/#canvasTex
 	/**@type {WebGLTexture}*/#changesTex
 	/**@type {WebGLTexture}*/#socketPixelsTex
 	/**@type {WebGLTexture}*/#paletteTex
@@ -108,14 +108,18 @@ export class BoardRenderer {
 
 				// Get palette index from board texture
 				uint index = texelFetch(u_boardTex, uv, 0).r;
+				
+				if (index == 255u) {
+					// Changes / socketPixels alpha index
+					discard;
+				}
 
-				// Get color from palette texture
+				// Get colour from palette texture
 				uvec4 raw = texelFetch(u_paletteTex, ivec2(int(index), 0), 0);
 
 				// Convert to normalized float
 				fragColour = vec4(raw) / 255.0;
 			}`;
-
 
 		const program = this.#program = gl.createProgram();
 		gl.attachShader(program, this.#compileShader(gl.VERTEX_SHADER, vsSource));
@@ -144,20 +148,23 @@ export class BoardRenderer {
 		gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffer);
 		gl.bufferData(gl.ARRAY_BUFFER, uv, gl.STATIC_DRAW);
 
-		// UV location setup
 		const uvLoc = gl.getAttribLocation(program, "a_uv");
 		gl.enableVertexAttribArray(uvLoc);
 		gl.vertexAttribPointer(uvLoc, 2, gl.FLOAT, false, 0, 0);
 
-		// Create image textures
-		this.#boardTex = this.#initialiseBoardTexture();
+		// Initialize dimensions first (required for texture creation)
+		this.#width = 1;
+		this.#height = 1;
+
+		// Create image textures with valid dimensions
+		this.#canvasTex = this.#initialiseBoardTexture();
 		this.#changesTex = this.#initialiseBoardTexture();
 		this.#socketPixelsTex = this.#initialiseBoardTexture();
 
-		const paletteArr = new Uint8Array();
+		// Create palette texture with minimal valid size
 		const paletteTex = this.#paletteTex = gl.createTexture();
 		gl.bindTexture(gl.TEXTURE_2D, paletteTex);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8UI, this.#palette?.length||0, 1, 0, gl.RGBA_INTEGER, gl.UNSIGNED_BYTE, paletteArr);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8UI, 1, 1, 0, gl.RGBA_INTEGER, gl.UNSIGNED_BYTE, new Uint8Array(4));
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -180,11 +187,14 @@ export class BoardRenderer {
 		mat4.identity(projection);
 		const mvp = this.#mvpMatrix = mat4.create();
 		mat4.identity(mvp);
+
+		// Initial canvas size update
+		this.#updateCanvasSize();
 	}
 
 	#initializeRenderLayers() {
 		this.#renderLayers = [
-			{ texture: this.#boardTex, enabled: true },
+			{ texture: this.#canvasTex, enabled: true },
 			{ texture: this.#changesTex, enabled: true },
 			{ texture: this.#socketPixelsTex, enabled: true }
 		];
@@ -222,13 +232,14 @@ export class BoardRenderer {
 		const gl = this.#gl;
 		const shader = gl.createShader(type);
 		if (!shader) {
-			throw new Error();
+			throw new Error("Failed to create shader");
 		}
 		gl.shaderSource(shader, source);
 		gl.compileShader(shader);
 		if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
 			const errorMsg = gl.getShaderInfoLog(shader) ?? "";
-			throw new Error(errorMsg);
+			gl.deleteShader(shader);
+			throw new Error(`Shader compilation error: ${errorMsg}`);
 		}
 		return shader;
 	}
@@ -256,7 +267,7 @@ export class BoardRenderer {
 		// Calculate canvas translation & scale
 		const scale = 1 / (this.#zoom * 50 * this.#devicePixelRatio); 
 		const ndcX = -(this.#x - this.#width / 2) / (this.#width / 2);
-		const ndcY = (this.#y - this.#width / 2) / (this.#width / 2);
+		const ndcY = (this.#y - this.#height / 2) / (this.#height / 2);
 
 		// Reset matrices
 		mat4.identity(model);
@@ -280,13 +291,15 @@ export class BoardRenderer {
 	}
 
 	/**
-	 * @param {Uint8Array} boardArr Board (canvas), changes, or socket pixels array
+	 * @param {Uint8Array|null} boardArr Board (canvas), changes, or socket pixels array
 	 */
-	#initialiseBoardTexture(boardArr = new Uint8Array(this.#width * this.#height)) {
+	#initialiseBoardTexture(boardArr = null) {
 		const gl = this.#gl;
 		const boardTex = gl.createTexture();
 		gl.bindTexture(gl.TEXTURE_2D, boardTex);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8UI, this.#width, this.#height, 0, gl.RED_INTEGER, gl.UNSIGNED_BYTE, boardArr);
+		
+		const data = boardArr || new Uint8Array(this.#width * this.#height);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8UI, this.#width, this.#height, 0, gl.RED_INTEGER, gl.UNSIGNED_BYTE, data);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -300,10 +313,12 @@ export class BoardRenderer {
 		if (blendMode === "normal") {
 			gl.enable(gl.BLEND);
 			gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-		} else if (blendMode === "additive") {
+		}
+		else if (blendMode === "additive") {
 			gl.enable(gl.BLEND);
 			gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
-		} else {
+		}
+		else {
 			gl.disable(gl.BLEND);
 		}
 	}
@@ -332,15 +347,20 @@ export class BoardRenderer {
 	}
 
 	/**
-	 * @param {Uint8Array} board - Base canvas
+	 * @param {Uint8Array} canvas - Base canvas
 	 * @param {Uint8Array} changes - Server delta changes from base fetched canvas
 	 * @param {Uint8Array} socketPixels - Websocket received pixels layer
 	 * @param {Uint32Array} palette
 	 * @param {number} width
 	 * @param {number} height
 	 */
-	setSources(board, changes, socketPixels, palette, width, height) {
-		this.#board = board;
+	setSources(canvas, changes, socketPixels, palette, width, height) {
+		if (!canvas || !changes || !socketPixels || !palette || width <= 0 || height <= 0) {
+			console.warn("Invalid sources provided to setSources");
+			return;
+		}
+
+		this.#board = canvas;
 		this.#changes = changes;
 		this.#socketPixels = socketPixels;
 		this.#palette = palette;
@@ -350,7 +370,7 @@ export class BoardRenderer {
 		const gl = this.#gl;
 	
 		// Update board tex
-		gl.bindTexture(gl.TEXTURE_2D, this.#boardTex);
+		gl.bindTexture(gl.TEXTURE_2D, this.#canvasTex);
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8UI, this.#width, this.#height, 0, gl.RED_INTEGER, gl.UNSIGNED_BYTE, this.#board);
 	
 		// Update changes tex
@@ -365,6 +385,19 @@ export class BoardRenderer {
 		const paletteArr = new Uint8Array(this.#palette.buffer);
 		gl.bindTexture(gl.TEXTURE_2D, this.#paletteTex);
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8UI, palette.length, 1, 0, gl.RGBA_INTEGER, gl.UNSIGNED_BYTE, paletteArr);
+
+		this.queueRedraw();
+	}
+
+	/**
+	 * @param {Uint8Array} socketPixels 
+	 */
+	updateSocketPixels(socketPixels) {
+		this.#socketPixels = socketPixels;
+
+		const gl = this.#gl;
+		gl.bindTexture(gl.TEXTURE_2D, this.#socketPixelsTex);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8UI, this.#width, this.#height, 0, gl.RED_INTEGER, gl.UNSIGNED_BYTE, socketPixels);
 		this.queueRedraw();
 	}
 
@@ -385,11 +418,17 @@ export class BoardRenderer {
 			cancelAnimationFrame(this.#redrawHandle);
 		}
 		this.#redrawHandle = requestAnimationFrame(() => {
+			this.#redrawHandle = null;
+			
 			const gl = this.#gl;
+
+			// Check if sources are properly initialized
+			if (!this.#board || !this.#palette || this.#width === 0 || this.#height === 0) {
+				return;
+			}
 
 			gl.viewport(0, 0, this.canvas.width, this.canvas.height);
 			gl.clearColor(0.0, 0.0, 0.0, 0.0);
-			gl.enable(gl.DEPTH_TEST);
 			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
 			// Update matrices

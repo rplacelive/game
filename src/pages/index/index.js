@@ -1290,6 +1290,9 @@ function seti(index, colour) {
 		canvasCtx.clearRect(x, y, 1, 1);
 		canvasCtx.fillRect(x, y, 1, 1);
 	}
+	if (boardRenderer) {
+		boardRenderer.updateSocketPixels(SOCKET_PIXELS);
+	}
 }
 
 viewport.addEventListener("touchmove", function(/**@type {TouchEvent}*/ e) {
@@ -1734,7 +1737,7 @@ function runLengthChanges(data, buffer) {
 	RAW_BOARD = new Uint8Array(buffer);
 	BOARD = new Uint8Array(RAW_BOARD);
 	CHANGES = new Uint8Array(w * h).fill(255);
-	SOCKET_PIXELS = new Uint8Array(2 * h).fill(255);
+	SOCKET_PIXELS = new Uint8Array(w * h).fill(255);
 
 	while (i < data.byteLength) {
 		let cell = data.getUint8(i++);
