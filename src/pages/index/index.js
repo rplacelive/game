@@ -2792,6 +2792,7 @@ function defaultServer() {
  * @param {Storage} storage
  */
 function server(serverAddress, boardAddress, vip = "", storage = localStorage) {
+	// TODO: This is outdated and dumb
 	if (!serverAddress) {
 		storage.vip = storage.vip2
 		delete storage.vip2
