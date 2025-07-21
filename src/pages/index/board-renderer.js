@@ -390,14 +390,15 @@ export class BoardRenderer {
 	}
 
 	/**
-	 * @param {Uint8Array} socketPixels 
+	 * @param {number} index 
+	 * @param {number} colour 
 	 */
-	updateSocketPixels(socketPixels) {
-		this.#socketPixels = socketPixels;
-
+	redrawSocketPixel(index, colour) {
 		const gl = this.#gl;
+		const x = index % this.#width;
+		const y = Math.floor(index / this.#width);
 		gl.bindTexture(gl.TEXTURE_2D, this.#socketPixelsTex);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8UI, this.#width, this.#height, 0, gl.RED_INTEGER, gl.UNSIGNED_BYTE, socketPixels);
+		gl.texSubImage2D(gl.TEXTURE_2D, 0, x, y, 1, 1, gl.RED_INTEGER, gl.UNSIGNED_BYTE, new Uint8Array([colour]));
 		this.queueRedraw();
 	}
 

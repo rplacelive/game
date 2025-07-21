@@ -1284,6 +1284,7 @@ function seti(index, colour) {
 	SOCKET_PIXELS[index] = colour;
 	u32Colour[0] = PALETTE[colour];
 	if (canvasCtx) {
+		// Canvas2D renderer
 		const x = index % WIDTH;
 		const y = Math.floor(index / WIDTH);
 		canvasCtx.fillStyle = "#" + (u8ArrColour[0] < 16 ? "0" : "") + u8ArrColour[0].toString(16) + (u8ArrColour[1] < 16 ? "0" : "") + u8ArrColour[1].toString(16) + (u8ArrColour[2] < 16 ? "0" : "") + u8ArrColour[2].toString(16) + (u8ArrColour[3] < 16 ? "0" : "") + u8ArrColour[3].toString(16);
@@ -1291,7 +1292,8 @@ function seti(index, colour) {
 		canvasCtx.fillRect(x, y, 1, 1);
 	}
 	if (boardRenderer) {
-		boardRenderer.updateSocketPixels(SOCKET_PIXELS);
+		// WebGL renderer
+		boardRenderer.redrawSocketPixel(index, colour);
 	}
 }
 
