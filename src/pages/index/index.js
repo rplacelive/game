@@ -1552,15 +1552,15 @@ function handlePixelPlace(e) {
 	if (!placeOkButton.classList.contains("enabled")) {
 		return;
 	}
-
 	// Send place to websocket
 	const position = Math.floor(x) + Math.floor(y) * WIDTH;
 	sendIpcMessage(wsCapsule, "putPixel", { position, colour: PEN });
 
 	// We client-side predict our new cooldown and pixel place the pixel went through
-	// server will (in)validate after
+	// TODO: Note client-server latency will make real cooldown a little bigger
 	const now = Date.now();
-	setCooldown(now + COOLDOWN);
+	const clientServerLatency = 50; // TODO: Use ping to determine this better
+	setCooldown(now + COOLDOWN + clientServerLatency);
 	set(Math.floor(x), Math.floor(y), PEN);
 
 	// Apply on client-side
