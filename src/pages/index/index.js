@@ -714,8 +714,6 @@ function handleUnspectating({ unspectatingIntId, reason }) {
 		spectatingIntId = null;
 	}
 
-	console.log("DEBUG:", unspectatingIntId, reason);
-
 	stoppedSpectating(unspectatingIntId, reason);
 }
 addIpcMessageHandler("handleUnspectating", handleUnspectating);
@@ -1278,10 +1276,10 @@ function pos(newX=x, newY=y, newZ=z) {
 			idPositionDebounce = false;
 			let id = intIdPositions.get(intX + intY * WIDTH);
 			if (id === undefined || id === null) {
-				// Request 16x16 region of pixel placers from server (fine tune if necessary)
+				// Request 15x15 region of pixel placers from server (fine tune if necessary)
 				const placersRadius = 15;
 				const centreX = Math.floor(Math.max(intX - placersRadius / 2, 0));
-				const centreY = Math.floor(Math.max(intY - placersRadius / 2));
+				const centreY = Math.floor(Math.max(intY - placersRadius / 2, 0));
 				const width = Math.min(placersRadius, WIDTH - intX);
 				const height = Math.min(placersRadius, HEIGHT - intY);
 				const position = centreX + centreY * WIDTH;
