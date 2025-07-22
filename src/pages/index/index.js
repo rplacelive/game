@@ -1559,7 +1559,8 @@ function handlePixelPlace(e) {
 
 	// We client-side predict our new cooldown and pixel place the pixel went through
 	// server will (in)validate after
-	setCooldown(COOLDOWN);
+	const now = Date.now();
+	setCooldown(now + COOLDOWN);
 	set(Math.floor(x), Math.floor(y), PEN);
 
 	// Apply on client-side
