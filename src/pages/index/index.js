@@ -115,6 +115,7 @@ const positionIndicator = /**@type {import("./game-elements.js").PositionIndicat
 const idPosition = /**@type {HTMLElement}*/($("#idPosition"));
 const onlineCounter = /**@type {HTMLElement}*/($("#onlineCounter"));
 const canvasLock = /**@type {HTMLElement}*/($("#canvasLock"));
+const lockMessageLabel = /**@type {HTMLElement}*/($("#lockMessageLabel"));
 const namePanel = /**@type {HTMLElement}*/($("#namePanel"));
 const nameInput = /**@type {HTMLInputElement}*/(document.getElementById("nameInput"));
 const placeButton = /**@type {HTMLButtonElement}*/($("#place"));
@@ -621,26 +622,29 @@ function handleTurnstile(siteKey) {
 	if (currentTurnstileWidget) {
 		currentTurnstileWidget.destroy();
 	}
+	// Lock the canvas (temporarily)
+	setCanvasLocked(true);
 
 	const turnstileContainer = document.getElementById("turnstileContainer");
 	currentTurnstileWidget = new TurnstileWidget(turnstileContainer, {
 		sitekey: siteKey,
 		theme: turnstileTheme,
 		language: lang,
-		onVerify: (token) => {
+		onVerify: (/**@type {string}*/token) => {
 			sendIpcMessage(wsCapsule, "sendTurnstileResult", token);
 		},
-		onError: (error) => {
+		onError: (/**@type {Error}*/error) => {
 			console.error("Turnstile error:", error);
 		},
-		onLoad: (widgetId) => {
+		onLoad: (/**@type {string}*/widgetId) => {
 			console.log("Turnstile loaded successfully");
 		}
 	});
 }
 addIpcMessageHandler("handleTurnstile", handleTurnstile);
 function handleTurnstileSuccess() {
-	turnstileMenu.removeAttribute("open")
+	turnstileMenu.removeAttribute("open");
+	setCanvasLocked(false);
 }
 addIpcMessageHandler("handleTurnstileSuccess", handleTurnstileSuccess);
 /**
@@ -1097,12 +1101,24 @@ document.body.addEventListener("keydown", function(/**@type {KeyboardEvent}*/e) 
 
 /**
  * @param {boolean} locked 
+ * @param {string|null} lockMessage
  */
-function setCanvasLocked(locked) {
+function setCanvasLocked(locked, lockMessage=null) {
 	canvasLocked = locked;
 	canvasLock.style.display = locked ? "flex" : "none";
+
 	if (locked) {
 		placeOkButton.classList.remove("enabled");
+		unselectColour();
+
+		if (!lockMessage) {
+			translate("lockMessage").then((translated) => {
+				lockMessageLabel.textContent = translated;
+			});	
+		}
+		else {
+			lockMessageLabel.textContent = lockMessage;
+		}
 	}
 	else {
 		placeOkButton.classList.add("enabled");
@@ -1512,16 +1528,16 @@ function zoomIn() {
 }
 
 // Client state
-let PEN = -1;
 let focused = true;
+let selectedColour = -1;
 
 /**
  * @param {boolean} state 
  */
 function setFocused(state) {
+	// TODO: Suspend clientside cooldown
 	if (focused !== state) {
 		focused = state;
-		// TODO: Disable pixel place UI, suspend clientside cooldown
 	}
 }
 window.addEventListener("blur", () => {
@@ -1554,14 +1570,14 @@ function handlePixelPlace(e) {
 	}
 	// Send place to websocket
 	const position = Math.floor(x) + Math.floor(y) * WIDTH;
-	sendIpcMessage(wsCapsule, "putPixel", { position, colour: PEN });
+	sendIpcMessage(wsCapsule, "putPixel", { position, colour: selectedColour });
 
 	// We client-side predict our new cooldown and pixel place the pixel went through
 	// TODO: Note client-server latency will make real cooldown a little bigger
 	const now = Date.now();
 	const clientServerLatency = 50; // TODO: Use ping to determine this better
 	setCooldown(now + COOLDOWN + clientServerLatency);
-	set(Math.floor(x), Math.floor(y), PEN);
+	set(Math.floor(x), Math.floor(y), selectedColour);
 
 	// Apply on client-side
 	hideIndicators();
@@ -1574,8 +1590,7 @@ function handlePixelPlace(e) {
 	runAudio(AUDIOS.cooldownStart);
 
 	if (!mobile) {
-		colours.children[PEN].classList.remove("sel");
-		PEN = -1;
+		unselectColour();
 	}
 }
 placeOkButton.addEventListener("click", handlePixelPlace);
@@ -1592,12 +1607,12 @@ function handlePlaceButtonClicked(e) {
 		showPalette()
 
 		// Persistent colours on mobile platforms
-		if (PEN != -1) {
+		if (isColourSelected()) {
 			placeOkButton.classList.add("enabled");
-			canvSelect.style.background = colours.children[PEN].style.background
-			canvSelect.children[0].style.display = 'none'
-			canvSelect.style.outline = '8px white solid'
-			canvSelect.style.boxShadow = '0px 2px 4px 0px rgb(0 0 0 / 50%)'
+			canvSelect.style.background = colours.children[selectedColour].style.background;
+			canvSelect.children[0].style.display = "none";
+			canvSelect.style.outline = "8px white solid";
+			canvSelect.style.boxShadow = "0px 2px 4px 0px rgb(0 0 0 / 50%)";
 		}
 	}
 	else {
@@ -1616,9 +1631,8 @@ function handlePlaceCancelClicked(e) {
 	runAudio(AUDIOS.closePalette);
 	canvSelect.style.background = "";
 	palette.style.transform = "translateY(100%)";
-	if (PEN != -1) {
-		colours.children[PEN].classList.remove("sel");
-		PEN = -1;
+	if (isColourSelected()) {
+		unselectColour();
 	}
 	placeOkButton.classList.remove("enabled");
 	canvSelect.children[0].style.display = "block";
@@ -1794,14 +1808,14 @@ function runSelectColourAudio(colourIndex) {
  */
 function selectColour(colourIndex) {
 	// Clear select from old colour
-	const oldColour = colours.children[PEN];
+	const oldColour = colours.children[selectedColour];
 	if (oldColour) {
 		oldColour.classList.remove("sel");
 	}
 
 	// Apply new selection
-	PEN = colourIndex;
-	const clickedColour = colours.children[PEN];
+	selectedColour = colourIndex;
+	const clickedColour = colours.children[selectedColour];
 	canvSelect.style.background = clickedColour.style.background;
 	clickedColour.classList.add("sel");
 	placeOkButton.classList.add("enabled");
@@ -1809,6 +1823,15 @@ function selectColour(colourIndex) {
 	canvSelect.style.outline = "8px white solid";
 	canvSelect.style.boxShadow = "0px 2px 4px 0px rgb(0 0 0 / 50%)";
 	runSelectColourAudio(colourIndex);
+}
+
+function unselectColour() {
+	selectedColour = -1;
+	colours.children[selectedColour].classList.remove("sel");
+}
+
+function isColourSelected() {
+	return selectedColour !== -1;
 }
 
 /**

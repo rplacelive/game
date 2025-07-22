@@ -104,10 +104,10 @@ export class BoardRenderer {
 
 			void main() {
 				ivec2 texSize = textureSize(u_boardTex, 0);
-				ivec2 uv = ivec2(v_uv * vec2(texSize));
+				ivec2 texelCoord = ivec2(v_uv * vec2(texSize));
 
 				// Get palette index from board texture
-				uint index = texelFetch(u_boardTex, uv, 0).r;
+				uint index = texelFetch(u_boardTex, texelCoord, 0).r;
 				
 				if (index == 255u) {
 					// Changes / socketPixels alpha index
