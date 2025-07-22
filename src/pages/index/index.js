@@ -623,7 +623,7 @@ function handleTurnstile(siteKey) {
 		currentTurnstileWidget.destroy();
 	}
 	// Lock the canvas (temporarily)
-	setCanvasLocked(true);
+	//setCanvasLocked(true);
 
 	const turnstileContainer = document.getElementById("turnstileContainer");
 	currentTurnstileWidget = new TurnstileWidget(turnstileContainer, {
@@ -644,7 +644,7 @@ function handleTurnstile(siteKey) {
 addIpcMessageHandler("handleTurnstile", handleTurnstile);
 function handleTurnstileSuccess() {
 	turnstileMenu.removeAttribute("open");
-	setCanvasLocked(false);
+	//setCanvasLocked(false);
 }
 addIpcMessageHandler("handleTurnstileSuccess", handleTurnstileSuccess);
 /**
