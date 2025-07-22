@@ -1562,21 +1562,21 @@ function handlePixelPlace(e) {
 	// We client-side predict our new cooldown and pixel place the pixel went through
 	// server will (in)validate after
 	setCooldown(COOLDOWN);
-	set(Math.floor(x), Math.floor(y), PEN)
+	set(Math.floor(x), Math.floor(y), PEN);
 
 	// Apply on client-side
 	hideIndicators();
-	placeOkButton.classList.remove("enabled")
-	canvSelect.style.background = ""
-	canvSelect.children[0].style.display = "block"
-	canvSelect.style.outline = ""
-	canvSelect.style.boxShadow = ""
-	palette.style.transform = "translateY(100%)"
-	runAudio(AUDIOS.cooldownStart)
+	placeOkButton.classList.remove("enabled");
+	canvSelect.style.background = "";
+	canvSelect.children[0].style.display = "block";
+	canvSelect.style.outline = "";
+	canvSelect.style.boxShadow = "";
+	palette.style.transform = "translateY(100%)";
+	runAudio(AUDIOS.cooldownStart);
 
 	if (!mobile) {
-		colours.children[PEN].classList.remove("sel")
-		PEN = -1
+		colours.children[PEN].classList.remove("sel");
+		PEN = -1;
 	}
 }
 placeOkButton.addEventListener("click", handlePixelPlace);
@@ -1594,7 +1594,7 @@ function handlePlaceButtonClicked(e) {
 
 		// Persistent colours on mobile platforms
 		if (PEN != -1) {
-			placeOkButton.classList.add("enabled")
+			placeOkButton.classList.add("enabled");
 			canvSelect.style.background = colours.children[PEN].style.background
 			canvSelect.children[0].style.display = 'none'
 			canvSelect.style.outline = '8px white solid'
@@ -2940,19 +2940,20 @@ function startedSpectating(userIntId) {
  */
 function stoppedSpectating(userIntId, reason) {
 	const startState = spectateStartState ?? { x: WIDTH / 2, y: HEIGHT / 2, z: 0 };
-	const transitionDuration = 300;
+	const spectateEndMaxTransition = 2000;
+	const maxTransitionDuration = Math.min(spectateEndMaxTransition, COOLDOWN);
 
 	if (typeof reason === "string" && reason !== "") {
 		alert(`Stopped spectating ${userIntId}: ${reason}`);
 	}
 
 	// Move back to original position before releasing canvas controls
-	moveTo(startState.x, startState.y, startState.z, transitionDuration);
+	moveTo(startState.x, startState.y, startState.z, maxTransitionDuration);
 	setTimeout(() => {
 		spectateUserIdInput.value = "";
 		spectateStatusLabel.textContent = "";
 		setCanvasLocked(false);
-	}, transitionDuration);
+	}, maxTransitionDuration);
 }
 
 
