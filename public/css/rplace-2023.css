@@ -496,6 +496,34 @@ r-spoiler[hidden]:hover {
 }
 
 r-place-chat, .place-chat {
-	border-radius: 0px;
-    box-shadow: rgba(0, 0, 0, 0.75) 1px 1px 0px;
+	border: var(--pixel-border);
+	background-color: white;
+}
+
+r-place-chat::after, .place-chat::after {
+	content: "";
+	left: 8px;
+	top: 8px;
+	background-color: rgba(0, 0, 0, 0.75);
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	z-index: -2;
+}
+
+r-place-chat .content, .place-chat .content {
+	padding: 8px;
+	column-gap: 8px;
+	background-color: white;
+}
+
+r-place-chat .arrow, .place-chat .arrow {
+	border: var(--pixel-border);
+	background-color: white;
+}
+
+r-place-chat .arrow::after, .place-chat .arrow::after {
+	content: "";
+	left: 8px;
+	background-color: rgba(0, 0, 0, 0.75);
 }

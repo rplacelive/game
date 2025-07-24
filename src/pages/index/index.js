@@ -106,6 +106,7 @@ const canvParent2 = /**@type {HTMLElement}*/($("#canvparent2"));
 const canvSelect = /**@type {HTMLElement}*/($("#canvselect"));
 const canvas = /**@type {HTMLCanvasElement}*/($("#canvas"));
 const viewportCanvas = /**@type {HTMLCanvasElement}*/($("#viewportCanvas"));
+const placeChatMessages = /**@type {HTMLElement}*/($("#placeChatMessages"));
 const colours = /**@type {HTMLElement}*/($("#colours"));
 const modal = /**@type {HTMLDialogElement}*/($("#modal"));
 const modalInstall = /**@type {HTMLButtonElement}*/($("#modalInstall"));
@@ -113,6 +114,7 @@ const templateImage = /**@type {HTMLImageElement}*/($("#templateImage"));
 const overlayMenuOld = /**@type {HTMLElement}*/($("#overlayMenuOld"));
 const positionIndicator = /**@type {import("./game-elements.js").PositionIndicator}*/($("#positionIndicator"));
 const idPosition = /**@type {HTMLElement}*/($("#idPosition"));
+const idPositionPlacer = /**@type {HTMLElement}*/($("#idPositionPlacer"));
 const onlineCounter = /**@type {HTMLElement}*/($("#onlineCounter"));
 const canvasLock = /**@type {HTMLElement}*/($("#canvasLock"));
 const lockMessageLabel = /**@type {HTMLElement}*/($("#lockMessageLabel"));
@@ -486,9 +488,12 @@ function addPlaceChatMessage(message) {
 	placeMessage.senderIntId = message.senderIntId;
 	placeMessage.senderChatName = message.senderChatName;
 	placeMessage.sendDate = Date.now();
-	placeMessage.style.left = (message.positionIndex % WIDTH) + "px";
-	placeMessage.style.top = (Math.floor(message.positionIndex / WIDTH) + 0.5) + "px";
-	canvParent2.appendChild(placeMessage);
+
+	// Position message
+	const posX = (message.positionIndex % WIDTH);
+	const posY = Math.floor(message.positionIndex / WIDTH);
+	setPlaceChatPosition(placeMessage, posX, posY);
+	placeChatMessages.appendChild(placeMessage);
 
 	//Remove message after given time
 	setTimeout(() => {
@@ -825,7 +830,7 @@ viewport.addEventListener("touchend", function(/**@type {TouchEvent}*/ e) {
 				// Check touchMoveDistance and if target is inside canvParent2
 				if (touchMoveDistance > 0 && e.target instanceof Node && canvParent2.contains(e.target)) {
 					// Ensure target is valid
-					if (e.target !== viewport && !canvParent2.contains(e.target)) {
+					if (!isCanvasDragRegion(e.target)) {
 						break assign2;
 					}
 					clicked(t.clientX, t.clientY);
@@ -871,8 +876,10 @@ viewport.addEventListener("mouseup", function(/**@type {MouseEvent}*/ e) {
 		return;
 	}
 
-	if (e.target != viewport && !canvParent2.contains(e.target)) {
-		return (moved = 3, mouseDown = 0);
+	if (!isCanvasDragRegion(e.target)) {
+		moved = 3;
+		mouseDown = 0;
+		return;
 	}
 
 	if (moved > 0 && canvParent2.contains(e.target)) {
@@ -882,6 +889,14 @@ viewport.addEventListener("mouseup", function(/**@type {MouseEvent}*/ e) {
 	moved = 3;
 	mouseDown = 0;
 });
+/**
+ * @param {HTMLElement} element
+ */
+function isCanvasDragRegion(element) {
+	return (element === viewport
+		|| canvParent2.contains(element)
+		|| placeChatMessages.contains(element));
+}
 
 const placeContext = /**@type {HTMLElement}*/($("#placeContext"));
 placeContext.addEventListener("mousedown", function(e) {
@@ -903,10 +918,8 @@ viewport.addEventListener("contextmenu", function(e) {
 	}
 
 	placeContext.style.display = "block";
-	const canvasPos = screenToCanvas(e.clientX, e.clientY);
-	placeContext.dataset.x = String(canvasPos.x);
-	placeContext.dataset.y = String(canvasPos.y);
-	setPlaceContextPosition(canvasPos.x, canvasPos.y, z);
+	const { x, y } = screenToCanvas(e.clientX, e.clientY);
+	setPlaceContextPosition(x, y);
 });
 if (!localStorage.vip?.startsWith("!")) {
 	const placeContextModItem = /**@type {HTMLElement}*/($("#placeContextModItem"));
@@ -951,8 +964,6 @@ async function showPlacerInfo(x, y) {
 		id}`);
 }
 
-let selX = 0;
-let selY = 0;
 const canvasCtx = canvas.getContext("2d");
 function transform() {
 	const scale = z * 50;
@@ -964,6 +975,7 @@ function transform() {
 	canvParent1.style.transform = `translate(${translateX + innerWidth / 2}px, ${translateY + viewport.offsetHeight / 2}px) scale(${scale})`;
 	canvParent2.style.transform = canvParent1.style.transform;
 	canvSelect.style.transform = `translate(${Math.floor(x)}px, ${Math.floor(y)}px) scale(0.01)`;
+	placeChatMessages.style.transform = `translate(${translateX + innerWidth / 2}px, ${translateY + viewport.offsetHeight / 2}px) scale(${z * 5})`; 
 	canvas.style.width = `${width}px`;
 	canvas.style.height = `${height}px`;
 	canvas.style.transform = `translate(${translateX}px, ${translateY}px)`;
@@ -1159,6 +1171,8 @@ function setSize(w, h = w) {
 	canvParent1.style.height = h + "px";
 	canvParent2.style.width = w + "px";
 	canvParent2.style.height = h + "px";
+	placeChatMessages.style.width = w + "px";
+	placeChatMessages.style.width = h + "px";
 	BOARD = new Uint8Array(w * h).fill(255);
 	let i = BOARD.length;
 	x = +localStorage.x || w / 2;
@@ -1215,7 +1229,7 @@ viewport.addEventListener("mousemove", function(/** @type {MouseEvent} */ e) {
 	if (!(e instanceof Event) || !e.isTrusted || !(e.target instanceof HTMLElement)) {
 		return;
 	}
-	if (e.target != viewport && !canvParent2.contains(e.target)) {
+	if (!isCanvasDragRegion(e.target)) {
 		return;
 	}
 
@@ -1240,7 +1254,7 @@ viewport.addEventListener("wheel", function(/**@type {WheelEvent}*/e) {
 	if (!(e instanceof Event) || !e.isTrusted || !(e.target instanceof HTMLElement)) {
 		return;
 	}
-	if (e.target != viewport && !canvParent2.contains(e.target)) {
+	if (!isCanvasDragRegion(e.target)) {
 		return
 	}
 	const d = Math.max(minZoom / z, Math.min(3 ** Math.max(-0.5, Math.min(0.5, e.deltaY * -0.01)), 1 / z));
@@ -1256,20 +1270,40 @@ let lastIntX = Math.floor(x);
 let lastIntY = Math.floor(y);
 
 /**
+ * @param {HTMLElement} element
  * @param {number} px 
  * @param {number} py 
  * @param {number} z 
  */
-function setPlaceContextPosition(px, py, z) {
+function setCanvasAttachmentPosition(element, px, py, z) {
+	const scale = z * 50;
+	const translateX = x * z * -50;
+	const translateY = y * z * -50;
+	const screenX = (px * scale) + translateX + viewport.offsetWidth / 2;
+	const screenY = (py * scale) + translateY + viewport.offsetHeight / 2;
+	element.style.left = `${screenX}px`;
+	element.style.top = `${screenY}px`;
+}
+/**
+ * @param {number} canvX 
+ * @param {number} canvY 
+ */
+function setPlaceContextPosition(canvX, canvY) {
 	if (placeContext.style.display === "block") {
-		const scale = z * 50;
-		const translateX = x * z * -50;
-		const translateY = y * z * -50;
-		const screenX = (px * scale) + translateX + innerWidth / 2;
-		const screenY = (py * scale) + translateY + viewport.offsetHeight / 2;
-		placeContext.style.left = `${screenX}px`;
-		placeContext.style.top = `${screenY}px`;
+		placeContext.dataset.x = String(canvX);
+		placeContext.dataset.y = String(canvY);
+		setCanvasAttachmentPosition(placeContext, canvX, canvY, z);
 	}
+}
+
+/**
+ * @param {HTMLElement} element 
+ * @param {number} posX 
+ * @param {number} posY 
+ */
+function setPlaceChatPosition(element, posX, posY) {
+	element.style.left = `${posX * 10}px`;
+	element.style.top = `${posY * 10}px`;
 }
 
 function pos(newX=x, newY=y, newZ=z) {
@@ -1295,9 +1329,11 @@ function pos(newX=x, newY=y, newZ=z) {
 	boardRenderer?.setPosition(x, y, z);
 
 	// Place context
-	const px = Number(placeContext.dataset.x);
-	const py = Number(placeContext.dataset.y);
-	setPlaceContextPosition(px, py, z);
+	const canvX = Number(placeContext.dataset.x);
+	const canvY = Number(placeContext.dataset.y);
+	setPlaceContextPosition(canvX, canvY);
+
+	// Update position indicator
 	if (positionIndicator.setPosition) {
 		positionIndicator.setPosition(x, y, z);
 	}
@@ -1334,13 +1370,11 @@ function pos(newX=x, newY=y, newZ=z) {
 				}
 				return;
 			}
+
 			idPosition.style.display = "flex";
-			idPosition.style.left = intX + "px";
-			idPosition.style.top = intY + "px";
-			if (idPosition.children[1]) {
-				/** @type {HTMLElement} */(idPosition.children[1]).style.color = CHAT_COLOURS[hash("" + id) & 7];
-				idPosition.children[1].textContent = intIdNames.get(id) || ("#" + id);
-			}
+			setPlaceChatPosition(idPosition, intX, intY);
+			/** @type {HTMLElement} */idPositionPlacer.style.color = CHAT_COLOURS[hash("" + id) & 7];
+			idPositionPlacer.textContent = intIdNames.get(id) || ("#" + id);
 		}, 1000);
 	}
 }

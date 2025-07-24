@@ -1091,7 +1091,7 @@ body[eventphase="3"] .coverer-title {
 	z-index: 5;
 	transform: translateX(-50%);
 	overflow: auto;
-    max-height: calc(100% - 120px);
+	max-height: calc(100% - 120px);
 }
 
 .toast-menu .toast-header {
@@ -1107,7 +1107,7 @@ body[eventphase="3"] .coverer-title {
 
 .toast-menu .toast-body {
 	display: flex;
-    flex-direction: column;
+	flex-direction: column;
 	row-gap: 8px;
 }
 
@@ -1216,7 +1216,7 @@ body[eventphase="3"] .coverer-title {
 	position: absolute;
 	top: 0;
 	left: 0;
-    height: 100%;
+	height: 100%;
 	aspect-ratio: 1/1;
 	text-align: center;
 	pointer-events: none;
@@ -1253,7 +1253,7 @@ body[eventphase="3"] .coverer-title {
 	display: flex;
 	column-gap: 4px;
 	height: min-content;
-    align-items: center;
+	align-items: center;
 }
 
 .avm-view-layers > li {
@@ -1500,39 +1500,42 @@ kbd {
 	border-radius: 0px !important;
 }
 
-r-place-chat, .place-chat {
-	display: flex;
-	column-gap: 1px;
-	background: white;
+#placeChatMessages {
 	position: absolute;
-	height: 4px;
-	border-radius: 1.5px;
-	font-size: 2px;
-	padding: 0px 1px 0px 1px;
-	text-align: center;
 	z-index: 3;
-	box-shadow: 0px 0px 1px black;
-	transform: translateX(-50%) translateY(-150%);
-	max-width: 65px;
-	min-width: 8px;
-	width: max-content;
+	transform-origin: top left;
 }
 
-r-place-chat::after, .place-chat::after {
-	content: " ";
+r-place-chat, .place-chat {
 	position: absolute;
-	top: 100%;
-	left: 50%;
-	margin-left: -2px;
-	border-width: 2px;
-	border-style: solid;
-	border-color: white transparent transparent transparent;
+	display: flex;
+	z-index: 3;
+	transform: translate(calc(-50% + 5px), calc(-50% - 37px));
+	user-select: none;
+	transition: .2s opacity, .2s filter;
 }
 
-r-place-chat span, .place-chat span {
-	color: black;
-	font-size: 2px;
-	align-self: center;
+r-place-chat .content, .place-chat .content {
+	display: flex;
+	width: 100%;
+	height: 100%;
+}
+
+r-place-chat:hover, .place-chat:hover {
+	opacity: 0.2;
+	filter: saturate(0.5);
+}
+
+r-place-chat .arrow, .place-chat .arrow {
+	position: absolute;
+	width: 24px;
+	height: 24px;
+	background: white;
+	transform: translate(-50%, 50%) rotate(45deg);
+	bottom: 0;
+	left: 50%;
+	transform-origin: center;
+	z-index: -1;
 }
 
 #popup {
@@ -1776,7 +1779,7 @@ r-gif-panel footer {
 r-gif {
 	display: block;
 	width: min(100%, 256px);
-    overflow: hidden;
+	overflow: hidden;
 }
 
 r-gif video {
@@ -1829,7 +1832,7 @@ r-gif video {
 
 #editLocalStorageList label {
 	flex-grow: 1;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
 }

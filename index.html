@@ -69,10 +69,6 @@
 						<img theme="pixelselect" src="/svg/pixel-select-2022.svg" style="position: absolute; top: -10%; left: -10%; width: 120%; height: 120%" ondragstart="return false">
 					</div>
 					<img id="templateImage" width="auto" height="auto" ondrag="return">
-					<div class="place-chat" id="idPosition" style="display: none;">
-						<span translate="placedBy">Placed by:</span>
-						<span><!--placer name||id--></span>
-					</div>
 				</div>
 				<div id="placeContext" class="context-menu" style="display:none">
 					<menu>
@@ -80,6 +76,16 @@
 						<li><button type="button" id="placeContextInfoButton">Show pixel placer info</button></li>
 						<li id="placeContextModItem"><button type="button" id="placeContextModButton" disabled>Moderate here</button></li>
 					</menu>
+				</div>
+				<div id="placeChatMessages">
+					<!--Container for canvas place chat messages-->
+					<div class="place-chat" id="idPosition" style="display: none;">
+						<div class="content">
+							<span translate="placedBy">Placed by:</span>
+							<span id="idPositionPlacer"><!--placer name||id--></span>
+						</div>
+						<div class="arrow"></div>
+					</div>
 				</div>
 			</div>
 
@@ -478,7 +484,7 @@
 				</p>
 				<div class="modal-footer">
 					<img noselect="" alt="Place Logo" height="40" width="40" src="images/rplace.png" style="position: absolute;left: 50%;transform: translateX(-50%);opacity: 0.2;">
-					<button id="muteButton" noselect class="modal-footer-button" title="Enable sounds">
+					<button type="button" id="muteButton" noselect class="modal-footer-button" title="Enable sounds">
 						<image id="muteButtonImage" class="icon-image" src="/svg/muted.svg"></image>
 					</button>
 					<div id="themeDropParent" noselect class="modal-footer-button" style="width: auto; align-items: center;justify-content: center;"

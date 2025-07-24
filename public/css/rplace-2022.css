@@ -5,6 +5,7 @@
 	--ui-panel-bg: white;
 	--ui-text: black;
 	--ui-shadow: 0 0 10px rgba(0,0,0,0.4);
+	--ui-border: none;
 }
 
 :root[data-variant="dark"] {
@@ -13,6 +14,7 @@
 	--ui-panel-hover: #313131;
 	--ui-panel-bg: #141414;
 	--ui-text: white;
+	--ui-border: 1px solid var(--ui-panel-hover);
 }
 :root[data-variant="dark"] .icon-image {
 	filter: invert(1);
@@ -102,8 +104,8 @@ input[type="file"]::file-selector-button {
 	padding: 17.5px;
 }
 .labelled-slider .slider-value {
-    width: 30px;
-    height: 30px;
+	width: 30px;
+	height: 30px;
 	box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.5);
 	background: var(--ui-panel-bg);
 	border-radius: 10px;
@@ -350,7 +352,7 @@ r-live-chat-message .emoji-reactors-count {
 }
 .toast-menu .toast-header {
 	background: var(--ui-panel-bg);
-    padding: 10px;
+	padding: 10px;
 }
 .toast-menu .toast-body {
 	padding: 10px;
@@ -549,4 +551,24 @@ r-spoiler[hidden] {
 r-spoiler[hidden]:hover {
 	opacity: 0.8;
 	color: black;
+}
+
+r-place-chat, .place-chat {
+	background: var(--ui-panel-bg);
+	box-shadow: var(--ui-shadow);
+	border-radius: 15px;
+	font-size: 16px;
+	border: var(--ui-border);
+}
+
+r-place-chat .content, .place-chat .content {
+	padding: 8px;
+	column-gap: 8px;
+	border-radius: 15px;
+	background: var(--ui-panel-bg);
+}
+
+r-place-chat .arrow, .place-chat .arrow {
+	background-color: var(--ui-panel-bg);
+	border: var(--ui-border);
 }

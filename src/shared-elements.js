@@ -136,7 +136,7 @@ class ClipboardCopy extends HTMLElement {
 		})
 	}
 }
-customElements.define("r-clipboard-copy", ClipboardCopy)
+customElements.define("r-clipboard-copy", ClipboardCopy);
 
 class CloseIcon extends HTMLElement {
 	constructor() {
