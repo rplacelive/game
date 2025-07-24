@@ -494,3 +494,8 @@ r-spoiler[hidden]:hover {
 #placeChatButtonImage {
 	width: 48px;
 }
+
+r-place-chat, .place-chat {
+	border-radius: 0px;
+    box-shadow: rgba(0, 0, 0, 0.75) 1px 1px 0px;
+}

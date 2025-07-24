@@ -69,12 +69,11 @@
 						<img theme="pixelselect" src="/svg/pixel-select-2022.svg" style="position: absolute; top: -10%; left: -10%; width: 120%; height: 120%" ondragstart="return false">
 					</div>
 					<img id="templateImage" width="auto" height="auto" ondrag="return">
-					<placechat id="idPosition" style="display: none;">
+					<div class="place-chat" id="idPosition" style="display: none;">
 						<span translate="placedBy">Placed by:</span>
 						<span><!--placer name||id--></span>
-					</placechat>
+					</div>
 				</div>
-
 				<div id="placeContext" class="context-menu" style="display:none">
 					<menu>
 						<li><button type="button" id="placeContextReportButton" disabled>Report here</button></li>
@@ -501,7 +500,7 @@
 							</menu>
 						</div>
 					</div>
-					<button id="placeChatButton" class="modal-footer-button" title="Enable canvas chat">
+					<button type="button" id="placeChatButton" class="modal-footer-button" title="Enable canvas chat">
 						<img id="placeChatButtonImage" src="/svg/place-chat.svg" width="60">
 					</button>
 				</div>

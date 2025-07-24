@@ -348,8 +348,14 @@ export class PublicPromiseSync {
 	renderer: {
 		heading({ tokens, depth }) {
 			const text = this.parser.parseInline(tokens);
-			if (depth >= 1 && depth <= 3) {
-				return `<h${depth}>${text}</h${depth}>`;
+			if (text.length <= 16 && depth <= 1) {
+				return `<h1>${text}</h1>`;
+			}
+			if (text.length <= 32 && depth <= 2) {
+				return `<h2>${text}</h2>`;
+			}
+			if (text.length <= 64 && depth <= 3) {
+				return `<h3>${text}</h3>`;
 			}
 			return text;
 		},
@@ -363,19 +369,21 @@ export class PublicPromiseSync {
 			return token.text;
 		},
 		table(token) {
-			const header = token.header.map(cell => cell.text).join(' | ');
-			const separator = token.align.map(align => 
-				align === 'left' ? ':---' : 
-				align === 'right' ? '---:' : 
-				align === 'center' ? ':---:' : '---'
-			).join(' | ');
-			const body = token.rows.map(row => 
-				row.map(cell => cell.text).join(' | ')
-			).join('\n');
-			return `| ${header} |\n| ${separator} |\n${body}`;
+			return token.raw
+		},
+		blockquote(token) {
+			if (!token.text.trim()) {
+				return "";
+			}
+
+			console.log(token)
+			
+			return `<blockquote>${token.text}</blockquote>`;
 		}
 	},
-	async: true
+	async: true,
+	gfm: false,
+	pedantic: true
 }
 
 /**

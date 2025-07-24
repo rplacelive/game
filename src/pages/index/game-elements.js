@@ -104,49 +104,38 @@ export class LiveChatMessage extends LitElement {
 	static properties = {
 		messageId: { type: Number, reflect: true, attribute: "messageid" },
 		senderId: { type: String, reflect: true, attribute: "senderid" },
-		name: { type: String, reflect: true, attribute: "name" },
+		senderChatName: { type: String, reflect: true, attribute: "senderchatname" },
 		sendDate: { type: Number, reflect: true, attribute: "senddate" },
 		repliesTo: { type: Number, reflect: true, attribute: "repliesto" },
 		content: { type: String, reflect: true, attribute: "content" },
+
 		reactions: { type: Object, attribute: false },
-		openedReactionDetails: { type: String, attribute: false },
+		openedReactionDetails: { type: String, state: true, attribute: false },
 		class: { reflect: true }
-	}
+	};
 	
 	constructor() {
 		super()
-		this.messageId = null
-		this.senderId = null
-		this.name = null
-		this.sendDate = null
-		/**@type {number|null}*/this.repliesTo = null
-		this.content = null
-		/**@type {Map<string, Set<{ intId: number, chatName: string|null }>>|null}*/ this.reactions = null
-		this.replyingMessage = null
-		this.openedReactionDetails = ""
-		this.addEventListener("contextmenu", this.#notifyContextMenu)
+		/**@type {number}*/this.messageId = 0;
+		/**@type {string}*/this.content = "";
+		/**@type {number}*/this.senderIntId = 0;
+		/**@type {string|null}*/this.senderChatName = null;
+		/**@type {number}*/this.sendDate = 0;
+		/**@type {number|null}*/this.repliesTo = null;
+		/**@type {Map<string, Set<{ intId: number, chatName: string|null }>>|null}*/ this.reactions = null;
+		/**@type {({senderChatName: string; content: string; fake?: boolean })|null}*/this.replyingMessage = null;
+		
+		this.openedReactionDetails = "";
+		this.addEventListener("contextmenu", this.#notifyContextMenu);
 	}
 
 	connectedCallback() {
-		super.connectedCallback()
-		this.classList.add("message")
+		super.connectedCallback();
+		this.classList.add("message");
 	}
 
 	createRenderRoot() {
-		return this
-	}
-
-	/**
-	 * @param {{ messageId: any; txt: any; senderId: any; name: any; sendDate: any; repliesTo?: null | undefined; }} data
-	 */
-	fromMessage(data) {
-		const { messageId, txt, senderId, name, sendDate, repliesTo = null } = data
-		this.messageId = messageId
-		this.senderId = senderId
-		this.name = name
-		this.sendDate = sendDate
-		this.repliesTo = repliesTo
-		this.content = txt
+		return this;
 	}
 
 	/**
@@ -160,7 +149,6 @@ export class LiveChatMessage extends LitElement {
 			this.classList.add("message")
 		}
 	}
-
 
 	/**
 	 * @param {string} message Raw message text
@@ -222,15 +210,16 @@ export class LiveChatMessage extends LitElement {
 	}
 
 	/**
-	 * @returns {{ name: string; content: string; fake?: boolean } | null}
+	 * @returns {{ senderChatName: string; content: string; fake?: boolean } | null}
 	 */
 	#findReplyingMessage() {
 		// TODO: Find a better way to do this, traversing the DOM to try and find the message we belong to is insane
 		const message = /**@type {LiveChatMessage|undefined}*/(Array.from(this.parentElement?.children ?? [])
 			.find(msgEl => msgEl instanceof LiveChatMessage && msgEl.messageId === this.repliesTo));
 		if (!message) {
+			// TODO: This is goofy as well
 			const fakeMessage = {
-				name: "[ERROR]",
+				senderChatName: "[ERROR]",
 				content: "...",
 				fake: true
 			};
@@ -275,7 +264,7 @@ export class LiveChatMessage extends LitElement {
 		const nameClickEvent = new CustomEvent("name-click", {
 			bubbles: true,
 			composed: true,
-			detail: { messageId: this.messageId, senderId: this.senderId }
+			detail: { messageId: this.messageId, senderId: this.senderIntId }
 		});
 		this.dispatchEvent(nameClickEvent);
 	}
@@ -285,7 +274,7 @@ export class LiveChatMessage extends LitElement {
 	 */
 	#notifyContextMenu(e) {
 		e.preventDefault();
-		const contextMenuEvent = LiveChatMouseEvent.fromMouseEvent(e, this.messageId, this.senderId, "context-menu")
+		const contextMenuEvent = LiveChatMouseEvent.fromMouseEvent(e, this.messageId, this.senderIntId, "context-menu")
 		this.dispatchEvent(contextMenuEvent);
 	}
 
@@ -299,7 +288,7 @@ export class LiveChatMessage extends LitElement {
 			composed: true,
 			detail: {
 				messageId: this.messageId,
-				senderId: this.senderId
+				senderId: this.senderIntId
 			}
 		});
 		this.dispatchEvent(replyClickEvent);
@@ -315,7 +304,7 @@ export class LiveChatMessage extends LitElement {
 			composed: true,
 			detail: {
 				messageId: this.messageId,
-				senderId: this.senderId
+				senderId: this.senderIntId
 			}
 		});
 		this.dispatchEvent(reportClickEvent);
@@ -331,7 +320,7 @@ export class LiveChatMessage extends LitElement {
 			composed: true,
 			detail: {
 				messageId: this.messageId,
-				senderId: this.senderId,
+				senderId: this.senderIntId,
 				messageElement: this
 			}
 		});
@@ -348,7 +337,7 @@ export class LiveChatMessage extends LitElement {
 			composed: true,
 			detail: {
 				messageId: this.messageId,
-				senderId: this.senderId,
+				senderId: this.senderIntId,
 				messageElement: this
 			}
 		});
@@ -357,14 +346,14 @@ export class LiveChatMessage extends LitElement {
 	
 	#renderName() {
 		const nameStyle = {
-			color: this.messageId === 0 ? undefined : CHAT_COLOURS[hash("" + this.senderId) & 7]
+			color: this.messageId === 0 ? undefined : CHAT_COLOURS[hash("" + this.senderIntId) & 7]
 		}
 		
 		return html`
 			<span 
 				class="name ${this.messageId === 0 ? "rainbow-glow" : ""}" style=${styleMap(nameStyle)}
 				title=${new Date(this.sendDate * 1000).toLocaleString()}
-				@click=${this.#notifyNameClick}>[${this.name || ("#" + this.senderId)}]</span>`
+				@click=${this.#notifyNameClick}>[${this.senderChatName || ("#" + this.senderIntId)}]</span>`
 	}
 	
 	#renderReply() {
@@ -374,7 +363,7 @@ export class LiveChatMessage extends LitElement {
 		
 		return html`
 			<p class="reply" @click=${this.#scrollToReply}>
-				↪️ ${this.replyingMessage.name} ${this.replyingMessage.content}
+				↪️ ${this.replyingMessage.senderChatName} ${this.replyingMessage.content}
 			</p>`
 	}
 	
@@ -466,4 +455,38 @@ export class LiveChatMessage extends LitElement {
 			${this.#renderActions()}`
 	}
 }
-customElements.define("r-live-chat-message", LiveChatMessage)
+customElements.define("r-live-chat-message", LiveChatMessage);
+
+export class PlaceChat extends LitElement {
+	static properties = {
+		positionIndex: { type: Number, reflect: true, attribute: "r-positionIndex" },
+		content: { type: String, reflect: true, attribute: "r-content" },
+		senderIntId: { type: Number, reflect: true, attribute: "r-senderIntId" },
+		senderChatName: { type: String, reflect: true, attribute: "r-senderChatName" },
+		sendDate: { type: Number, reflect: true, attribute: "r-sendDate" }
+	}
+
+	constructor() {
+		super();
+		/**@type {number}*/this.positionIndex = 0;
+		/**@type {string}*/this.content = "";
+		/**@type {number}*/this.senderIntId = 0;
+		/**@type {string}*/this.senderChatName = "";
+		/**@type {number}*/this.sendDate = Date.now(); 
+	}
+
+	createRenderRoot() {
+		return this;
+	}
+
+	render() {
+		return html`
+			<span title="${(new Date(this.sendDate)).toLocaleString()}" style="color: ${CHAT_COLOURS[hash(String(this.senderIntId)) & 7]};">
+				[${this.senderChatName}]
+			</span>
+			<span>
+				${this.content}
+			</span>`
+	}
+}
+customElements.define("r-place-chat", PlaceChat);

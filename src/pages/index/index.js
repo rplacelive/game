@@ -27,9 +27,9 @@ import FingerprintJS from "@fingerprintjs/fingerprintjs";
 /**
  * @typedef {Object} LiveChatMessage
  * @property {number} messageId
- * @property {string} txt
+ * @property {string} content
  * @property {number} senderIntId
- * @property {string} name
+ * @property {string} senderChatName
  * @property {number} sendDate
  * @property {Map<string, Set<number>>} reactions
  * @property {string} channel
@@ -37,10 +37,10 @@ import FingerprintJS from "@fingerprintjs/fingerprintjs";
  */
 /**
  * @typedef {Object} PlaceChatMessage
- * @property {number} msgPos
- * @property {string} txt
+ * @property {number} positionIndex
+ * @property {string} content
  * @property {number} senderIntId
- * @property {string} name
+ * @property {string} senderChatName
  */
 /**
  * @typedef {Object} ChatPacket
@@ -435,10 +435,10 @@ function addLiveChatMessage({ message, channel }) {
 
 	const newMessage = createLiveChatMessageElement(
 		message.messageId,
-		message.txt,
+		message.content,
 		message.senderIntId,
 		message.sendDate,
-		message.name,
+		message.senderChatName,
 		message.repliesTo,
 		message.reactions
 	);
@@ -480,16 +480,20 @@ function addPlaceChatMessage(message) {
 	}
 
 	// Create message
-	const placeMessage = document.createElement("placechat")
-	placeMessage.innerHTML = `<span title="${(new Date()).toLocaleString()}" style="color: ${CHAT_COLOURS[hash("" + message.senderIntId) & 7]};">[${message.name}]</span><span>${message.txt}</span>`
-	placeMessage.style.left = (message.msgPos % WIDTH) + "px"
-	placeMessage.style.top = (Math.floor(message.msgPos / WIDTH) + 0.5) + "px"
-	canvParent2.appendChild(placeMessage)
+	const placeMessage = /**@type {import("./game-elements.js").PlaceChat}*/(document.createElement("r-place-chat"));
+	placeMessage.positionIndex = message.positionIndex;
+	placeMessage.content = message.content;
+	placeMessage.senderIntId = message.senderIntId;
+	placeMessage.senderChatName = message.senderChatName;
+	placeMessage.sendDate = Date.now();
+	placeMessage.style.left = (message.positionIndex % WIDTH) + "px";
+	placeMessage.style.top = (Math.floor(message.positionIndex / WIDTH) + 0.5) + "px";
+	canvParent2.appendChild(placeMessage);
 
 	//Remove message after given time
 	setTimeout(() => {
 		placeMessage.remove();
-	}, localStorage.placeChatTime || 7e3)
+	}, localStorage.placeChatTime || 7e3);
 }
 addIpcMessageHandler("addPlaceChatMessage", addPlaceChatMessage);
 /**
@@ -737,10 +741,10 @@ function handleUnspectated(spectatorIntId) {
 addIpcMessageHandler("handleUnspectated", handleUnspectated);
 
 // Touch & mouse canvas event handling
-let moved = 3
-/**@type {Touch|null}*/let touch1 = null
-/**@type {Touch|null}*/let touch2 = null
-let touchMoveDistance = 15
+let moved = 3;
+/**@type {Touch|null}*/let touch1 = null;
+/**@type {Touch|null}*/let touch2 = null;
+let touchMoveDistance = 15;
 
 // Bidirectional IPC, similar to server.ts - db-worker.ts communication
 // Methods called by posts frame
@@ -748,6 +752,7 @@ function resizePostsFrame() {
 	if (!postsFrame) {
 		return;
 	}
+
 	const calcHeight = postsFrame.contentWindow?.document.body.scrollHeight || 0;
 	postsFrame.height = String(calcHeight);
 	postsFrame.style.minHeight = calcHeight + "px";
@@ -780,23 +785,27 @@ more.addEventListener("scroll", function(/**@type {any}*/ e) {
 
 // Game input handling && overrides
 viewport.addEventListener("touchstart", function(/**@type {TouchEvent}*/ e) {
+	if (!(e instanceof Event) || !e.isTrusted) {
+		return;
+	}
+
 	e.preventDefault()
 	for (let i = 0; i < e.changedTouches.length; i++) {
 		const touch = e.changedTouches[i];
 		if (!touch1) {
-			touch1 = touch
-			touchMoveDistance = 15
+			touch1 = touch;
+			touchMoveDistance = 15;
 		}
 		else if (!touch2) {
-			touch2 = touch
+			touch2 = touch;
 		}
 		else {
-			[touch1, touch2] = [touch2, touch]
+			[touch1, touch2] = [touch2, touch];
 		}
 	}
 })
 viewport.addEventListener("touchend", function(/**@type {TouchEvent}*/ e) {
-	if (!e.isTrusted) {
+	if (!(e instanceof Event) || !e.isTrusted || !(e.target instanceof HTMLElement)) {
 		return;
 	}
 
@@ -837,14 +846,19 @@ viewport.addEventListener("touchend", function(/**@type {TouchEvent}*/ e) {
 
 		// Handle click on target
 		if (touchMoveDistance > 0 && target) {
-			// NOTE: Any button that requires e.isTrusted to be true will cause a problem on mobile due to 
-			// mobile inputs emitting fake events - remember to bind use touchstart too when trust is required
+			// NOTE: Any button within viewport that requires e.isTrusted to be true will cause a problem on
+			// mobile due to mobile inputs emitting fake events - remember to bind use touchstart too when
+			// trust is required
 			target.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 		}
 	}
 	e.preventDefault();
 });
 viewport.addEventListener("mousedown", function(/**@type {MouseEvent}*/ e) {
+	if (!(e instanceof Event) || !e.isTrusted) {
+		return;
+	}
+
 	moved = 3;
 	mouseDown = e.button + 1;
 
@@ -853,6 +867,10 @@ viewport.addEventListener("mousedown", function(/**@type {MouseEvent}*/ e) {
 	}
 });
 viewport.addEventListener("mouseup", function(/**@type {MouseEvent}*/ e) {
+	if (!(e instanceof Event) || !e.isTrusted || !(e.target instanceof HTMLElement)) {
+		return;
+	}
+
 	if (e.target != viewport && !canvParent2.contains(e.target)) {
 		return (moved = 3, mouseDown = 0);
 	}
@@ -880,13 +898,17 @@ placeContextInfoButton.addEventListener("click", function(e) {
 	showPlacerInfo(px, py);
 });
 viewport.addEventListener("contextmenu", function(e) {
+	if (!(e instanceof Event) || !e.isTrusted || !(e.target instanceof HTMLElement)) {
+		return;
+	}
+
 	placeContext.style.display = "block";
 	const canvasPos = screenToCanvas(e.clientX, e.clientY);
 	placeContext.dataset.x = String(canvasPos.x);
 	placeContext.dataset.y = String(canvasPos.y);
 	setPlaceContextPosition(canvasPos.x, canvasPos.y, z);
 });
-if (!localStorage.vip) {
+if (!localStorage.vip?.startsWith("!")) {
 	const placeContextModItem = /**@type {HTMLElement}*/($("#placeContextModItem"));
 	placeContextModItem.setAttribute("hidden", "");
 }
@@ -1189,11 +1211,15 @@ let mouseDown = 0
 let mx = 0
 let my = 0
 
-viewport.addEventListener("mousemove", function(/** @type {{ target: any; clientX: number; clientY: number; }} */ e) {
-	lastMouseMove = Date.now();
+viewport.addEventListener("mousemove", function(/** @type {MouseEvent} */ e) {
+	if (!(e instanceof Event) || !e.isTrusted || !(e.target instanceof HTMLElement)) {
+		return;
+	}
 	if (e.target != viewport && !canvParent2.contains(e.target)) {
 		return;
 	}
+
+	lastMouseMove = Date.now();
 	moved--;
 	let dx = -(mx - (mx = e.clientX - innerWidth / 2));
 	let dy = -(my - (my = e.clientY - viewport.offsetHeight / 2));
@@ -1210,7 +1236,10 @@ viewport.addEventListener("mousemove", function(/** @type {{ target: any; client
 	}
 })
 
-viewport.addEventListener("wheel", function(/** @type {{ target: any; deltaY: number; }} */ e) {
+viewport.addEventListener("wheel", function(/**@type {WheelEvent}*/e) {
+	if (!(e instanceof Event) || !e.isTrusted || !(e.target instanceof HTMLElement)) {
+		return;
+	}
 	if (e.target != viewport && !canvParent2.contains(e.target)) {
 		return
 	}
@@ -1393,7 +1422,7 @@ function seti(index, colour) {
 }
 
 viewport.addEventListener("touchmove", function(/**@type {TouchEvent}*/ e) {
-	if (!e.target) {
+	if (!(e instanceof Event) || !e.isTrusted || !(e.target instanceof HTMLElement)) {
 		return;
 	}
 
@@ -1826,8 +1855,8 @@ function selectColour(colourIndex) {
 }
 
 function unselectColour() {
-	selectedColour = -1;
 	colours.children[selectedColour].classList.remove("sel");
+	selectedColour = -1;
 }
 
 function isColourSelected() {
@@ -2122,20 +2151,20 @@ function switchLanguageChannel(selected) {
 
 /**
  * @param {number} messageId
- * @param {string} txt
+ * @param {string} content
  * @param {number} senderId
  * @param {number} sendDate
- * @param {string|null} name
+ * @param {string|null} senderChatName
  * @param {number|null} repliesTo
  * @param {Map<string, Set<number>>|null} reactions
  * @returns {import("./game-elements.js").LiveChatMessage}
  */
-function createLiveChatMessageElement(messageId, txt, senderId, sendDate, name = null, repliesTo = null, reactions = null) {
+function createLiveChatMessageElement(messageId, content, senderId, sendDate, senderChatName = null, repliesTo = null, reactions = null) {
 	const message = /**@type {import("./game-elements.js").LiveChatMessage}*/(document.createElement("r-live-chat-message"));
 	message.messageId = messageId;
-	message.content = txt;
-	message.senderId = senderId;
-	message.name = name;
+	message.content = content;
+	message.senderIntId = senderId;
+	message.senderChatName = senderChatName;
 	message.sendDate = sendDate;
 	message.repliesTo = repliesTo;
 	message.reactions = reactions ? new Map(
@@ -2215,7 +2244,7 @@ function applyLiveChatMessageInteractivity(message, channel = "") {
 	});
 
 	// Apply user blocking
-	if (message.senderId !== 0 && blockedUsers.includes(message.senderId)) {
+	if (message.senderIntId !== 0 && blockedUsers.includes(message.senderIntId)) {
 		message.style.color = "transparent";
 		message.style.textShadow = "0px 0px 6px black";
 	}
@@ -2350,20 +2379,18 @@ function addLiveChatMessages({ channel, messages, before }) {
 		return;
 	}
 
-	if (!chatMessages) throw new Error("Chat messages container not found");
-
 	/** @type {Promise<void>[]} */
 	const messageRenderPromises = [];
 
 	messages.forEach(msgData => {
-		const chatName = intIdNames.get(msgData.senderIntId) || null;
+		const senderChatName = intIdNames.get(msgData.senderIntId) || null;
 		/** @type {import("./game-elements.js").LiveChatMessage}*/
 		const newMessage = createLiveChatMessageElement(
 			msgData.messageId,
-			msgData.txt,
+			msgData.content,
 			msgData.senderIntId,
 			msgData.sendDate,
-			chatName,
+			senderChatName,
 			msgData.repliesTo,
 			msgData.reactions
 		);
@@ -2633,7 +2660,7 @@ modMessageId.addEventListener("input", async function(e) {
 	// Check local cache first
 	let found = null;
 	for (const message of (cMessages.get(currentChannel) || [])) {
-		if (message.messageId == modMessageId.value) {
+		if (message.messageId === Number(modMessageId.value)) {
 			found = message;
 			break;
 		}
@@ -2957,7 +2984,7 @@ function startedSpectating(userIntId) {
 	setCanvasLocked(true);
 }
 /**
- * @param {string} userIntId
+ * @param {number} userIntId
  * @param {string} reason
  */
 function stoppedSpectating(userIntId, reason) {
@@ -3306,7 +3333,7 @@ overlayYInput.addEventListener("change", function() {
 });
 const overlayOpacity = /**@type {HTMLInputElement}*/($("#overlayOpacity"));
 overlayOpacity.addEventListener("change", function() {
-	overlayInfo.opacity = (+this.value ?? 80) / 100;
+	overlayInfo.opacity = Number(overlayOpacity.value) / 100;
 	templateImage.style.opacity = String(overlayInfo.opacity);
 });
 
