@@ -4,6 +4,7 @@
 	--ui-panel-hover: lightgrey;
 	--ui-panel-bg: white;
 	--ui-text: black;
+	--ui-shadow: 0 0 10px rgba(0,0,0,0.4);
 }
 
 :root[data-variant="dark"] {
@@ -39,7 +40,7 @@ select {
 	border-radius: 10px;
 	font-size: 16px;
 	border: 1px solid gray;
-	box-shadow: 0 0 10px rgba(0,0,0,0.4);
+	box-shadow: var(--ui-shadow);
 	height: 35px;
 	padding: 5px;
 	font-family: bold;
@@ -53,7 +54,7 @@ input, button, textarea, .labelled-slider {
 	border-radius: 10px;
 	font-size: 16px;
 	border: none;
-	box-shadow: 0 0 10px rgba(0,0,0,0.4);
+	box-shadow: var(--ui-shadow);
 	height: 35px;
 	padding: 5px;
 	outline: none;
@@ -438,7 +439,7 @@ r-live-chat-message .emoji-reactors-count {
 	cursor: pointer;
 	font-weight: bolder;
 	border-radius: 10px;
-	box-shadow: 0 0 10px rgba(0,0,0,0.4);
+	box-shadow: var(--ui-shadow);
 }
 
 #chatMessages > .message > .actions {
@@ -454,11 +455,12 @@ r-live-chat-message .emoji-reactors-count {
 	background: var(--ui-panel-bg);
 	border: 1px solid var(--ui-panel-hover);
 	border-radius: 5px 5px 10px 10px;
+	box-shadow: var(--ui-shadow);
 }
 
 .channels-options {
 	border-radius: 20px;
-	box-shadow: 0 0 10px rgba(0,0,0,0.4);
+	box-shadow: var(--ui-shadow);
 }
 
 .channel-button {
