@@ -481,12 +481,15 @@ export class PlaceChat extends LitElement {
 
 	render() {
 		return html`
-			<span title="${(new Date(this.sendDate)).toLocaleString()}" style="color: ${CHAT_COLOURS[hash(String(this.senderIntId)) & 7]};">
-				[${this.senderChatName}]
-			</span>
-			<span>
-				${this.content}
-			</span>`
+			<div class="content">
+				<span title="${(new Date(this.sendDate)).toLocaleString()}" style="color: ${CHAT_COLOURS[hash(String(this.senderIntId)) & 7]};">
+					[${this.senderChatName}]
+				</span>
+				<span>
+					${this.content}
+				</span>
+			</div>
+			<div class="arrow"></div>`
 	}
 }
 customElements.define("r-place-chat", PlaceChat);
