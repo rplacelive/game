@@ -2,7 +2,7 @@ import { LitElement, html } from "lit-element"
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { styleMap } from "lit/directives/style-map.js";
 import { DEFAULT_SERVER, EMOJIS, CUSTOM_EMOJIS } from "./defaults.js";
-import { lerp, translate } from "./shared.js";
+import { toCapitalised, lerp, translate, generateRandomId } from "./shared.js";
 import { openAccountFrame } from "./services/account-manager.js";
 
 class Spoiler extends HTMLElement {
@@ -557,18 +557,25 @@ export class EditList extends LitElement {
 	render() {
 		return html`
 			<ul>
-				${Object.entries(this.data).map(([key, value]) => html`
-					<li>
-						<input
-							type="text"
-							title="${key}"
-							.value=${value}
-							@input=${(e) => this.updateEntry(key, e.target.value)}
-							placeholder="${key}"
-						>
-						<button @click=${() => this.removeEntry(key)}>x</button>
-					</li>
-				`)}
+				${Object.entries(this.data).map(([key, value]) => {
+					const inputId = (this.getAttribute("id") ?? generateRandomId()) + toCapitalised(key);
+					return html`
+						<li>
+							<label for="${inputId}" title=${key}>
+								${key}:
+							</label>
+							<input
+								id=${inputId}
+								type="text"
+								title="${key}"
+								.value=${value}
+								@input=${(e) => this.updateEntry(key, e.target.value)}
+								placeholder="${key}"
+							>
+							<button @click=${() => this.removeEntry(key)}>x</button>
+						</li>`
+					})
+				}
 			</ul>
 			<button @click=${this.addEntry}>+ Add Entry</button>
 		`;

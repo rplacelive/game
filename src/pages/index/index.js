@@ -1,8 +1,6 @@
 import { DEFAULT_BOARD, DEFAULT_SERVER, ADS, CHAT_COLOURS, COMMANDS, CUSTOM_EMOJIS, DEFAULT_HEIGHT, DEFAULT_PALETTE_KEYS, DEFAULT_THEMES, DEFAULT_WIDTH, EMOJIS, LANG_INFOS, MAX_CHANNEL_MESSAGES, PUNISHMENT_STATE, DEFAULT_PALETTE_USABLE_REGION, DEFAULT_PALETTE, DEFAULT_COOLDOWN, PLACEMENT_MODE } from "../../defaults.js";
-import { lang, translate, translateAll, hash, $, stringToHtml, blobToBase64, base64ToBlob, lerp }  from "../../shared.js";
+import { lang, translate, translateAll, hash, $, stringToHtml, blobToBase64, base64ToBlob, lerp, clamp }  from "../../shared.js";
 import { showLoadingScreen, hideLoadingScreen } from "./loading-screen.js";
-//import { enableDarkplace, disableDarkplace } from "./darkplace.js";
-//import { enableWinter, disableWinter } from "./snowplace.js";
 import { clearCaptchaCanvas, updateImgCaptchaCanvas, updateImgCaptchaCanvasFallback } from "./captcha-canvas.js";
 import { BoardRenderer } from "./board-renderer.js";
 import { placeChat } from "./game-settings.js";
@@ -13,6 +11,7 @@ import { addIpcMessageHandler, handleIpcMessage, sendIpcMessage, makeIpcRequest 
 import { openOverlayMenu } from "./overlay-menu.js";
 import { TurnstileWidget } from "../../services/turnstile-manager.js";
 import FingerprintJS from "@fingerprintjs/fingerprintjs";
+import { theme } from "./game-themes.js";
 
 // HTTPS upgrade
 // TODO: Make sure this doesn't happen on localhost
@@ -846,7 +845,7 @@ viewport.addEventListener("touchend", function(/**@type {TouchEvent}*/ e) {
 
 		// Traverse up to find a dispatchable target
 		while (target && !target.dispatchEvent) {
-			target = target.parentElement
+			target = target.parentElement;
 		}
 
 		// Handle click on target
@@ -960,7 +959,7 @@ async function showPlacerInfo(x, y) {
 	alert(`Details of who placed at ${
 		Math.floor(x)}, ${
 		Math.floor(y)}:\nName: ${
-		name || 'anon'}\nUser ID: #${
+		name || "anon"}\nUser ID: #${
 		id}`);
 }
 
@@ -2084,7 +2083,7 @@ function initChannelDrop() {
 			containsMy = true;
 		}
 		const el = document.createElement("li");
-		el.innerHTML = `<span>${info.name}</span> <img src="${info.flag}" style="height: 24px;">`;
+		el.innerHTML = `<button type="button"><span>${info.name}</span> <img src="${info.flag}" style="height: 24px;"></button>`;
 		el.dataset.lang = code;
 		channelDropMenu.appendChild(el);
 	}
@@ -2331,7 +2330,6 @@ function handleLiveChatCommand(command, message) {
 		}
 		case "vip": {
 			const key = message.slice(4).trim();
-			localStorage.vip2 = key;
 			localStorage.vip = key;
 			window.location.reload();
 			break;
@@ -2646,7 +2644,7 @@ function chatCancelReplies() {
 	// TODO: Use CSS classes / find a better solution
 	// HACK: Ensure no overlap between reply and send features
 	messageTypePanel.style.height = "calc(var(--message-input-height) + 62px)"
-	messageReplyPanel.setAttribute('closed', 'true')
+	messageReplyPanel.setAttribute("closed", "true")
 }
 
 messageCancelReplyButton.addEventListener("click", function(e) {
@@ -3056,134 +3054,28 @@ function defaultServer() {
 	}
 }
 
-/**
- * @param {string} serverAddress
- * @param {string} boardAddress
- * @param {string} vip
- * @param {Storage} storage
- */
-function server(serverAddress, boardAddress, vip = "", storage = localStorage) {
-	// TODO: This is outdated and dumb
-	if (!serverAddress) {
-		storage.vip = storage.vip2
-		delete storage.vip2
-		delete storage.server
-		delete storage.board
-		return
-	}
-
-	storage.vip2 = storage.vip2 || storage.vip
-	storage.vip = vip
-	storage.server = serverAddress
-	storage.board = boardAddress
-}
-
-/**
- * @param {string} forceTheme
- * @param {string|null} forceVariant
- * @param {string|null} forceEffects
- */
-async function forceTheme(forceTheme, forceVariant = null , forceEffects = null) {
-	const currentThemeSet = document.documentElement.dataset.theme
-	const currentVariant = document.documentElement.dataset.variant
-	if (currentThemeSet != forceTheme || currentVariant != forceVariant) {
-		console.warn("Forcing site theme to", forceTheme, forceVariant)
-		await theme(/**@type {import("../../defaults.js").ThemeInfo}*/(DEFAULT_THEMES.get(forceTheme)), forceVariant, forceEffects)
-	}
-}
-
-/**@type {HTMLLinkElement|null}*/let styleElement = null;
-/**@type {import("../../defaults.js").ThemeInfo|null}*/let currentTheme = null;
-
-/**
- * @param {import("../../defaults.js").ThemeInfo} themeSet
- * @param {string|null} variant
- * @param {string|null} effects
- */
-async function theme(themeSet, variant = null, effects = null) {
-	variant ??= "";
-
-	// Effects
-	// TODO: Fix dodgy module load race condition concerning forceTheme func
-	/*disableDarkplace();
-	disableWinter();
-	switch (effects) {
-		case "darkplace":
-			enableDarkplace();
-			break;
-		case "winter":
-			enableWinter();
-			break;
-	}*/
-
-	if (currentTheme !== themeSet) {
-		// Intermediate stylesheet handles giving a nice transition animation during theme change
-		const intermediate = document.createElement("link");
-		intermediate.rel = "stylesheet";
-		intermediate.type = "text/css";
-		intermediate.href = "/css/theme-switch.css";
-		intermediate.setAttribute("intermediate-temp", "true");
-		await (new Promise(resolve => {
-			intermediate.onload = resolve;
-			document.head.appendChild(intermediate);
-		}))
-
-		// Load in new CSS
-		const link = document.createElement("link");
-		link.rel = "stylesheet";
-		link.type = "text/css";
-		link.href = themeSet.css + "?v=" + themeSet.cssVersion;
-		await (new Promise(async (resolve) => {
-			link.onload = resolve;
-			document.head.appendChild(link);
-		}));
-		setTimeout(() => document.head.removeChild(intermediate), 200);
-		// Swap out intermediate and old stylesheet
-		if (styleElement) {
-			document.head.removeChild(styleElement);
-		}
-		styleElement = link;
-		currentTheme = themeSet;
-
-		document.querySelectorAll("[theme]").forEach((element) => {
-			const themeKey = element.getAttribute("theme")
-			if (!themeKey) {
-				return
-			}
-			if (element.tagName == "IMG") {
-				const imageElement = /**@type {HTMLImageElement}*/(element);
-				imageElement.src = themeSet[themeKey] || imageElement.src
-			}
-			else {
-				element.innerHTML = themeSet[themeKey] || element.innerHTML
-			}
-		})
-		document.documentElement.dataset.theme = themeSet.id
-	}
-	document.documentElement.dataset.variant = variant
-}
+// Theme
 function initTheme() {
-	let startupThemeSet = DEFAULT_THEMES.get(localStorage.theme || "r/place 2022");
-	if (!startupThemeSet) {
-		startupThemeSet = DEFAULT_THEMES.get("r/place 2022");
-	}
-	if (startupThemeSet) {
-		theme(startupThemeSet, localStorage.variant, localStorage.effects);
-		themeDropName.textContent = "🖌️ " + (localStorage.theme || "r/place 2022");
-	}
-	else {
-		const errorMessage = "Error: Can't find startup theme set, site may appear broken!";
-		console.error(errorMessage, { availableThemes: DEFAULT_THEMES, savedTheme: localStorage.theme });
-		alert(errorMessage);
-	}
+    let startupThemeSet = DEFAULT_THEMES.get(localStorage.theme || "r/place 2022");
+    if (!startupThemeSet) {
+        startupThemeSet = DEFAULT_THEMES.get("r/place 2022");
+    }
+    if (startupThemeSet) {
+        theme(startupThemeSet, localStorage.variant, localStorage.effects);
+        themeDropName.textContent = "🖌️ " + (localStorage.theme || "r/place 2022");
+    }
+    else {
+        const errorMessage = "Error: Can't find startup theme set, site may appear broken!";
+        console.error(errorMessage, { availableThemes: DEFAULT_THEMES, savedTheme: localStorage.theme });
+        alert(errorMessage);
+    }
 }
 if (document.readyState !== "loading") {
-	initTheme();
+    initTheme();
 }
 else {
-	window.addEventListener("DOMContentLoaded", initTheme);
+    window.addEventListener("DOMContentLoaded", initTheme);
 }
-
 const themeDropList = themeDrop.firstElementChild;
 themeDropList?.addEventListener("click", function(e) {
 	let target = e.target;
@@ -3199,7 +3091,7 @@ themeDropList?.addEventListener("click", function(e) {
 		e.stopPropagation();
 
 		if (targetTheme) {
-			themeDropName.textContent = '🖌️ ' + targetTheme;
+			themeDropName.textContent = "🖌️ " + targetTheme;
 			const newTheme = DEFAULT_THEMES.get(targetTheme);
 			if (newTheme) {
 				theme(newTheme, targetVariant, targetEffects);
@@ -3211,16 +3103,6 @@ themeDropList?.addEventListener("click", function(e) {
 		break;
 	}
 });
-
-/**
- * @param {number} num
- * @param {number} min
- * @param {number} max
- */
-function clamp(num, min, max) {
-	return Math.min(Math.max(num, min), max);
-}
-
 
 /**
  * @param {MouseEvent} e
@@ -3236,28 +3118,28 @@ function tlMouseMove(e) {
 }
 
 function toggleTlPanel() {
-	timelapsePanel.style.display = timelapsePanel.style.display == 'none' ? 'block' : 'none'
-	tlImage.src = canvas.toDataURL("image/png")
-	tlSelect.style.width = WIDTH + "px"
-	tlSelect.style.height = HEIGHT + "px"
+	timelapsePanel.style.display = timelapsePanel.style.display == "none" ? "block" : "none";
+	tlImage.src = canvas.toDataURL("image/png");
+	tlSelect.style.width = WIDTH + "px";
+	tlSelect.style.height = HEIGHT + "px";
 
 	let backups = []
-	fetch(localStorage.board + '/backuplist')
+	fetch(localStorage.board + "/backups")
 		.then((response) => response.text())
 		.then((data) => {
-			for (let b of data.split("\n")) backups.push(b)
+			for (let b of data.split("\n")) backups.push(b);
 		})
 }
 
 /**@type {number}*/let tlTimerStart = 0
 
 function confirmTlCreate() {
-	tlConfirm.value = "Timelapse loading. Hang tight! ⏳"
-	tlConfirm.style.pointerEvents = "none"
-	tlTimerStart = Date.now()
-	let tlTimerInterval = setInterval(updateTlTimer, 100)
+	tlConfirm.value = "Timelapse loading. Hang tight! ⏳";
+	tlConfirm.style.pointerEvents = "none";
+	tlTimerStart = Date.now();
+	let tlTimerInterval = setInterval(updateTlTimer, 100);
 
-	fetch(`https://${localStorage.server || DEFAULT_SERVER}/timelapse/`, {
+	fetch(`https://${localStorage.server || DEFAULT_SERVER}/timelapses/`, {
 			method: "POST",
 			body: JSON.stringify({
 				"backupStart": tlStartSel.value,
@@ -3269,28 +3151,28 @@ function confirmTlCreate() {
 				"endY": HEIGHT,
 				"reverse": tlPlayDir.getAttribute("reverse") == "true"
 			}),
-			headers: { 'Content-type': 'application/json; charset=UTF-8' }
+			headers: { "Content-type": "application/json; charset=UTF-8" }
 		})
 		.then(resp => resp.blob())
 		.then(blob => {
-			const url = window.URL.createObjectURL(blob)
-			const a = document.createElement('a')
-			a.style.display = 'none'
-			a.href = url
-			a.download = 'place_timelapse.gif'
-			document.body.appendChild(a)
-			a.click()
-			tlConfirm.value = "Create"
-			tlConfirm.style.pointerEvents = "auto"
-			clearInterval(tlTimerInterval)
-			tlTimer.innerText = "0.0s"
+			const url = window.URL.createObjectURL(blob);
+			const a = document.createElement("a");
+			a.style.display = "none";
+			a.href = url;
+			a.download = "place_timelapse.gif";
+			document.body.appendChild(a);
+			a.click();
+			tlConfirm.value = "Create";
+			tlConfirm.style.pointerEvents = "auto";
+			clearInterval(tlTimerInterval);
+			tlTimer.innerText = "0.0s";
 		})
 		.catch((e) => {
-			console.error("Timelapse failed, " + e)
-			tlConfirm.value = "Create"
-			tlConfirm.style.pointerEvents = "auto"
-			clearInterval(tlTimerInterval)
-			tlTimer.innerText = "0.0s"
+			console.error("Timelapse failed, " + e);
+			tlConfirm.value = "Create";
+			tlConfirm.style.pointerEvents = "auto";
+			clearInterval(tlTimerInterval);
+			tlTimer.innerText = "0.0s";
 		})
 }
 function updateTlTimer() {
@@ -3310,9 +3192,11 @@ function updateTlTimer() {
  */
 /**@type {OverlayInfo}*/var overlayInfo = { x: 0, y: 0, w: 0, h: 0, opacity: 0.8, type: "", data: null }
 overlayInput.onchange = function() {
-	if (!overlayInput.files || !overlayInput.files[0]) return
-	templateImage.src = URL.createObjectURL(overlayInput.files[0])
-	templateImage.style.opacity = "0.8"
+	if (!overlayInput.files || !overlayInput.files[0]) {
+		return;
+	}
+	templateImage.src = URL.createObjectURL(overlayInput.files[0]);
+	templateImage.style.opacity = "0.8";
 }
 async function generateOverlayUrl() {
 	if (!overlayInput.files) {
@@ -3345,7 +3229,7 @@ overlayCopyButton.addEventListener("click", async function(e) {
 		overlayCopyButton.children[2].textContent = "Failed: Overlay is too big!";
 		overlayCopyButton.children[2].animate([
 			{ opacity: 1 },
-			{ color: 'red' }
+			{ color: "red" }
 		], { duration: 1000, iterations: 1 });
 		if (overlayFailTimeout) {
 			clearTimeout(overlayFailTimeout);
@@ -3381,26 +3265,26 @@ let openedChat = false;
 function openChatPanel() {
 	chatPanel.setAttribute("open", "true")
 	if (!openedChat) {
-		openedChat = true
+		openedChat = true;
 	}
-	chatPanel.inert = false
+	chatPanel.inert = false;
 }
 chatButton.addEventListener("click", openChatPanel);
 
 messageOptionsButton.addEventListener("click", function(e) {
 	updateMessageInputHeight();
-	messageTypePanel.toggleAttribute('closed')
+	messageTypePanel.toggleAttribute("closed");
 })
 
 // Chat panel
 chatCloseButton.addEventListener("click", closeChatPanel);
 
 function closeChatPanel() {
-	messageInput.blur()
-	messageInputEmojiPanel.removeAttribute("open")
-	messageInputGifPanel.removeAttribute("open")
-	chatPanel.removeAttribute("open")
-	chatPanel.inert = true
+	messageInput.blur();
+	messageInputEmojiPanel.removeAttribute("open");
+	messageInputGifPanel.removeAttribute("open");
+	chatPanel.removeAttribute("open");
+	chatPanel.inert = true;
 }
 closeChatPanel()
 
