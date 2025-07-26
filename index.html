@@ -28,9 +28,8 @@
 	<script type="module" src="/src/pages/index/event-timer.js"></script>
 	<script type="module" src="/src/pages/index/august21-event.js"></script>
 	<script type="module" src="/src/pages/index/captcha-canvas.js"></script> <!--TODO: Make async compatible-->
-	<script type="module" src="/src/pages/index/darkplace.js"></script>
-	<script type="module" src="/src/pages/index/snowplace.js"></script>
 	<script type="module" src="/src/pages/index/game-elements.js"></script>
+	<script type="module" src="/src/pages/index/game-themes.js"></script>
 	<script type="module" src="/src/pages/index/game-settings.js"></script> <!--TODO: Make async compatible-->
 	<script type="module" src="/src/pages/index/secret-settings.js"></script> <!--TODO: Make async compatible-->
 	<script type="module" src="/src/pages/index/game-defaults.js"></script> <!--async-->
@@ -59,10 +58,10 @@
 
 			<!-- Main game viewport -->
 			<div id="viewport" noselect>
-				<canvas id="canvas" width="0" height="0" noselect></canvas>
 				<div id="canvparent1" noselect>
 					<img id="edge" height="226" width="290" src="images/snoo-edge.png" />
 				</div>
+				<canvas id="canvas" width="0" height="0" noselect></canvas>
 				<canvas id="viewportCanvas"></canvas>
 				<div id="canvparent2" noselect>
 					<div id="canvselect">
@@ -91,11 +90,11 @@
 
 			<!-- Game layout/HUD Elements -->
 			<button type="button" noselect id="closebtn" class="layout" title="More">...</button>
-			<r-position-indicator id="positionIndicator"></r-position-indicator>
+			<r-position-indicator id="positionIndicator" class="layout"></r-position-indicator>
 			<button type="button" noselect id="helpbtn" class="layout" title="Help" onclick="if (modal.open) { modal.close() } else { modal.showModal() }">
 				<img class="icon-image" alt="?" src="/svg/help.svg">
 			</button>
-			<button type="button" id="place" translate="connecting" noselect>Connecting...</button>
+			<button type="button" id="place" class="layout" translate="connecting" noselect>Connecting...</button>
 			<button type="button" id="chatbtn" class="layout" noselect>
 				<img alt="Chat" class="icon-image" src="/svg/chat.svg" style="width:16px; height:21px">
 			</button>
@@ -479,9 +478,9 @@
 					Together you can create something more.<br><br>
 				</div>
 				<div class="modal-install" id="modalInstall" noselect>Install rplace.live web app</div>
-				<p class="modal-content copyright-label" ondblclick="secretSettingsDialog.showModal()">
+				<button type="button" title="Open secret settings" class="modal-content copyright-label" onclick="secretSettingsDialog.showModal()">
 					© Zekiah-A, BlobKat
-				</p>
+				</button>
 				<div class="modal-footer">
 					<img noselect="" alt="Place Logo" height="40" width="40" src="images/rplace.png" style="position: absolute;left: 50%;transform: translateX(-50%);opacity: 0.2;">
 					<button type="button" id="muteButton" noselect class="modal-footer-button" title="Enable sounds">
@@ -495,13 +494,24 @@
 						</svg>
 						<div id="themeDrop" style="top: 40px;" class="context-menu" ontouchstart="event.stopPropagation()">
 							<menu>
-								<li theme="r/place 2022" variant=""><span>r/place 2022 (Classic)</span></li>
-								<li theme="r/place 2022" variant="dark"><span>r/place 2022 (Dark)</span></li>
-								<li theme="r/place 2023" variant=""><span>r/place 2023 (Classic)</span></li>
+								<li theme="r/place 2022" variant="">
+									<button type="button">r/place 2022 (Classic)</button>
+								</li>
+								<li theme="r/place 2022" variant="dark">
+									<button type="button">r/place 2022 (Dark)</button>
+								</li>
+								<li theme="r/place 2023" variant="">
+									<button type="button">r/place 2023 (Classic)</button>
+								</li>
 								<hr style="opacity: 0.2">
-								<li theme="r/place 2022" variant="dark" effects="darkplace"><span>darkplace.live (April fools)</span></li>
-								<li theme="r/place 2022" variant="" effects="winter"><span>snowplace.live (December 2023)</span></li>
-								<li theme="r/place 2022" variant="merry" effects="winter"><span>merryplace.live (December 2024)</span></li>
+								<li theme="r/place 2022" variant="dark" effects="darkplace">
+									<button type="button">darkplace.live (April fools)</button></li>
+								<li theme="r/place 2022" variant="" effects="winter">
+									<button type="button">snowplace.live (December 2023)</button>
+								</li>
+								<li theme="r/place 2022" variant="merry" effects="winter">
+									<button type="button">merryplace.live (December 2024)</button>
+								</li>
 								<!--<li theme="goldplace" variant=""><span>goldplace.live (August 21st 2025)</span></li>-->
 							</menu>
 						</div>

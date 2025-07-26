@@ -189,8 +189,23 @@ export const LANG_INFOS = new Map([
  * @constant {Map<string, ThemeInfo>} DEFAULT_THEMES
  */
 export const DEFAULT_THEMES = new Map([
-	["r/place 2022", { id: "r/place 2022", css: "/css/rplace-2022.css", cssVersion: "23", pixelselect: "/svg/pixel-select-2022.svg" }],
-	["r/place 2023", { id: "r/place 2023", css: "/css/rplace-2023.css", cssVersion: "23", pixelselect: "/svg/pixel-select-2023.svg" }]
+	["r/place 2022", { id: "r/place 2022", css: "/css/rplace-2022.css", cssVersion: "24", pixelselect: "/svg/pixel-select-2022.svg" }],
+	["r/place 2023", { id: "r/place 2023", css: "/css/rplace-2023.css", cssVersion: "24", pixelselect: "/svg/pixel-select-2023.svg" }]
+])
+
+/**
+ * @typedef {Record<string, string>} EffectInfo
+ * @property {string} id - Effect ID.
+ * @property {string} module - Effect module sources.
+ * @property {string} version - Version of effect sources.
+ */
+
+/**
+ * @constant {Map<string, EffectInfo>} DEFAULT_THEMES
+ */
+export const DEFAULT_EFFECTS = new Map([
+	[ "darkplace", { id: "darkplace", module: "./effects/darkplace.js", version: "1" } ],
+	[ "winter", { id: "winter", module: "./effects/snowplace.js", version: "1" } ]
 ])
 
 /**

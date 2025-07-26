@@ -1,27 +1,30 @@
-//import { forceTheme } from "./index.js";
 /**@type {Set<any>|null}*/ let fallingMessages = null;
 /**@type {Timer|null}*/let fallingMessageInterval = null;
 /**@type {HTMLCanvasElement|null}*/let backgroundCanvas = null;
 
-export async function enableDarkplace() {
-	//forceTheme("r/place 2022", "dark")
-	const bgWrapper = document.getElementById("bgWrapper")
-	backgroundCanvas = /**@type {HTMLCanvasElement}*/(document.getElementById("backgroundCanvas") || document.createElement("canvas"))
-	backgroundCanvas.id = "backgroundCanvas"
-	backgroundCanvas.style.position = "absolute"
-	backgroundCanvas.style.top = "0"
-	backgroundCanvas.style.left = "0"
-	backgroundCanvas.style.width = "100%"
-	backgroundCanvas.style.height = "100%"
-	backgroundCanvas.style.filter = "blur(1px)"
-	bgWrapper?.appendChild(backgroundCanvas)
+/**
+ * @param {Function} forceTheme 
+ */
+export async function enable(forceTheme) {
+	forceTheme("r/place 2022", "dark");
+	const bgWrapper = document.getElementById("bgWrapper");
+	backgroundCanvas = /**@type {HTMLCanvasElement}*/(document.getElementById("backgroundCanvas")
+		|| document.createElement("canvas"));
+	backgroundCanvas.id = "backgroundCanvas";
+	backgroundCanvas.style.position = "absolute";
+	backgroundCanvas.style.top = "0";
+	backgroundCanvas.style.left = "0";
+	backgroundCanvas.style.width = "100%";
+	backgroundCanvas.style.height = "100%";
+	backgroundCanvas.style.filter = "blur(1px)";
+	bgWrapper?.appendChild(backgroundCanvas);
 
 	function updateBgCanvasSize() {
-		backgroundCanvas.width = window.innerWidth
-		backgroundCanvas.height = window.innerHeight
+		backgroundCanvas.width = window.innerWidth;
+		backgroundCanvas.height = window.innerHeight;
 	}
-	updateBgCanvasSize()
-	window.addEventListener("resize", updateBgCanvasSize)
+	updateBgCanvasSize();
+	window.addEventListener("resize", updateBgCanvasSize);
 
 	const messages = [
 		"88",
@@ -112,11 +115,11 @@ export async function enableDarkplace() {
 		"9",
 		"10",
 		"❤️ ataturk"
-	]
+	];
 
-	let wind = 1
-	const gravity = 0.001
-	const messageColours = ["#fff", "#aaa", "#db7c7c", "#4a4949"]
+	let wind = 1;
+	const gravity = 0.001;
+	const messageColours = ["#fff", "#aaa", "#db7c7c", "#4a4949"];
 
 	class FallingMessage {
 		/**
@@ -125,60 +128,60 @@ export async function enableDarkplace() {
 		 * @param {string} msg
 		 */
 		constructor(x, y, msg) {
-			this.x = x
-			this.y = y
-			this.msg = msg
-			this.colour = messageColours[Math.floor(Math.random() * messageColours.length)]
-			this.fontSize = Math.random() * 32 + 6
-			this.velocityY = Math.random() * 0.4
-			this.velocityX = Math.random() - 0.5
+			this.x = x;
+			this.y = y;
+			this.msg = msg;
+			this.colour = messageColours[Math.floor(Math.random() * messageColours.length)];
+			this.fontSize = Math.random() * 32 + 6;
+			this.velocityY = Math.random() * 0.4;
+			this.velocityX = Math.random() - 0.5;
 		}
 
 		/**
 		 * @param {CanvasRenderingContext2D} ctx
 		 */
 		update(ctx) {
-			this.velocityX += wind * (38 / this.fontSize) * 0.014
-			this.x += this.velocityX
-			this.velocityY += gravity
-			this.y += this.velocityY
-			const speed = Math.abs(this.velocityX * this.velocityY)
-			ctx.globalAlpha = Math.min(1, speed * 0.4 + 0.4)
-			ctx.font = `${this.fontSize}px 'Brush Script MT', cursive`
-			ctx.fillStyle = this.colour
-			ctx.fillText(this.msg, this.x, this.y)
+			this.velocityX += wind * (38 / this.fontSize) * 0.014;
+			this.x += this.velocityX;
+			this.velocityY += gravity;
+			this.y += this.velocityY;
+			const speed = Math.abs(this.velocityX * this.velocityY);
+			ctx.globalAlpha = Math.min(1, speed * 0.4 + 0.4);
+			ctx.font = `${this.fontSize}px 'Brush Script MT', cursive`;
+			ctx.fillStyle = this.colour;
+			ctx.fillText(this.msg, this.x, this.y);
 		}
 	}
 
-	const backgroundContext = backgroundCanvas.getContext("2d")
+	const backgroundContext = backgroundCanvas.getContext("2d");
 	if (backgroundContext == null) {
-		return
+		return;
 	}
-	fallingMessages = new Set()
-	let lastWindChange = Date.now()
-	let lastSpawn = Date.now()
-	clearInterval(fallingMessageInterval)
+	fallingMessages = new Set();
+	let lastWindChange = Date.now();
+	let lastSpawn = Date.now();
+	clearInterval(fallingMessageInterval);
 	fallingMessageInterval = setInterval(() => {
-		backgroundContext.clearRect(0, 0, window.innerWidth, window.innerHeight)
+		backgroundContext.clearRect(0, 0, window.innerWidth, window.innerHeight);
 		if (Date.now() - lastSpawn > 400 && Math.random() < 0.1) {
-			const chosenMessage = messages[Math.floor(Math.random() * messages.length)]
-			fallingMessages.add(new FallingMessage(Math.random() * window.innerWidth - 100, 0, chosenMessage))
-			lastSpawn = Date.now()
+			const chosenMessage = messages[Math.floor(Math.random() * messages.length)];
+			fallingMessages.add(new FallingMessage(Math.random() * window.innerWidth - 100, 0, chosenMessage));
+			lastSpawn = Date.now();
 		}
 		if (Date.now() - lastWindChange > 5_000 && Math.random() < 0.3) {
-			wind = Math.random() * 0.1 - 0.05
-			lastWindChange = Date.now()
+			wind = Math.random() * 0.1 - 0.05;
+			lastWindChange = Date.now();
 		}
 		for (const message of fallingMessages) {
-			message.update(backgroundContext)
+			message.update(backgroundContext);
 			if (message.y > window.innerHeight) {
-				fallingMessages.delete(message)
+				fallingMessages.delete(message);
 			}
 		}
 	}, 17)
 }
 
-export function disableDarkplace() {
+export function disable() {
 	fallingMessages?.clear()
 	clearInterval(fallingMessageInterval)
 	backgroundCanvas?.remove()

@@ -137,6 +137,12 @@ body {
 	color: black;
 	height: min-content;
 	font-size: 16px;
+	padding: 5px;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+
 }
 
 /* Layout/HUD elements */
@@ -159,10 +165,8 @@ body {
 .layout:hover {
 	background: linear-gradient(rgba(0, 0, 0, 0.2) 0px, rgba(0, 0, 0, 0.2) 0px), rgb(255, 255, 255);
 }
-#place {
-	z-index: 3;
-}
 #positionIndicator {
+	all: unset;
 	position: absolute;
 	bottom: 24px;
 	left: 50%;
@@ -339,6 +343,7 @@ r-close-icon {
 	box-shadow: var(--pixel-box-shadow);
 	justify-content: center;
 	font-family: var(--font-pixel);
+	align-items: baseline;
 }
 #place:hover {
 	background: linear-gradient(rgba(0, 0, 0, 0.2) 0 0), var(--pixel-color-orange);
@@ -526,4 +531,10 @@ r-place-chat .arrow::after, .place-chat .arrow::after {
 	content: "";
 	left: 8px;
 	background-color: rgba(0, 0, 0, 0.75);
+}
+
+#editLocalStorageList label:hover {
+	z-index: 1;
+	overflow: visible;
+	background: white;
 }

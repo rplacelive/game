@@ -214,8 +214,8 @@ r-user-tooltip > span {
 	margin: 0;
 }
 .user-tooltip-titles > span {
-    font-size: 10px;
-    text-align: left;
+	font-size: 10px;
+	text-align: left;
 }
 .user-tooltip-titles {
 	display: flex;

@@ -327,12 +327,20 @@ r-close-icon {
 }
 
 .copyright-label {
+	all: unset;
 	text-align: center;
 	opacity: 0.6;
 	margin-top: 16px;
 	margin-bottom: 0px;
 	font-size: 14px;
 	user-select: none;
+	width: fit-content;
+	align-self: center;
+}
+
+.copyright-label:hover {
+	text-decoration: underline;
+	cursor: pointer;
 }
 
 .dialog-modal {
@@ -1345,9 +1353,6 @@ kbd {
 	display: flex;
 	flex-direction: column;
 }
-.context-menu > menu > li {
-	padding: 5px;
-}
 .context-menu > menu > li > a {
 	text-decoration: none;
 	color: black;
@@ -1828,11 +1833,23 @@ r-gif video {
 #editLocalStorageList > li {
 	display: flex;
 	column-gap: 5px;
+	width: 100%;
 }
 
 #editLocalStorageList label {
+	max-width: 64px;
+    text-overflow: ellipsis;
+	overflow: hidden;
+	transition: .2s max-width;
+}
+
+#editLocalStorageList label:hover {
+	z-index: 1;
+	background: white;
+	max-width: 512px;
+}
+
+#editLocalStorageList input {
+	min-width: 0;
 	flex-grow: 1;
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
 }

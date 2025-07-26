@@ -18,7 +18,7 @@ body {
 	color: white;
 	overflow-x: hidden;
 	line-height: 1.6;
-	    font-family: "IBM Plex Sans", sans-serif;
+	font-family: "IBM Plex Sans", sans-serif;
 }
 
 header, .sidebar {
@@ -58,9 +58,9 @@ header, .sidebar {
 
 .premium-badge {
 	display: flex;
-    width: fit-content;
-    column-gap: 4px;
-    align-items: center;
+	width: fit-content;
+	column-gap: 4px;
+	align-items: center;
 	background: linear-gradient(45deg, #FF5700, #FFB100);
 	color: #333;
 	padding: 8px 20px;

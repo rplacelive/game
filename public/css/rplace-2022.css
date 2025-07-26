@@ -72,7 +72,7 @@ button, input[type="button"] {
 
 input[type="button"]:disabled, button:disabled {
 	cursor: default;
-	color: #0000009c;
+	opacity: 0.6;
 	pointer-events: none;
 }
 
@@ -200,6 +200,7 @@ dialog {
 	margin-top: 16px;
 	margin-bottom: 0px;
 	font-size: 14px;
+	border: none !important;
 }
 
 .modal-footer-button {
@@ -233,6 +234,13 @@ dialog {
 	text-align: left;
 	height: min-content;
 	background: transparent;	
+	width: 100%;
+	height: 100%;
+	padding: 5px;
+	border: none !important;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
 }
 
 /* Layout/HUD elements */
@@ -571,4 +579,10 @@ r-place-chat .content, .place-chat .content {
 r-place-chat .arrow, .place-chat .arrow {
 	background-color: var(--ui-panel-bg);
 	border: var(--ui-border);
+}
+
+#editLocalStorageList label:hover {
+	z-index: 1;
+	overflow: visible;
+	background: var(--ui-panel-bg);
 }

@@ -396,7 +396,7 @@ export function sanitise(text) {
 		.replaceAll(/</g,"&lt;")
 		.replaceAll(/"/g,"&quot;")
 		// Javascript URLs
-		.replaceAll(/\?|javascript:/gi, "")
+		.replaceAll(/javascript:/gi, "")
 		// Null characters
 		.replaceAll(/[\u200B-\u200D\uFEFF]/g, "");
 }
@@ -813,7 +813,6 @@ export function objectToHtml(object, editable = false) {
 }
 
 /**
- * 
  * @param {number} from 
  * @param {number} to 
  * @param {number} weight 
@@ -821,4 +820,28 @@ export function objectToHtml(object, editable = false) {
  */
 export function lerp(from, to, weight) {
 	return from + weight * (to - from)
+}
+
+/**
+ * @param {number} num
+ * @param {number} min
+ * @param {number} max
+ */
+export function clamp(num, min, max) {
+	return Math.min(Math.max(num, min), max);
+}
+
+/**
+ * @param {string} val 
+ */
+export function toCapitalised(val) {
+	return String(val).charAt(0).toUpperCase() + String(val).slice(1);
+}
+
+export function generateRandomId() {
+	/**@type {string|undefined}*/let randomId;
+	while (!randomId || document.getElementById(randomId)) {
+		randomId = crypto.randomUUID().split("-")[0];
+	}
+	return randomId;
 }
