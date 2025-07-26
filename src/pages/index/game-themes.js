@@ -1,4 +1,5 @@
 import { DEFAULT_EFFECTS, DEFAULT_THEMES } from "../../defaults.js";
+const effectModules = import.meta.glob("./effects/*.js");
 
 /**
  * @param {string} forceTheme
@@ -32,9 +33,12 @@ export async function theme(themeSet, variant = null, effects = null) {
 		effectsModule?.disable?.();
 	}
 	if (effects && (effectInfo = DEFAULT_EFFECTS.get(effects)) !== undefined) {
-		effectsModule = await import(effectInfo.module + "?v=" + effectInfo.version);
-		await effectsModule?.enable?.(forceTheme);
-		currentEffects = effectInfo;
+		const importer = effectModules[effectInfo.modulePath];
+		if (importer) {
+			effectsModule = await importer();
+			await effectsModule?.enable?.(forceTheme);
+			currentEffects = effectInfo;
+		}
 	}
 
 	if (currentTheme !== themeSet) {

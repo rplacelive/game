@@ -204,8 +204,8 @@ export const DEFAULT_THEMES = new Map([
  * @constant {Map<string, EffectInfo>} DEFAULT_THEMES
  */
 export const DEFAULT_EFFECTS = new Map([
-	[ "darkplace", { id: "darkplace", module: "./effects/darkplace.js", version: "1" } ],
-	[ "winter", { id: "winter", module: "./effects/snowplace.js", version: "1" } ]
+	[ "darkplace", { id: "darkplace", modulePath: "./effects/darkplace.js" } ],
+	[ "winter", { id: "winter", modulePath: "./effects/snowplace.js" } ]
 ])
 
 /**

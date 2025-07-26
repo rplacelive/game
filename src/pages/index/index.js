@@ -2621,7 +2621,7 @@ async function chatReply(messageId, senderId) {
 function chatReport(messageId, senderId) {
 	const reason = prompt("Enter the reason for why you are reporting this message (max 280 chars)\n\n" +
 		`Additional info:\nMessage ID: ${messageId}\nSender ID: ${senderId}\n`)?.trim();
-	if (reason === null) {
+	if (!reason || reason.length === 0) {
 		return;
 	}
 	sendIpcMessage(wsCapsule, "chatReport", { messageId, reason });
