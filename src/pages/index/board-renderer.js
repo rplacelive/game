@@ -1,8 +1,22 @@
 import { mat4 } from "gl-matrix";
 
+/**
+ * @typedef {Object} LayerShader
+ * @property {WebGLProgram} program
+ * @property {WebGLUniformLocation} mvpUniformLoc 
+ * @property {WebGLUniformLocation} textureUniformLoc  
+ */
+/**
+ * @typedef {Object} RenderLayer
+ * @property {WebGLTexture} texture
+ * @property {LayerShader} shader
+ * @property {string} [blendMode]
+ * @property {boolean} enabled
+ */
+
 export class BoardRenderer {
-	/**@type {ResizeObserver}*/#resizeObserver
-	/**@type {HTMLCanvasElement}*/canvas
+	/**@type {ResizeObserver}*/#resizeObserver;
+	/**@type {HTMLCanvasElement}*/canvas;
 	/**@type {WebGL2RenderingContext}*/#gl;
 
 	// We separate into different render layers for mod & debugging purposes
@@ -18,27 +32,67 @@ export class BoardRenderer {
 	/**@type {number}*/#zoom = 1;
 	/**@type {number}*/#devicePixelRatio = 1;
 
-	/**@type {WebGLProgram}*/#program
-	/**@type {WebGLVertexArrayObject}*/#vao
-	/**@type {WebGLTexture}*/#canvasTex
-	/**@type {WebGLTexture}*/#changesTex
-	/**@type {WebGLTexture}*/#socketPixelsTex
-	/**@type {WebGLTexture}*/#paletteTex
+	/**@type {WebGLProgram}*/#boardProgram;
+	/**@type {WebGLVertexArrayObject}*/#vao;
+	/**@type {WebGLTexture}*/#canvasTex;
+	/**@type {WebGLTexture}*/#changesTex;
+	/**@type {WebGLTexture}*/#socketPixelsTex;
+	/**@type {WebGLTexture}*/#paletteTex;
 
-	/**@type {mat4}*/#modelMatrix
-	/**@type {mat4}*/#viewMatrix
-	/**@type {mat4}*/#projectionMatrix
-	/**@type {mat4}*/#mvpMatrix
+	/**@type {mat4}*/#modelMatrix;
+	/**@type {mat4}*/#viewMatrix;
+	/**@type {mat4}*/#projectionMatrix;
+	/**@type {mat4}*/#mvpMatrix;
 
-	/**@type {WebGLUniformLocation}*/#mvpUniformLoc
-	/**@type {WebGLUniformLocation}*/#boardTexUniformLoc
-	/**@type {WebGLUniformLocation}*/#paletteTexUniformLoc
+	/**@type {WebGLUniformLocation}*/#boardMvpUniformLoc;
+	/**@type {WebGLUniformLocation}*/#boardTexUniformLoc;
+	/**@type {WebGLUniformLocation}*/#paletteTexUniformLoc;
 
 	// Render layers configuration
-	/**
-	 * @typedef {{texture: WebGLTexture, enabled: boolean, blendMode?: string}} RenderLayer
-	 */
+	/**@type {LayerShader}*/#boardLayerShader;
 	/**@type {Array<RenderLayer>}*/#renderLayers = [];
+
+	// Shaders
+	static boardVertexSource = `#version 300 es
+		in vec3 a_position;
+		in vec2 a_uv;
+		out vec2 v_uv;
+
+		uniform mat4 u_modelViewProjection;
+
+		void main() {
+			v_uv = vec2(a_uv.x, 1.0 - a_uv.y);
+			gl_Position = u_modelViewProjection * vec4(a_position, 1.0); 
+		}`;
+
+	static boardFragmentSource = `#version 300 es
+		precision highp float;
+		precision highp usampler2D;
+
+		in vec2 v_uv;
+		out vec4 fragColour;
+
+		uniform usampler2D u_boardTex;
+		uniform usampler2D u_paletteTex;
+
+		void main() {
+			ivec2 texSize = textureSize(u_boardTex, 0);
+			ivec2 texelCoord = ivec2(v_uv * vec2(texSize));
+
+			// Get palette index from board texture
+			uint index = texelFetch(u_boardTex, texelCoord, 0).r;
+			
+			if (index == 255u) {
+				// Changes / socketPixels alpha index
+				discard;
+			}
+
+			// Get colour from palette texture
+			uvec4 raw = texelFetch(u_paletteTex, ivec2(int(index), 0), 0);
+
+			// Convert to normalized float
+			fragColour = vec4(raw) / 255.0;
+		}`;
 
 	/**
 	 * 
@@ -78,57 +132,9 @@ export class BoardRenderer {
 			1, 1
 		]);
 
-		// Vertex Shader
-		const vsSource = `#version 300 es
-			in vec3 a_position;
-			in vec2 a_uv;
-			out vec2 v_uv;
-
-			uniform mat4 u_modelViewProjection;
-
-			void main() {
-				v_uv = vec2(a_uv.x, 1.0 - a_uv.y);
-				gl_Position = u_modelViewProjection * vec4(a_position, 1.0); 
-			}`;
-
-		// Fragment Shader
-		const fsSource = `#version 300 es
-			precision highp float;
-			precision highp usampler2D;
-
-			in vec2 v_uv;
-			out vec4 fragColour;
-
-			uniform usampler2D u_boardTex;
-			uniform usampler2D u_paletteTex;
-
-			void main() {
-				ivec2 texSize = textureSize(u_boardTex, 0);
-				ivec2 texelCoord = ivec2(v_uv * vec2(texSize));
-
-				// Get palette index from board texture
-				uint index = texelFetch(u_boardTex, texelCoord, 0).r;
-				
-				if (index == 255u) {
-					// Changes / socketPixels alpha index
-					discard;
-				}
-
-				// Get colour from palette texture
-				uvec4 raw = texelFetch(u_paletteTex, ivec2(int(index), 0), 0);
-
-				// Convert to normalized float
-				fragColour = vec4(raw) / 255.0;
-			}`;
-
-		const program = this.#program = gl.createProgram();
-		gl.attachShader(program, this.#compileShader(gl.VERTEX_SHADER, vsSource));
-		gl.attachShader(program, this.#compileShader(gl.FRAGMENT_SHADER, fsSource));
-		gl.linkProgram(program);
-		if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-			const errorMsg = gl.getProgramInfoLog(program) ?? "";
-			throw new Error(errorMsg);
-		}
+		// Shader setup
+		const program = this.#boardProgram = this.#createShader(
+			BoardRenderer.boardFragmentSource, BoardRenderer.boardVertexSource);
 
 		// Vertex array setup
 		const vao = this.#vao = gl.createVertexArray();
@@ -171,12 +177,19 @@ export class BoardRenderer {
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 		
 		// Initialise uniform locations
-		this.#mvpUniformLoc = /**@type {WebGLUniformLocation}*/ (gl.getUniformLocation(program, "u_modelViewProjection"));
+		this.#boardMvpUniformLoc = /**@type {WebGLUniformLocation}*/ (gl.getUniformLocation(program, "u_modelViewProjection"));
 		this.#boardTexUniformLoc = /**@type {WebGLUniformLocation}*/ (gl.getUniformLocation(program, "u_boardTex"));
 		this.#paletteTexUniformLoc = /**@type {WebGLUniformLocation}*/ (gl.getUniformLocation(program, "u_paletteTex"));
 
+		// Create default board layer shader
+		this.#boardLayerShader = {
+			program: this.#boardProgram,
+			mvpUniformLoc: this.#boardMvpUniformLoc,
+			textureUniformLoc: this.#boardTexUniformLoc
+		}
+
 		// Initialize render layers
-		this.#initializeRenderLayers();
+		this.#initialiseRenderLayers();
 
 		// Initialise matrices
 		const model = this.#modelMatrix = mat4.create();
@@ -192,12 +205,39 @@ export class BoardRenderer {
 		this.#updateCanvasSize();
 	}
 
-	#initializeRenderLayers() {
+
+	#initialiseRenderLayers() {
+
+		// TODO: Perhaps incorporate uniform locations into shader program bundle
 		this.#renderLayers = [
-			{ texture: this.#canvasTex, enabled: true },
-			{ texture: this.#changesTex, enabled: true },
-			{ texture: this.#socketPixelsTex, enabled: true }
+			{
+				texture: this.#canvasTex,
+				shader: this.#boardLayerShader,
+				enabled: true
+			},
+			{
+				texture: this.#changesTex,
+				shader: this.#boardLayerShader,
+				enabled: true
+			},
+			{
+				texture: this.#socketPixelsTex,
+				shader: this.#boardLayerShader,
+				enabled: true
+			}
 		];
+	}
+
+	getContext() {
+		return this.#gl;
+	}
+
+	getBoardWidth() {
+		return this.#width;
+	}
+
+	getBoardHeight() {
+		return this.#height;
 	}
 
 	/**
@@ -215,11 +255,50 @@ export class BoardRenderer {
 	/**
 	 * Add a new render layer
 	 * @param {WebGLTexture} texture
+	 * @param {LayerShader} shader
+	 * @param {WebGLProgram} shader
 	 * @param {boolean} enabled
 	 */
-	addRenderLayer(texture, enabled = true) {
-		this.#renderLayers.push({ texture, enabled });
+	addRenderLayer(texture, shader = this.#boardLayerShader, enabled = true) {
+		this.#renderLayers.push({ texture, shader, enabled });
 		this.queueRedraw();
+	}
+
+	/**
+	 * @param {string} fragmentSource 
+	 * @param {string} textureUniform
+	 * @param {string} vertexSource 
+	 * @returns {LayerShader} 
+	 */
+	createLayerShader(fragmentSource, textureUniform, vertexSource = BoardRenderer.boardVertexSource) {
+		const gl = this.#gl;
+		const program = this.#createShader(fragmentSource, vertexSource);
+		const textureUniformLoc = /**@type {WebGLUniformLocation}*/ (gl.getUniformLocation(program, textureUniform));
+		const mvpUniformLoc = /**@type {WebGLUniformLocation}*/ (gl.getUniformLocation(program, "u_modelViewProjection"));
+
+		return {
+			program,
+			mvpUniformLoc,
+			textureUniformLoc
+		}
+	}
+
+	/**
+	 * @param {string} fragmentSource 
+	 * @param {string} vertexSource 
+	 */
+	#createShader(fragmentSource, vertexSource) {
+		const gl = this.#gl;
+		const program = gl.createProgram();
+		gl.attachShader(program, this.#compileShader(gl.FRAGMENT_SHADER, fragmentSource));
+		gl.attachShader(program, this.#compileShader(gl.VERTEX_SHADER, vertexSource));
+		gl.linkProgram(program);
+		if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+			const errorMsg = gl.getProgramInfoLog(program) ?? "";
+			throw new Error(errorMsg);
+		}
+
+		return program;
 	}
 
 	/**
@@ -330,18 +409,25 @@ export class BoardRenderer {
 		if (!layer.enabled) {
 			return;
 		}
-		
+	
 		const gl = this.#gl;
-		
 		this.#setupBlending(layer.blendMode);
-		
+
+		const layerShader = layer.shader;
+		gl.useProgram(layerShader.program);
+		gl.bindVertexArray(this.#vao);
+		gl.uniformMatrix4fv(layerShader.mvpUniformLoc, false, this.#mvpMatrix);
+
 		gl.activeTexture(gl.TEXTURE0);
 		gl.bindTexture(gl.TEXTURE_2D, layer.texture);
-		gl.uniform1i(this.#boardTexUniformLoc, 0);
+		gl.uniform1i(layerShader.textureUniformLoc, 0);
 
-		gl.activeTexture(gl.TEXTURE1);
-		gl.bindTexture(gl.TEXTURE_2D, this.#paletteTex);
-		gl.uniform1i(this.#paletteTexUniformLoc, 1);
+		if (layerShader === this.#boardLayerShader) {
+			// Kinda hacky but standard board layer shader needs palette tex too
+			gl.activeTexture(gl.TEXTURE1);
+			gl.bindTexture(gl.TEXTURE_2D, this.#paletteTex);
+			gl.uniform1i(this.#paletteTexUniformLoc, 1);
+		}
 
 		gl.drawArrays(gl.TRIANGLES, 0, 6);
 	}
@@ -434,10 +520,6 @@ export class BoardRenderer {
 
 			// Update matrices
 			this.#updateMatrices();
-
-			gl.useProgram(this.#program);
-			gl.bindVertexArray(this.#vao);
-			gl.uniformMatrix4fv(this.#mvpUniformLoc, false, this.#mvpMatrix);
 
 			// Render all enabled layers in order
 			for (const layer of this.#renderLayers) {

@@ -375,8 +375,6 @@ export class PublicPromiseSync {
 			if (!token.text.trim()) {
 				return "";
 			}
-
-			console.log(token)
 			
 			return `<blockquote>${token.text}</blockquote>`;
 		}

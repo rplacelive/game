@@ -28,12 +28,15 @@
 	<script type="module" src="/src/pages/index/event-timer.js"></script>
 	<script type="module" src="/src/pages/index/august21-event.js"></script>
 	<script type="module" src="/src/pages/index/captcha-canvas.js"></script> <!--TODO: Make async compatible-->
+	<script type="module" src="/src/pages/index/game-defaults.js"></script>
+	<script type="module" src="/src/pages/index/game-state.js"></script>
 	<script type="module" src="/src/pages/index/game-elements.js"></script>
 	<script type="module" src="/src/pages/index/game-themes.js"></script>
 	<script type="module" src="/src/pages/index/game-settings.js"></script> <!--TODO: Make async compatible-->
 	<script type="module" src="/src/pages/index/secret-settings.js"></script> <!--TODO: Make async compatible-->
-	<script type="module" src="/src/pages/index/game-defaults.js"></script> <!--async-->
-	<script type="module" src="/src/pages/index/board-renderer.js"></script> <!--async-->
+	<script type="module" src="/src/pages/index/viewport.js"></script> <!--TODO: Make async compatible-->
+	<script type="module" src="/src/pages/index/advanced-view-menu.js"></script> <!--TODO: Make async compatible-->
+	<script type="module" src="/src/pages/index/board-renderer.js"></script>
 	<!--Entrypoint-->
 	<script type="module" src="/src/pages/index/index.js"></script>
 </head>
@@ -229,7 +232,7 @@
 				</div>
 				<div class="toast-body">
 					<h3>Selection mode:</h3>
-					<button type="button" disabled>+ Create a selection</button>
+					<button type="button" id="avmCreateSelectionButton">+ Create a selection</button>
 					<h3>Render layers:</h3>
 					<p>
 						Control what board layers are being rendered by the game:

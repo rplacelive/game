@@ -5,6 +5,9 @@ const muteButtonImage = /**@type {HTMLImageElement}*/($("#muteButtonImage"));
 const placeChatButton = /**@type {HTMLButtonElement}*/($("#placeChatButton"));
 const placeChatButtonImage = /**@type {HTMLImageElement}*/($("#placeChatButtonImage"));
 
+export let muted = localStorage.muted === "true";
+export let placeChat = localStorage.placeChat === "true";
+
 // Modal settings (mute, place chat)
 if (localStorage.muted !== "true") { // Prefer false
 	localStorage.muted = "false";
@@ -12,8 +15,6 @@ if (localStorage.muted !== "true") { // Prefer false
 if (localStorage.placeChat !== "false") { // Prefer true
 	localStorage.placeChat = "true";
 }
-export let muted = localStorage.muted === "true";
-export let placeChat = localStorage.placeChat === "true";
 window.addEventListener("DOMContentLoaded", function() {
 	muteButtonImage.src = muted ? "/svg/muted.svg" : "/svg/unmuted.svg";
 	placeChatButtonImage.style.opacity = placeChat ? "1" : "0.6";
