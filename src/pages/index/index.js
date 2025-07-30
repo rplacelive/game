@@ -153,9 +153,6 @@ const themeDrop = /**@type {HTMLElement}*/($("#themeDrop"));
 const themeDropName = /**@type {HTMLElement}*/($("#themeDropName"));
 const themeDropParent = /**@type {HTMLElement}*/($("#themeDropParent"));
 const advancedViewMenu = /**@type {HTMLElement}*/($("#advancedViewMenu"));
-const viewCanvasLayer = /**@type {HTMLInputElement}*/($("#viewCanvasLayer"));
-const viewChangesLayer = /**@type {HTMLInputElement}*/($("#viewChangesLayer"));
-const viewSocketPixelsLayer = /**@type {HTMLInputElement}*/($("#viewSocketPixelsLayer"));
 const spectateMenu = /**@type {HTMLElement}*/($("#spectateMenu"));
 const spectateCloseButton = /**@type {HTMLElement}*/($("#spectateCloseButton"));
 const spectateUserIdInput = /**@type {HTMLInputElement}*/($("#spectateUserIdInput"));
@@ -2168,17 +2165,6 @@ messageInputEmojiPanel.addEventListener("emojiselection", (/**@type {CustomEvent
 	else {
 		chatInsertText(e.detail.value)
 	}
-});
-
-// Advanced view menu
-viewCanvasLayer.addEventListener("change", function() {
-	boardRenderer?.setLayerEnabled(0, viewCanvasLayer.checked);
-});
-viewChangesLayer.addEventListener("change", function() {
-	boardRenderer?.setLayerEnabled(1, viewChangesLayer.checked);
-});
-viewSocketPixelsLayer.addEventListener("change", function() {
-	boardRenderer?.setLayerEnabled(2, viewSocketPixelsLayer.checked);
 });
 
 // Spectation
