@@ -1,5 +1,5 @@
 "use strict";
-import { mat4 } from "gl-matrix";
+import { mat4, vec4 } from "gl-matrix";
 
 /**
  * @typedef {Object} UniformSchema
@@ -28,55 +28,77 @@ import { mat4 } from "gl-matrix";
  */
 
 export class BoardRenderer {
-	/**@type {ResizeObserver}*/#resizeObserver;
 	/**@type {HTMLCanvasElement}*/canvas;
-	/**@type {WebGL2RenderingContext}*/#gl;
+	/**@type {WebGL2RenderingContext}*/_gl;
+	/**@type {ResizeObserver}*/_resizeObserver;
 
 	// We separate into different render layers for mod & debugging purposes
-	/**@type {Uint8Array|null}*/#board = null;
-	/**@type {Uint8Array|null}*/#changes = null;
-	/**@type {Uint8Array|null}*/#socketPixels = null;	
-	/**@type {Uint32Array|null}*/#palette = null;
-	/**@type {number}*/#boardWidth = 0;
-	/**@type {number}*/#boardHeight = 0;
-	/**@type {number|null}*/#redrawHandle = null;
-	/**@type {number}*/#x = 0;
-	/**@type {number}*/#y = 0;
-	/**@type {number}*/#zoom = 1;
-	/**@type {number}*/#devicePixelRatio = 1;
+	/**@type {Uint8Array|null}*/_board = null;
+	/**@type {Uint8Array|null}*/_changes = null;
+	/**@type {Uint8Array|null}*/_socketPixels = null;	
+	/**@type {Uint32Array|null}*/_palette = null;
+	/**@type {number}*/_boardWidth = 0;
+	/**@type {number}*/_boardHeight = 0;
+	/**@type {number|null}*/_redrawHandle = null;
+	/**@type {number}*/_x = 0;
+	/**@type {number}*/_y = 0;
+	/**@type {number}*/_zoom = 1;
+	/**@type {number}*/_devicePixelRatio = 1;
 
 	// Default textures and shader program
-	/**@type {WebGLProgram}*/#boardProgram;
-	/**@type {WebGLVertexArrayObject}*/#vao;
-	/**@type {WebGLTexture}*/#canvasTex;
-	/**@type {WebGLTexture}*/#changesTex;
-	/**@type {WebGLTexture}*/#socketPixelsTex;
-	/**@type {WebGLTexture}*/#paletteTex;
+	/**@type {WebGLProgram}*/_boardProgram;
+	/**@type {WebGLVertexArrayObject}*/_vao;
+	/**@type {WebGLTexture}*/_canvasTex;
+	/**@type {WebGLTexture}*/_changesTex;
+	/**@type {WebGLTexture}*/_socketPixelsTex;
+	/**@type {WebGLTexture}*/_paletteTex;
 
 	// Transform handling
-	/**@type {mat4}*/#modelMatrix;
-	/**@type {mat4}*/#viewMatrix;
-	/**@type {mat4}*/#projectionMatrix;
-	/**@type {mat4}*/#mvpMatrix;
+	/**@type {mat4}*/_modelMatrix;
+	/**@type {mat4}*/_viewMatrix;
+	/**@type {mat4}*/_projectionMatrix;
+	/**@type {mat4}*/_mvpMatrix;
 
 	// Default board shader handling
-	/**@type {WebGLUniformLocation}*/#boardMvpUniformLoc;
-	/**@type {WebGLUniformLocation}*/#boardSizeUniformLoc;
-	/**@type {WebGLUniformLocation}*/#boardTexUniformLoc;
-	/**@type {WebGLUniformLocation}*/#paletteTexUniformLoc;
+	/**@type {WebGLUniformLocation}*/_boardMvpUniformLoc;
+	/**@type {WebGLUniformLocation}*/_boardSizeUniformLoc;
+	/**@type {WebGLUniformLocation}*/_boardTexUniformLoc;
+	/**@type {WebGLUniformLocation}*/_paletteTexUniformLoc;
 
 	// Render layers configuration
-	/**@type {LayerShader}*/#boardLayerShader;
-	/**@type {Array<RenderLayer>}*/#renderLayers = [];
+	/**@type {LayerShader}*/_boardLayerShader;
+	/**@type {Array<RenderLayer>}*/_renderLayers = [];
 
 	// Picking handling
-	/**@type {WebGLFramebuffer}*/#pickFBO;
-	/**@type {WebGLTexture}*/#pickFBOTex;
-	/**@type {WebGLTexture}*/#pickTex;
-	/**@type {WebGLProgram}*/#pickProgram;
-	/**@type {WebGLUniformLocation}*/#pickMvpUniformLoc;
-	/**@type {WebGLUniformLocation}*/#pickBoardSizeUniformLoc;
-	/**@type {WebGLUniformLocation}*/#pickTexUniformLoc;
+	/**@type {WebGLFramebuffer}*/_pickFBO;
+	/**@type {WebGLTexture}*/_pickFBOTex;
+	/**@type {WebGLTexture}*/_pickTex;
+	/**@type {WebGLProgram}*/_pickProgram;
+	/**@type {WebGLUniformLocation}*/_pickMvpUniformLoc;
+	/**@type {WebGLUniformLocation}*/_pickBoardSizeUniformLoc;
+	/**@type {WebGLUniformLocation}*/_pickTexUniformLoc;
+
+	// Geometry
+	/**@type {Float32Array}*/_uv;
+	/**@type {Float32Array}*/_vertices;
+	/**@type {number}*/_vertexCount;
+
+	static uv = new Float32Array([
+			0.0, 0.0,
+			1.0, 0.0,
+			0.0, 1.0,
+			0.0, 1.0,
+			1.0, 0.0,
+			1.0, 1.0
+		]);
+	static vertices = new Float32Array([
+			-1.0, -1.0, 0.0,
+			1.0, -1.0, 0.0,
+			-1.0,  1.0, 0.0,
+			-1.0,  1.0, 0.0,
+			1.0, -1.0, 0.0,
+			1.0,  1.0, 0.0
+		]);
 
 	// Shaders
 	static boardVertexSource = `#version 300 es
@@ -120,84 +142,72 @@ export class BoardRenderer {
 			// Convert to normalized float
 			fragColour = vec4(raw) / 255.0;
 		}`;
-		static pickFragmentSource = `#version 300 es
-			precision highp float;
-			precision highp usampler2D;
+	static pickFragmentSource = `#version 300 es
+		precision highp float;
+		precision highp usampler2D;
 
-			in highp vec2 v_uv;
-			layout(location = 0) out uvec4 fragColour;
+		in highp vec2 v_uv;
+		layout(location = 0) out uvec4 fragColour;
 
-			uniform usampler2D u_pickTex;
-			uniform ivec2 u_boardSize;
+		uniform usampler2D u_pickTex;
+		uniform ivec2 u_boardSize;
 
-			void main() {
-				ivec2 texelCoord = ivec2(v_uv * vec2(u_boardSize));
-				uvec4 pixelId = texelFetch(u_pickTex, texelCoord, 0);
+		void main() {
+			ivec2 texelCoord = ivec2(v_uv * vec2(u_boardSize));
+			uvec4 pixelId = texelFetch(u_pickTex, texelCoord, 0);
 
-				if (texelCoord.x >= 0 && texelCoord.x < u_boardSize.x && 
-					texelCoord.y >= 0 && texelCoord.y < u_boardSize.y) {
-					fragColour = pixelId;
-				}
-				else {
-					// Outside board bounds - output invalid ID
-					fragColour = uvec4(255u, 255u, 255u, 255u);
-				}
-			}`;
+			if (texelCoord.x >= 0 && texelCoord.x < u_boardSize.x && 
+				texelCoord.y >= 0 && texelCoord.y < u_boardSize.y) {
+				fragColour = pixelId;
+			}
+			else {
+				// Outside board bounds - output invalid ID
+				fragColour = uvec4(255u, 255u, 255u, 255u);
+			}
+		}`;
 
 	/**
-	 * 
-	 * @param {HTMLCanvasElement} canvas 
+	 * @param {HTMLCanvasElement} canvas
+	 * @param {Float32Array} uv
+	 * @param {Float32Array} vertices
+	 * @param {number} vertexCount
 	 */
-	constructor(canvas) {
-		// Init context & handlers
+	constructor(canvas, uv = BoardRenderer.uv, vertices = BoardRenderer.vertices, vertexCount = 6) {
 		this.canvas = canvas;
-		this.#resizeObserver = new ResizeObserver(() => {
-			this.#updateCanvasSize();
-			this.#updatePickFrameBufferSize();
+		this._uv = uv;
+		this._vertices = vertices;
+		this._vertexCount = vertexCount;
+
+		// Init context & handlers
+		this._resizeObserver = new ResizeObserver(() => {
+			this._updateCanvasSize();
+			this._updatePickFrameBufferSize();
 			this.queueRedraw();
 		});
-		this.#resizeObserver.observe(canvas);
+		this._resizeObserver.observe(canvas);
 		window.addEventListener("resize", () => {
-			this.#devicePixelRatio = window.devicePixelRatio || 1;
-			this.#updateCanvasSize();
-			this.#updatePickFrameBufferSize();
+			this._devicePixelRatio = window.devicePixelRatio ?? 1;
+			this._updateCanvasSize();
+			this._updatePickFrameBufferSize();
 		});
-		this.#devicePixelRatio = window.devicePixelRatio || 1;
-		const gl = this.#gl = /**@type {WebGL2RenderingContext}*/(canvas.getContext("webgl2", { alpha: true }));
+		this._devicePixelRatio = window.devicePixelRatio ?? 1;
+		const gl = this._gl = /**@type {WebGL2RenderingContext}*/(canvas.getContext("webgl2", { alpha: true }));
 		if (!gl) {
 			throw new Error("WebGL2 not supported");
 		}
 
-		// Geometry
-		const vertices = new Float32Array([
-			-1.0, -1.0, 0.0,
-			 1.0, -1.0, 0.0,
-			-1.0,  1.0, 0.0,
-			-1.0,  1.0, 0.0,
-			 1.0, -1.0, 0.0,
-			 1.0,  1.0, 0.0
-		]);
-		const uv = new Float32Array([
-			0.0, 0.0,
-			1.0, 0.0,
-			0.0, 1.0,
-			0.0, 1.0,
-			1.0, 0.0,
-			1.0, 1.0
-		]);
-
 		// Shader setup
-		const boardProgram = this.#boardProgram = this.#createShader(
+		const boardProgram = this._boardProgram = this._createShader(
 			BoardRenderer.boardFragmentSource, BoardRenderer.boardVertexSource);
 
 		// Vertex array setup
-		const vao = this.#vao = gl.createVertexArray();
+		const vao = this._vao = gl.createVertexArray();
 		gl.bindVertexArray(vao);
 
 		// Vertex position buffer setup
 		const vbo = gl.createBuffer();
 		gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
-		gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+		gl.bufferData(gl.ARRAY_BUFFER, this._vertices, gl.STATIC_DRAW);
 
 		const posLoc = gl.getAttribLocation(boardProgram, "a_position");
 		gl.enableVertexAttribArray(posLoc);
@@ -205,20 +215,20 @@ export class BoardRenderer {
 
 		const uvBuffer = gl.createBuffer();
 		gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffer);
-		gl.bufferData(gl.ARRAY_BUFFER, uv, gl.STATIC_DRAW);
+		gl.bufferData(gl.ARRAY_BUFFER, this._uv, gl.STATIC_DRAW);
 
 		const uvLoc = gl.getAttribLocation(boardProgram, "a_uv");
 		gl.enableVertexAttribArray(uvLoc);
 		gl.vertexAttribPointer(uvLoc, 2, gl.FLOAT, false, 0, 0);
 
 		// Default textures and board dimensions
-		this.#boardWidth = 1;
-		this.#boardHeight = 1;
-		this.#canvasTex = this.#createBoardTexture();
-		this.#changesTex = this.#createBoardTexture();
-		this.#socketPixelsTex = this.#createBoardTexture();
+		this._boardWidth = 1;
+		this._boardHeight = 1;
+		this._canvasTex = this._createBoardTexture();
+		this._changesTex = this._createBoardTexture();
+		this._socketPixelsTex = this._createBoardTexture();
 
-		const paletteTex = this.#paletteTex = gl.createTexture();
+		const paletteTex = this._paletteTex = gl.createTexture();
 		gl.bindTexture(gl.TEXTURE_2D, paletteTex);
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8UI, 1, 1, 0, gl.RGBA_INTEGER, gl.UNSIGNED_BYTE, new Uint8Array(4));
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
@@ -227,32 +237,32 @@ export class BoardRenderer {
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 		
 		// Uniform locations
-		this.#boardMvpUniformLoc = /**@type {WebGLUniformLocation}*/ (gl.getUniformLocation(boardProgram, "u_modelViewProjection"));
-		this.#boardTexUniformLoc = /**@type {WebGLUniformLocation}*/ (gl.getUniformLocation(boardProgram, "u_boardTex"));
-		this.#boardSizeUniformLoc = /**@type {WebGLUniformLocation}*/ (gl.getUniformLocation(boardProgram, "u_boardSize"));
-		this.#paletteTexUniformLoc = /**@type {WebGLUniformLocation}*/ (gl.getUniformLocation(boardProgram, "u_paletteTex"));
+		this._boardMvpUniformLoc = /**@type {WebGLUniformLocation}*/ (gl.getUniformLocation(boardProgram, "u_modelViewProjection"));
+		this._boardTexUniformLoc = /**@type {WebGLUniformLocation}*/ (gl.getUniformLocation(boardProgram, "u_boardTex"));
+		this._boardSizeUniformLoc = /**@type {WebGLUniformLocation}*/ (gl.getUniformLocation(boardProgram, "u_boardSize"));
+		this._paletteTexUniformLoc = /**@type {WebGLUniformLocation}*/ (gl.getUniformLocation(boardProgram, "u_paletteTex"));
 
 		// Create default board layer shader
-		this.#boardLayerShader = {
-			program: this.#boardProgram,
-			mvpUniformLoc: this.#boardMvpUniformLoc,
-			boardSizeUniformLoc: this.#boardSizeUniformLoc,
-			paletteTexUniformLoc: this.#paletteTexUniformLoc,
-			textureUniformLoc: this.#boardTexUniformLoc
+		this._boardLayerShader = {
+			program: this._boardProgram,
+			mvpUniformLoc: this._boardMvpUniformLoc,
+			boardSizeUniformLoc: this._boardSizeUniformLoc,
+			paletteTexUniformLoc: this._paletteTexUniformLoc,
+			textureUniformLoc: this._boardTexUniformLoc
 		}
 
 		// Create pick handler framebuffer
-		const pickFBO = this.#pickFBO = gl.createFramebuffer();
+		const pickFBO = this._pickFBO = gl.createFramebuffer();
 		gl.bindFramebuffer(gl.FRAMEBUFFER, pickFBO);
 
-		this.#pickTex = this.#createPickTexture();
+		this._pickTex = this._createPickTexture();
 		
-		const pickProgram = this.#pickProgram = this.#createShader(BoardRenderer.pickFragmentSource, BoardRenderer.boardVertexSource);
-		this.#pickMvpUniformLoc = /**@type {WebGLUniformLocation}*/(gl.getUniformLocation(pickProgram, "u_modelViewProjection"));
-		this.#pickBoardSizeUniformLoc = /**@type {WebGLUniformLocation}*/(gl.getUniformLocation(pickProgram, "u_boardSize"));
-		this.#pickTexUniformLoc = /**@type {WebGLUniformLocation}*/(gl.getUniformLocation(pickProgram, "u_pickTex"));
+		const pickProgram = this._pickProgram = this._createShader(BoardRenderer.pickFragmentSource, BoardRenderer.boardVertexSource);
+		this._pickMvpUniformLoc = /**@type {WebGLUniformLocation}*/(gl.getUniformLocation(pickProgram, "u_modelViewProjection"));
+		this._pickBoardSizeUniformLoc = /**@type {WebGLUniformLocation}*/(gl.getUniformLocation(pickProgram, "u_boardSize"));
+		this._pickTexUniformLoc = /**@type {WebGLUniformLocation}*/(gl.getUniformLocation(pickProgram, "u_pickTex"));
 
-		const pickFBOTex = this.#pickFBOTex = gl.createTexture();
+		const pickFBOTex = this._pickFBOTex = gl.createTexture();
 		gl.bindTexture(gl.TEXTURE_2D, pickFBOTex);
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8UI, canvas.width, canvas.height, 0, gl.RGBA_INTEGER, gl.UNSIGNED_BYTE, null);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
@@ -266,53 +276,53 @@ export class BoardRenderer {
 		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
 		// Initialize render layers
-		this.#initialiseRenderLayers();
+		this._initialiseRenderLayers();
 
 		// Initialise matrices
-		const model = this.#modelMatrix = mat4.create();
+		const model = this._modelMatrix = mat4.create();
 		mat4.identity(model);
-		const view = this.#viewMatrix = mat4.create();
+		const view = this._viewMatrix = mat4.create();
 		mat4.identity(view);
-		const projection = this.#projectionMatrix = mat4.create();
+		const projection = this._projectionMatrix = mat4.create();
 		mat4.identity(projection);
-		const mvp = this.#mvpMatrix = mat4.create();
+		const mvp = this._mvpMatrix = mat4.create();
 		mat4.identity(mvp);
 
 		// Initial canvas size update
-		this.#updateCanvasSize();
+		this._updateCanvasSize();
 	}
 
-	#initialiseRenderLayers() {
-		this.#renderLayers = [
+	_initialiseRenderLayers() {
+		this._renderLayers = [
 			{
-				texture: this.#canvasTex,
-				shader: this.#boardLayerShader,
+				texture: this._canvasTex,
+				shader: this._boardLayerShader,
 				enabled: true,
 				uniforms: {
-					"u_paletteTex": this.#paletteTex
+					"u_paletteTex": this._paletteTex
 				}
 			},
 			{
-				texture: this.#changesTex,
-				shader: this.#boardLayerShader,
+				texture: this._changesTex,
+				shader: this._boardLayerShader,
 				enabled: true,
 				uniforms: {
-					"u_paletteTex": this.#paletteTex
+					"u_paletteTex": this._paletteTex
 				}
 			},
 			{
-				texture: this.#socketPixelsTex,
-				shader: this.#boardLayerShader,
+				texture: this._socketPixelsTex,
+				shader: this._boardLayerShader,
 				enabled: true,
 				uniforms: {
-					"u_paletteTex": this.#paletteTex
+					"u_paletteTex": this._paletteTex
 				}
 			}
 		];
 	}
 
 	getContext() {
-		return this.#gl;
+		return this._gl;
 	}
 
 	/**
@@ -321,8 +331,8 @@ export class BoardRenderer {
 	 * @param {boolean} enabled
 	 */
 	setLayerEnabled(layerIndex, enabled) {
-		if (this.#renderLayers[layerIndex]) {
-			this.#renderLayers[layerIndex].enabled = enabled;
+		if (this._renderLayers[layerIndex]) {
+			this._renderLayers[layerIndex].enabled = enabled;
 			this.queueRedraw();
 		}
 	}
@@ -334,9 +344,9 @@ export class BoardRenderer {
 	 * @param {boolean} enabled
 	 * @param {Object<string, any>} [uniforms] - Custom uniform values
 	 */
-	addRenderLayer(texture, shader = this.#boardLayerShader, enabled = true, uniforms = {}) {
+	addRenderLayer(texture, shader = this._boardLayerShader, enabled = true, uniforms = {}) {
 		const layer = { texture, shader, enabled, uniforms };
-		this.#renderLayers.push(layer);
+		this._renderLayers.push(layer);
 		this.queueRedraw();
 		return layer;
 	}
@@ -345,9 +355,9 @@ export class BoardRenderer {
 	 * @param {RenderLayer} layer 
 	 */
 	removeRenderLayer(layer) {
-		const index = this.#renderLayers.indexOf(layer);
+		const index = this._renderLayers.indexOf(layer);
 		if (index != -1) {
-			this.#renderLayers.splice(index, 1);
+			this._renderLayers.splice(index, 1);
 		}
 		this.queueRedraw();
 		return index;
@@ -374,8 +384,8 @@ export class BoardRenderer {
 	 * @returns {LayerShader} 
 	 */
 	createLayerShader(fragmentSource = BoardRenderer.boardFragmentSource, vertexSource = BoardRenderer.boardVertexSource, textureUniform = "u_boardTex", uniformSchema = {}) {
-		const gl = this.#gl;
-		const program = this.#createShader(fragmentSource, vertexSource);
+		const gl = this._gl;
+		const program = this._createShader(fragmentSource, vertexSource);
 		const textureUniformLoc = /**@type {WebGLUniformLocation}*/ (gl.getUniformLocation(program, textureUniform));
 		const mvpUniformLoc = /**@type {WebGLUniformLocation}*/ (gl.getUniformLocation(program, "u_modelViewProjection"));
 		const boardSizeUniformLoc = /**@type {WebGLUniformLocation}*/ (gl.getUniformLocation(program, "u_boardSize"));
@@ -413,7 +423,7 @@ export class BoardRenderer {
 	 * @param {LayerShader} shader
 	 * @param {Record<string, any>} uniformValues
 	 */
-	#bindCustomUniforms(gl, shader, uniformValues) {
+	_bindCustomUniforms(gl, shader, uniformValues) {
 		if (!shader.uniformSchema || !shader.uniformLocations || !uniformValues) {
 			return;
 		}
@@ -481,11 +491,11 @@ export class BoardRenderer {
 	 * @param {string} fragmentSource 
 	 * @param {string} vertexSource 
 	 */
-	#createShader(fragmentSource, vertexSource) {
-		const gl = this.#gl;
+	_createShader(fragmentSource, vertexSource) {
+		const gl = this._gl;
 		const program = gl.createProgram();
-		gl.attachShader(program, this.#compileShader(gl.FRAGMENT_SHADER, fragmentSource));
-		gl.attachShader(program, this.#compileShader(gl.VERTEX_SHADER, vertexSource));
+		gl.attachShader(program, this._compileShader(gl.FRAGMENT_SHADER, fragmentSource));
+		gl.attachShader(program, this._compileShader(gl.VERTEX_SHADER, vertexSource));
 		gl.linkProgram(program);
 		if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
 			const errorMsg = gl.getProgramInfoLog(program) ?? "";
@@ -501,8 +511,8 @@ export class BoardRenderer {
 	 * @param {string} source
 	 * @returns
 	 */
-	#compileShader(type, source) {
-		const gl = this.#gl;
+	_compileShader(type, source) {
+		const gl = this._gl;
 		const shader = gl.createShader(type);
 		if (!shader) {
 			throw new Error("Failed to create shader");
@@ -517,8 +527,8 @@ export class BoardRenderer {
 		return shader;
 	}
 
-	#updateCanvasSize() {
-		const dpr = this.#devicePixelRatio;
+	_updateCanvasSize() {
+		const dpr = this._devicePixelRatio;
 		const width = this.canvas.offsetWidth * dpr;
 		const height = this.canvas.offsetHeight * dpr;
 
@@ -531,16 +541,16 @@ export class BoardRenderer {
 		return false;
 	}
 
-	#updateMatrices() {
-		const model = this.#modelMatrix, 
-			view = this.#viewMatrix,
-			projection = this.#projectionMatrix,  
-			mvp = this.#mvpMatrix;
+	_updateMatrices() {
+		const model = this._modelMatrix;
+		const view = this._viewMatrix;
+		const projection = this._projectionMatrix;  
+		const mvp = this._mvpMatrix;
 
 		// Calculate canvas translation & scale
-		const scale = 1 / (this.#zoom * 50 * this.#devicePixelRatio); 
-		const ndcX = -(this.#x - this.#boardWidth / 2) / (this.#boardWidth / 2);
-		const ndcY = (this.#y - this.#boardHeight / 2) / (this.#boardHeight / 2);
+		const scale = 1 / (this._zoom * 50 * this._devicePixelRatio); 
+		const ndcX = -(this._x - this._boardWidth / 2) / (this._boardWidth / 2);
+		const ndcY = (this._y - this._boardHeight / 2) / (this._boardHeight / 2);
 
 		// Reset matrices
 		mat4.identity(model);
@@ -557,7 +567,7 @@ export class BoardRenderer {
 			-scale, scale, // Bottom top
 			-1, 1 // Clipping plane
 		);
-		
+
 		// Combine matrices
 		mat4.multiply(mvp, projection, view);
 		mat4.multiply(mvp, mvp, model);
@@ -566,13 +576,13 @@ export class BoardRenderer {
 	/**
 	 * @param {Uint8Array|null} boardArr Board (canvas), changes, or socket pixels array
 	 */
-	#createBoardTexture(boardArr = null) {
-		const gl = this.#gl;
+	_createBoardTexture(boardArr = null) {
+		const gl = this._gl;
 		const boardTex = gl.createTexture();
 		gl.bindTexture(gl.TEXTURE_2D, boardTex);
 		
-		const data = boardArr || new Uint8Array(this.#boardWidth * this.#boardHeight);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8UI, this.#boardWidth, this.#boardHeight, 0, gl.RED_INTEGER, gl.UNSIGNED_BYTE, data);
+		const data = boardArr || new Uint8Array(this._boardWidth * this._boardHeight);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8UI, this._boardWidth, this._boardHeight, 0, gl.RED_INTEGER, gl.UNSIGNED_BYTE, data);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -580,8 +590,8 @@ export class BoardRenderer {
 		return boardTex;
 	}
 
-	#setupBlending(blendMode = "normal") {
-		const gl = this.#gl;
+	_setupBlending(blendMode = "normal") {
+		const gl = this._gl;
 		
 		if (blendMode === "normal") {
 			gl.enable(gl.BLEND);
@@ -599,36 +609,36 @@ export class BoardRenderer {
 	/**
 	 * @param {RenderLayer} layer 
 	 */
-	#renderLayer(layer) {
+	_renderLayer(layer) {
 		if (!layer.enabled) {
 			return;
 		}
 	
-		const gl = this.#gl;
-		this.#setupBlending(layer.blendMode);
+		const gl = this._gl;
+		this._setupBlending(layer.blendMode);
 
 		const layerShader = layer.shader;
 		gl.useProgram(layerShader.program);
-		gl.bindVertexArray(this.#vao);
-		gl.uniformMatrix4fv(layerShader.mvpUniformLoc, false, this.#mvpMatrix);
+		gl.bindVertexArray(this._vao);
+		gl.uniformMatrix4fv(layerShader.mvpUniformLoc, false, this._mvpMatrix);
 
 		// Bind default uniforms
 		gl.activeTexture(gl.TEXTURE0);
 		gl.bindTexture(gl.TEXTURE_2D, layer.texture);
 		gl.uniform1i(layerShader.textureUniformLoc, 0);
 
-		gl.uniform2i(layerShader.boardSizeUniformLoc, this.#boardWidth, this.#boardHeight);
+		gl.uniform2i(layerShader.boardSizeUniformLoc, this._boardWidth, this._boardHeight);
 
 		gl.activeTexture(gl.TEXTURE1);
-		gl.bindTexture(gl.TEXTURE_2D, this.#paletteTex);
+		gl.bindTexture(gl.TEXTURE_2D, this._paletteTex);
 		gl.uniform1i(layerShader.paletteTexUniformLoc, 1);
 
 		// Bind custom uniforms if present
 		if (layer.uniforms) {
-			this.#bindCustomUniforms(gl, layerShader, layer.uniforms);
+			this._bindCustomUniforms(gl, layerShader, layer.uniforms);
 		}
 
-		gl.drawArrays(gl.TRIANGLES, 0, 6);
+		gl.drawArrays(gl.TRIANGLES, 0, this._vertexCount);
 	}
 
 	/**
@@ -645,34 +655,34 @@ export class BoardRenderer {
 			return;
 		}
 
-		this.#board = canvas;
-		this.#changes = changes;
-		this.#socketPixels = socketPixels;
-		this.#palette = palette;
-		this.#boardWidth = width;
-		this.#boardHeight = height;
+		this._board = canvas;
+		this._changes = changes;
+		this._socketPixels = socketPixels;
+		this._palette = palette;
+		this._boardWidth = width;
+		this._boardHeight = height;
 
-		const gl = this.#gl;
+		const gl = this._gl;
 	
 		// Update board tex
-		gl.bindTexture(gl.TEXTURE_2D, this.#canvasTex);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8UI, this.#boardWidth, this.#boardHeight, 0, gl.RED_INTEGER, gl.UNSIGNED_BYTE, this.#board);
+		gl.bindTexture(gl.TEXTURE_2D, this._canvasTex);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8UI, this._boardWidth, this._boardHeight, 0, gl.RED_INTEGER, gl.UNSIGNED_BYTE, this._board);
 	
 		// Update changes tex
-		gl.bindTexture(gl.TEXTURE_2D, this.#changesTex);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8UI, this.#boardWidth, this.#boardHeight, 0, gl.RED_INTEGER, gl.UNSIGNED_BYTE, this.#changes);
+		gl.bindTexture(gl.TEXTURE_2D, this._changesTex);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8UI, this._boardWidth, this._boardHeight, 0, gl.RED_INTEGER, gl.UNSIGNED_BYTE, this._changes);
 
 		// Update socket pixels tex
-		gl.bindTexture(gl.TEXTURE_2D, this.#socketPixelsTex);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8UI, this.#boardWidth, this.#boardHeight, 0, gl.RED_INTEGER, gl.UNSIGNED_BYTE, this.#socketPixels);
+		gl.bindTexture(gl.TEXTURE_2D, this._socketPixelsTex);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8UI, this._boardWidth, this._boardHeight, 0, gl.RED_INTEGER, gl.UNSIGNED_BYTE, this._socketPixels);
 
 		// Update palette tex
-		const paletteArr = new Uint8Array(this.#palette.buffer);
-		gl.bindTexture(gl.TEXTURE_2D, this.#paletteTex);
+		const paletteArr = new Uint8Array(this._palette.buffer);
+		gl.bindTexture(gl.TEXTURE_2D, this._paletteTex);
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8UI, palette.length, 1, 0, gl.RGBA_INTEGER, gl.UNSIGNED_BYTE, paletteArr);
 
 		// Update pick tex
-		this.#pickTex = this.#createPickTexture();
+		this._pickTex = this._createPickTexture();
 
 		this.queueRedraw();
 	}
@@ -682,10 +692,10 @@ export class BoardRenderer {
 	 * @param {number} colour 
 	 */
 	redrawSocketPixel(index, colour) {
-		const gl = this.#gl;
-		const x = index % this.#boardWidth;
-		const y = Math.floor(index / this.#boardWidth);
-		gl.bindTexture(gl.TEXTURE_2D, this.#socketPixelsTex);
+		const gl = this._gl;
+		const x = index % this._boardWidth;
+		const y = Math.floor(index / this._boardWidth);
+		gl.bindTexture(gl.TEXTURE_2D, this._socketPixelsTex);
 		gl.texSubImage2D(gl.TEXTURE_2D, 0, x, y, 1, 1, gl.RED_INTEGER, gl.UNSIGNED_BYTE, new Uint8Array([colour]));
 		this.queueRedraw();
 	}
@@ -696,17 +706,17 @@ export class BoardRenderer {
 	 * @param {number} zoom
 	 */
 	setPosition(x, y, zoom) {
-		this.#x = x
-		this.#y = y
-		this.#zoom = zoom
+		this._x = x
+		this._y = y
+		this._zoom = zoom
 		this.queueRedraw();
 	}
 
-	#updatePickFrameBufferSize() {
-		const gl = this.#gl;
+	_updatePickFrameBufferSize() {
+		const gl = this._gl;
 
 		// Update framebuffer texture
-		gl.bindTexture(gl.TEXTURE_2D, this.#pickFBOTex);
+		gl.bindTexture(gl.TEXTURE_2D, this._pickFBOTex);
 		gl.texImage2D(
 			gl.TEXTURE_2D,
 			0,
@@ -719,32 +729,32 @@ export class BoardRenderer {
 			null
 		);
 
-		gl.bindFramebuffer(gl.FRAMEBUFFER, this.#pickFBO);
+		gl.bindFramebuffer(gl.FRAMEBUFFER, this._pickFBO);
 		gl.framebufferTexture2D(
 			gl.FRAMEBUFFER,
 			gl.COLOR_ATTACHMENT0,
 			gl.TEXTURE_2D,
-			this.#pickFBOTex,
+			this._pickFBOTex,
 			0
 		);
 		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 	}
 
-	#createPickTexture() {
-		const gl = this.#gl;
+	_createPickTexture() {
+		const gl = this._gl;
 		// Create pick texture with pixel IDs
-		if (this.#pickTex) {
-			gl.deleteTexture(this.#pickTex);
+		if (this._pickTex) {
+			gl.deleteTexture(this._pickTex);
 		}
 		
-		const pickTex = this.#pickTex = gl.createTexture();
+		const pickTex = this._pickTex = gl.createTexture();
 		gl.bindTexture(gl.TEXTURE_2D, pickTex);
 		
-		const pickTexSize = this.#boardWidth * this.#boardHeight * 4;
+		const pickTexSize = this._boardWidth * this._boardHeight * 4;
 		const pickTexData = new Uint8Array(pickTexSize);
 		
 		// Generate pixel IDs for each screen pixel
-		for (let i = 0; i < this.#boardWidth * this.#boardHeight; i++) {
+		for (let i = 0; i < this._boardWidth * this._boardHeight; i++) {
 			const pixelIndex = i * 4;
 			// Encode pixel ID in RGBA channels (32-bit ID split across 4 bytes)
 			pickTexData[pixelIndex] = i & 0xFF;           // R: bits 0-7
@@ -757,8 +767,8 @@ export class BoardRenderer {
 			gl.TEXTURE_2D,
 			0,
 			gl.RGBA8UI,
-			this.#boardWidth,
-			this.#boardHeight,
+			this._boardWidth,
+			this._boardHeight,
 			0,
 			gl.RGBA_INTEGER,
 			gl.UNSIGNED_BYTE,
@@ -773,94 +783,84 @@ export class BoardRenderer {
 	}
 
 	/**
+	 * @param {number} screenX 
+	 * @param {number} screenY 
+	 * @returns 
+	 */
+	#screenToGameCoords(screenX, screenY) {
+		// Ensure matrices are up to date
+		this._updateMatrices();
+		
+		// Convert screen coordinates to NDC 
+		const ndcX = (2 * screenX) / this.canvas.width - 1;
+		const ndcY = 1 - (2 * screenY) / this.canvas.height;
+
+		// Inverse MVP matrix
+		const inverseMVP = mat4.create();
+		mat4.invert(inverseMVP, this._mvpMatrix);
+
+		// Transform NDC coordinates using inverse MVP
+		const ndcPoint = vec4.fromValues(ndcX, ndcY, 0, 1);
+		const gamePoint = vec4.create();
+		vec4.transformMat4(gamePoint, ndcPoint, inverseMVP);
+
+		return {
+			x: gamePoint[0],
+			y: gamePoint[1]
+		};
+	}
+
+	/**
 	 * @param {number} clientX 
 	 * @param {number} clientY 
 	 * @returns {{ x: number, y: number }|null}
 	 */
 	hitTest(clientX, clientY) {
-		const gl = this.#gl;
+		const gl = this._gl;
 		const rect = this.canvas.getBoundingClientRect();
-		const x = Math.floor((clientX - rect.left) * (gl.drawingBufferWidth / rect.width));
-		const y = Math.floor((rect.bottom - clientY) * (gl.drawingBufferHeight / rect.height));
+		const mouseX = Math.floor((clientX - rect.left) * (gl.drawingBufferWidth / rect.width));
+		const mouseY = Math.floor((clientY - rect.top) * (gl.drawingBufferHeight / rect.height));
 
-		// Framebuffer tex must be 1:1 with screen else readback will break entirely
-		this.#updatePickFrameBufferSize(); //TODO: only on resize
+		const { x: modelX, y: modelY } = this.#screenToGameCoords(mouseX, mouseY);
+		return {
+			x: (modelX + 1) / 2 * this._boardWidth,
+			y: (2 - (modelY + 1)) / 2 * this._boardHeight
+		};
+	}
 
-		// Init
-		gl.bindFramebuffer(gl.FRAMEBUFFER, this.#pickFBO);
-		gl.viewport(0.0, 0.0, this.canvas.width, this.canvas.height);
-		gl.clearBufferuiv(gl.COLOR, 0, new Uint32Array([0, 0, 0, 0]));
-		gl.disable(gl.BLEND);
+	_draw() {
+		const gl = this._gl;
+
+		// Check if sources are properly initialized
+		if (!this._board || !this._palette || this._boardWidth === 0 || this._boardHeight === 0) {
+			return;
+		}
+
+		gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+		gl.clearColor(0.0, 0.0, 0.0, 0.0);
+		gl.clear(gl.COLOR_BUFFER_BIT);
 
 		// Update matrices
-		this.#updateMatrices();
+		this._updateMatrices();
 
-		gl.useProgram(this.#pickProgram);
-		gl.bindVertexArray(this.#vao);
-		gl.uniformMatrix4fv(this.#pickMvpUniformLoc, false, this.#mvpMatrix);
-		gl.uniform2i(this.#pickBoardSizeUniformLoc, this.#boardWidth, this.#boardHeight);
-		
-		// Bind pick texture
-		gl.activeTexture(gl.TEXTURE0);
-		gl.bindTexture(gl.TEXTURE_2D, this.#pickTex);
-		gl.uniform1i(this.#pickTexUniformLoc, 0);
-
-		gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-		// Readback
-		const pixel = new Uint8Array(4);
-		gl.readPixels(x, y, 1, 1, gl.RGBA_INTEGER, gl.UNSIGNED_BYTE, pixel);
-		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+		// Render all enabled layers in order
+		for (const layer of this._renderLayers) {
+			this._renderLayer(layer);
+		}
 
 		const error = gl.getError();
 		if (error !== gl.NO_ERROR) {
-			console.error("WebGL Error in hitTest:", error);
-			return null;
+			console.error("WebGL Error:", error);
 		}
-	
-		if (pixel[0] === 255 && pixel[1] === 255 && pixel[2] === 255 && pixel[3] === 255) {
-			return null;
-		}
-
-		const pixelId = pixel[0] | (pixel[1] << 8) | (pixel[2] << 16) | (pixel[3] << 24);
-
-		// Convert pixel ID back to screen coordinates
-		const boardX = pixelId % this.#boardWidth;
-		const boardY = Math.floor(pixelId / this.#boardWidth);
-
-		return { x: boardX, y: boardY };
 	}
 
 	queueRedraw() {
-		if (this.#redrawHandle) {
-			cancelAnimationFrame(this.#redrawHandle);
+		if (this._redrawHandle) {
+			cancelAnimationFrame(this._redrawHandle);
 		}
-		this.#redrawHandle = requestAnimationFrame(() => {
-			this.#redrawHandle = null;
-			
-			const gl = this.#gl;
-
-			// Check if sources are properly initialized
-			if (!this.#board || !this.#palette || this.#boardWidth === 0 || this.#boardHeight === 0) {
-				return;
-			}
-
-			gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-			gl.clearColor(0.0, 0.0, 0.0, 0.0);
-			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-			// Update matrices
-			this.#updateMatrices();
-
-			// Render all enabled layers in order
-			for (const layer of this.#renderLayers) {
-				this.#renderLayer(layer);
-			}
-
-			const error = gl.getError();
-			if (error !== gl.NO_ERROR) {
-				console.error("WebGL Error:", error);
-			}
+		this._redrawHandle = requestAnimationFrame(() => {
+			this._redrawHandle = null;
+			this._draw();
 		});
 	}
 }

@@ -1,27 +1,19 @@
-import { DEFAULT_BOARD, DEFAULT_SERVER, ADS, CHAT_COLOURS, COMMANDS, CUSTOM_EMOJIS, DEFAULT_HEIGHT, DEFAULT_PALETTE_KEYS, DEFAULT_THEMES, DEFAULT_WIDTH, EMOJIS, LANG_INFOS, MAX_CHANNEL_MESSAGES, PUNISHMENT_STATE, DEFAULT_PALETTE_USABLE_REGION, DEFAULT_PALETTE, DEFAULT_COOLDOWN, PLACEMENT_MODE } from "../../defaults.js";
-import { lang, translate, translateAll, hash, $, stringToHtml, blobToBase64, base64ToBlob, lerp, clamp }  from "../../shared.js";
+import { DEFAULT_BOARD, DEFAULT_SERVER, ADS,  COMMANDS, CUSTOM_EMOJIS, DEFAULT_HEIGHT, DEFAULT_PALETTE_KEYS, DEFAULT_THEMES, DEFAULT_WIDTH, EMOJIS, LANG_INFOS, MAX_CHANNEL_MESSAGES, PUNISHMENT_STATE, PLACEMENT_MODE } from "../../defaults.js";
+import { lang, translate, translateAll, $, stringToHtml, blobToBase64, base64ToBlob, clamp }  from "../../shared.js";
 import { showLoadingScreen, hideLoadingScreen } from "./loading-screen.js";
 import { clearCaptchaCanvas, updateImgCaptchaCanvas, updateImgCaptchaCanvasFallback } from "./captcha-canvas.js";
 import { boardRenderer, canvasCtx, zoomIn, moveTo, setPlaceChatPosition, setMinZoom, pos, x, y, z, minZoom, setX, setY, setZ } from "./viewport.js";
 import { placeChat } from "./game-settings.js";
 import { runAudio, playSample, getNaturalNotes, selectColourSample } from "./game-audio.js";
-import { enableMelodicPalette, enableNewOverlayMenu, enableWebglCanvas } from "./secret-settings.js";
+import { enableMelodicPalette, enableNewOverlayMenu } from "./secret-settings.js";
 import { AUDIOS } from "./game-defaults.js";
 import { addIpcMessageHandler, handleIpcMessage, sendIpcMessage, makeIpcRequest } from "shared-ipc";
 import { openOverlayMenu } from "./overlay-menu.js";
 import { TurnstileWidget } from "../../services/turnstile-manager.js";
 import FingerprintJS from "@fingerprintjs/fingerprintjs";
 import { theme } from "./game-themes.js";
-import { BOARD, canvasLocked, CHANGES, chatName, connectStatus, COOLDOWN, cooldownEndDate, HEIGHT, intId, intIdNames, intIdPositions, onCooldown, PALETTE, PALETTE_USABLE_REGION, placementMode, RAW_BOARD, setCooldown, setPixel, SOCKET_PIXELS, WIDTH, wsCapsule } from "./game-state.js";
-
-// HTTPS upgrade
-// TODO: Make sure this doesn't happen on localhost
-/*if (import.meta.env.MODE !== "development") {
-	if(!("subtle" in (window.crypto || {}))) {
-		console.error("HTTP unsupported, upgrading to HTTPS");
-		location.protocol = "https:";
-	}
-}*/
+import { BOARD, canvasLocked, CHANGES, chatName, connectStatus, COOLDOWN, cooldownEndDate, HEIGHT, intId, intIdNames, intIdPositions, onCooldown, PALETTE, PALETTE_USABLE_REGION, placementMode, RAW_BOARD, setCooldown, SOCKET_PIXELS, WIDTH, wsCapsule } from "./game-state.js";
+import { generateIndicators, generatePalette, hideIndicators, showPalette } from "./palette.js";
 
 const params = new URLSearchParams(window.location.search);
 const boardParam = params.get("board");
@@ -1073,38 +1065,6 @@ function clearCooldownInterval() {
 	}
 }
 
-function showPalette() {
-	palette.style.transform = "";
-	runAudio(AUDIOS.highlight);
-}
-
-function generatePalette() {
-	colours.innerHTML = ""
-	for (let i = PALETTE_USABLE_REGION.start; i < PALETTE_USABLE_REGION.end; i++) {
-		const colour = PALETTE[i] || 0
-		const colourEl = document.createElement("div")
-		colourEl.dataset.index = String(i)
-		colourEl.style.background = `rgba(${colour & 255},${(colour >> 8) & 255},${(colour >> 16) & 255}, 1)`
-		if (colour == 0xffffffff) {
-			colourEl.style.outline = "1px #ddd solid"
-			colourEl.style.outlineOffset = "-1px"
-		}
-		const indicatorSpan = document.createElement("span")
-		indicatorSpan.contentEditable = "true"
-		indicatorSpan.onkeydown = function(event) {
-			rebindIndicator(event, i)
-		}
-		colourEl.appendChild(indicatorSpan)
-		colours.appendChild(colourEl)
-	}
-}
-if (document.readyState !== "loading") {
-	generatePalette();
-}
-else {
-	window.addEventListener("DOMContentLoaded", generatePalette);
-}
-
 /**
  * @param {number} colourIndex 
  */
@@ -1198,48 +1158,6 @@ let currentChannel = lang;
 extraChannel(extraLanguage);
 initChannelDrop();
 switchLanguageChannel(currentChannel);
-
-// TODO: A CSS class on colours could handle this
-function hideIndicators() {
-	for (let c = 0; c < colours.children.length; c++) {
-		const indicator = /**@type {HTMLElement}*/(colours.children[c]?.firstElementChild);
-		if (indicator?.style.visibility !== "hidden") {
-			indicator.style.visibility = "hidden";
-		}
-	}
-}
-
-/**
- * @param {KeyboardEvent} e
- * @param {string | number} i
- */
-function rebindIndicator(e, i) {
-	const indicator = /**@type {HTMLElement}*/ (e.target);
-	if (!e.key || e.key.length != 1 || !indicator){
-		return;
-	}
-	indicator.innerText = e.key
-	indicator.blur()
-
-	let binds = (localStorage.paletteKeys || DEFAULT_PALETTE_KEYS).split("")
-	const preExisting = binds.indexOf(e.key)
-	if (preExisting != -1) {
-		binds[preExisting] = "​"
-	}
-	binds[i] = e.key.charAt(0)
-	localStorage.paletteKeys = binds.join("")
-	generateIndicators(binds.join(""))
-}
-/**
- * @param {string} keybinds
- */
-function generateIndicators(keybinds) {
-	for (let c = 0; c < colours.children.length; c++) {
-		const indicator = /**@type {HTMLElement}*/(colours.children[c].firstChild);
-		indicator.textContent = keybinds.charAt(c)
-	}
-}
-generateIndicators(localStorage.paletteKeys || DEFAULT_PALETTE_KEYS)
 
 // Live chat channels
 function initChannelDrop() {

@@ -40,7 +40,7 @@ export async function loadSample(url) {
 		return audioData;
 	}
 	catch(e) {
-		console.log("Failed to load audio sample:", e);
+		console.error("Failed to load audio sample:", e);
 	}
 
 	return null;

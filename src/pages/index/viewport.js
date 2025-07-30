@@ -7,6 +7,7 @@ import { runAudio } from "./game-audio.js";
 import { AUDIOS } from "./game-defaults.js";
 import { connectStatus, cooldownEndDate, HEIGHT, intIdNames, intIdPositions, WIDTH, wsCapsule } from "./game-state.js";
 import { sendIpcMessage } from "shared-ipc";
+import { showPalette } from "./palette.js";
 
 const viewport = /**@type {HTMLElement}*/($("#viewport"));
 const canvParent1 = /**@type {HTMLElement}*/($("#canvparent1"));

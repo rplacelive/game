@@ -164,7 +164,7 @@ async function fetchTranslations(lang) {
 		return translation
 	}
 	catch (error) {
-		console.log(error)
+		console.error(error)
 		return TRANSLATIONS["en"]
 	}
 }

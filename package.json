@@ -19,6 +19,7 @@
 	"dependencies": {
 		"@cycjimmy/canvas-snow": "^3.0.3",
 		"@fingerprintjs/fingerprintjs": "^4.6.2",
+		"@thi.ng/geom-io-obj": "^0.3.183",
 		"@tsparticles/confetti": "^3.8.1",
 		"dompurify": "^3.2.6",
 		"gl-matrix": "^3.4.3",

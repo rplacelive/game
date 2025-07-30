@@ -6,6 +6,7 @@
       "dependencies": {
         "@cycjimmy/canvas-snow": "^3.0.3",
         "@fingerprintjs/fingerprintjs": "^4.6.2",
+        "@thi.ng/geom-io-obj": "^0.3.183",
         "@tsparticles/confetti": "^3.8.1",
         "dompurify": "^3.2.6",
         "gl-matrix": "^3.4.3",
@@ -341,6 +342,28 @@
     "@rollup/rollup-win32-x64-msvc": ["@rollup/rollup-win32-x64-msvc@4.38.0", "", { "os": "win32", "cpu": "x64" }, "sha512-jjqy3uWlecfB98Psxb5cD6Fny9Fupv9LrDSPTQZUROqjvZmcCqNu4UMl7qqhlUUGpwiAkotj6GYu4SZdcr/nLw=="],
 
     "@surma/rollup-plugin-off-main-thread": ["@surma/rollup-plugin-off-main-thread@2.2.3", "", { "dependencies": { "ejs": "^3.1.6", "json5": "^2.2.0", "magic-string": "^0.25.0", "string.prototype.matchall": "^4.0.6" } }, "sha512-lR8q/9W7hZpMWweNiAKU7NQerBnzQQLvi8qnTDU/fxItPhtZVMbPV3lbCwjhIlNBe9Bbr5V+KHshvWmVSG9cxQ=="],
+
+    "@thi.ng/api": ["@thi.ng/api@8.11.32", "", {}, "sha512-DqXp7K0qKD45IA6/Aof8AdgYSzTGvVFlXS9dL3iCEMY3GdkCF6DpgctVPCp5nBKloamUwPiE+TQWHA365MYEQg=="],
+
+    "@thi.ng/binary": ["@thi.ng/binary@3.4.56", "", { "dependencies": { "@thi.ng/api": "^8.11.32" } }, "sha512-Pxhng9FJds6PXiuv/jlQGfreCWHHBnPI7PuLS/wa3UqH5w69BYZ0MBI68Dm6pHz9YtQaDsTgF3HWAv2OlL2V9Q=="],
+
+    "@thi.ng/checks": ["@thi.ng/checks@3.7.12", "", {}, "sha512-i2lRhlvTKyKgcEG8orU0sst8HwziyEzzWXpIohf9TSsawARCABpK4qOGXzQXyHhCCMiV4pC8Th2DMjcy6XLgdQ=="],
+
+    "@thi.ng/errors": ["@thi.ng/errors@2.5.38", "", {}, "sha512-vKziryUtBCNzLDibqn6qu3V6gEFu1BuM8BQq6nxcK2rnS8cABIWuaNVRE3Yc3BOyX2sVYwa96JXlXy75gosbCw=="],
+
+    "@thi.ng/geom-io-obj": ["@thi.ng/geom-io-obj@0.3.183", "", { "dependencies": { "@thi.ng/api": "^8.11.32", "@thi.ng/errors": "^2.5.38", "@thi.ng/vectors": "^8.5.1" } }, "sha512-YjloWrpWyEr2gsUrI84n0lKDEu60Gf2274y54WLepo/cYItYhmYB1a7F4jUvTCvyFNbPEooQ6H/pHSSUs719tw=="],
+
+    "@thi.ng/hex": ["@thi.ng/hex@2.3.76", "", {}, "sha512-otRsBrAL4sJmmcinu/3tjwer1ZkEfy+8qOHZfcLoCP6Wvc0Bzavl6zC5SeS8hEjRU71vnfmxirO8BrasO770SQ=="],
+
+    "@thi.ng/math": ["@thi.ng/math@5.11.32", "", { "dependencies": { "@thi.ng/api": "^8.11.32" } }, "sha512-nuN5/SCLDENHjoyJt6Noj1s4ZDRQZM/IG8SwqI5WY3E/CGK4p91nRwYagTa9MhQtPV/+vKtq15wA4r+BuoSgUw=="],
+
+    "@thi.ng/memoize": ["@thi.ng/memoize@4.0.22", "", { "dependencies": { "@thi.ng/api": "^8.11.32" } }, "sha512-dylpQcVK4ihDf69V+9qoJV6kVIFZFXavQb9zv/GOmh2pNZGUnZFspR+PaKjqNuueXvPSbA1bW8fmgNIZ2prW4Q=="],
+
+    "@thi.ng/random": ["@thi.ng/random@4.1.23", "", { "dependencies": { "@thi.ng/api": "^8.11.32", "@thi.ng/errors": "^2.5.38" } }, "sha512-j0ZVoAtlqebkdunojER8Ni/uL1pTqLkOKNzVqXyvh6EHlHeWJlAW6zM55oQ6dmv+Gw/OWdeDsS4Yb5ycaqAvZg=="],
+
+    "@thi.ng/strings": ["@thi.ng/strings@3.9.18", "", { "dependencies": { "@thi.ng/api": "^8.11.32", "@thi.ng/errors": "^2.5.38", "@thi.ng/hex": "^2.3.76", "@thi.ng/memoize": "^4.0.22" } }, "sha512-pvmefzvcCZla+lEtRxac+8L5Ma4jF4EWRNnONTBFABWw9OGrgimh1ZHAyPBOwHODp/ObCXyoKDhHaB3f1XTvGQ=="],
+
+    "@thi.ng/vectors": ["@thi.ng/vectors@8.5.1", "", { "dependencies": { "@thi.ng/api": "^8.11.32", "@thi.ng/binary": "^3.4.56", "@thi.ng/checks": "^3.7.12", "@thi.ng/errors": "^2.5.38", "@thi.ng/math": "^5.11.32", "@thi.ng/memoize": "^4.0.22", "@thi.ng/random": "^4.1.23", "@thi.ng/strings": "^3.9.18" } }, "sha512-3UHqiHc6FmmcYbEzjL3cP9whLWoObuT5IxXL7gPn74t0jD90r1I+mQnXkNFhEQDHVKjRHsCaeS19VKmN47+S3A=="],
 
     "@tsparticles/basic": ["@tsparticles/basic@3.8.1", "", { "dependencies": { "@tsparticles/engine": "3.8.1", "@tsparticles/move-base": "3.8.1", "@tsparticles/plugin-hex-color": "3.8.1", "@tsparticles/plugin-hsl-color": "3.8.1", "@tsparticles/plugin-rgb-color": "3.8.1", "@tsparticles/shape-circle": "3.8.1", "@tsparticles/updater-color": "3.8.1", "@tsparticles/updater-opacity": "3.8.1", "@tsparticles/updater-out-modes": "3.8.1", "@tsparticles/updater-size": "3.8.1" } }, "sha512-my114zRmekT/+I2cGuEnHxlX5G/jO0iVtNnsxxlsgspXUTSY+fDixmrNF4UgFkuaIwd9Bv/yH+7S/4HE4qte7A=="],
 

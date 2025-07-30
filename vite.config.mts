@@ -3,7 +3,8 @@ import { glob } from "glob";
 import { createHtmlPlugin } from "vite-plugin-html";
 import { VitePWA } from "vite-plugin-pwa";
 
-const pages = await glob("*.html");
+const devMode = process.env.NODE_ENV !== "production";
+const pages = await glob(devMode ? "**/*.html" : "*.html");
 
 export default defineConfig({
 	base: "/",

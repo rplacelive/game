@@ -750,9 +750,9 @@ class Header extends LitElement {
 		return html`
 			${sidebarPresent ? html`
 				<button id="sidebarButton" type="button" class="header-menu" onclick="sidebar?.open()">
-					<img src="./svg/menu.svg" alt="Menu" width="36" height="36">
+					<img src="/svg/menu.svg" alt="Menu" width="36" height="36">
 				</button>` : html``}
-			<img src="./images/rplace.png" alt="Rplace logo">
+			<img src="/images/rplace.png" alt="Rplace logo">
 			<h1>${this.title}</h1>
 			<button type="button" id="accountButton" class="header-account" @click=${this.#handleAccountButtonClick}>
 				<img src="/svg/account.svg" alt="Menu" width="36" height="36">
