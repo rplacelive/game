@@ -253,6 +253,15 @@ export const PLACEMENT_MODE = Object.freeze({
 	selectPixelMouseOnly: 1,
 	freeDraw: 2
 });
+/**
+ * @enum {number}
+ * @property {number} placePixels - Standard place pixels viewport mode.
+ * @property {number} selectPixels - Select pixel regions.
+ */
+export const VIEWPORT_MODE = Object.freeze({
+	placePixels: 0,
+	selectPixels: 1
+});
 
 /**
  * @constant {number} MAX_CHANNEL_MESSAGES
