@@ -379,7 +379,7 @@ r-live-chat-message .emoji-reactors-count {
 	border-radius: 12px;
 	padding: 8px;
 	box-shadow: inset 2px 2px #dbdbdb;
-	background: #f7f7f7;
+	background: var(--ui-panel-hover);
 	padding: 4px;
 	border: 1px solid lightgray;
 }
@@ -476,6 +476,7 @@ r-live-chat-message .emoji-reactors-count {
 .channel-button {
 	background: transparent;
 	box-shadow: none;
+	border: none !important;
 }
 
 #captchaPopup {

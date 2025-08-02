@@ -4,6 +4,8 @@ import { $ } from "../../shared.js"
 
 const overlayMenu = /**@type {HTMLDialogElement}*/($("#overlayMenu"));
 const overlayMenuCanvas = /**@type {HTMLCanvasElement}*/($("#overlayMenuCanvas"));
+const closeButton = /**@type {HTMLButtonElement}*/($("#overlayMenuCloseButton"));
+
 const renderer = new BoardRenderer(overlayMenuCanvas);
 
 function initOverlayMenu() {
@@ -25,3 +27,4 @@ export function openOverlayMenu() {
 export function closeOverlayMenu() {
 	overlayMenu.close();
 }
+closeButton.addEventListener("click", closeOverlayMenu);

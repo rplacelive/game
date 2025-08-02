@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import { glob } from "glob";
 import { createHtmlPlugin } from "vite-plugin-html";
 import { VitePWA } from "vite-plugin-pwa";
+import sri from "rollup-plugin-sri";
 
 const devMode = process.env.NODE_ENV !== "production";
 const pages = await glob(devMode ? "**/*.html" : "*.html");
@@ -69,6 +70,10 @@ export default defineConfig({
 					}
 				]
 			}
-		})	  
+		}),
+		sri({
+			publicPath: "/",
+			active: true
+		})
 	]
 })

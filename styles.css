@@ -169,6 +169,16 @@ btn{
 	transform: scale(1.2) rotate(-10deg);
 }
 
+#bgWrapper {
+	z-index: -1;
+	position: absolute; 
+	pointer-events: none;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+}
+
 /** Main game viewport elements*/
 #viewport {
 	position: absolute;
@@ -217,6 +227,7 @@ btn{
 	position: absolute;
 	transform-origin: top left;
 	image-rendering: pixelated;
+	user-select: none;
 	will-change: transform;
 	z-index: 2;
 }
@@ -228,7 +239,17 @@ btn{
 	position: absolute;
 	will-change: transform;
 	z-index: 3;
+	user-select: none;
 }
+
+#canvSelectImage {
+	position: absolute;
+	top: -10%;
+	left: -10%;
+	width: 120%;
+	height: 120%;
+}
+
 #edge{
 	pointer-events: none;
 	position: absolute;
@@ -1243,7 +1264,7 @@ body[eventphase="3"] .coverer-title {
 	flex-direction: column;
 }
 
-.mod-form div {
+.mod-form > label {
 	display: flex;
 	column-gap: 4px;
 }
@@ -1852,4 +1873,37 @@ r-gif video {
 #editLocalStorageList input {
 	min-width: 0;
 	flex-grow: 1;
+}
+
+.selection-handle {
+	display: block;
+	position: absolute;
+	width: 16px;
+	height: 16px;
+	border-radius: 64px;
+	transform: translate(-50%, -50%);
+	background-color: blue;
+	border: 1px solid lightblue;
+	box-shadow: 0px 0px 4px black;
+	cursor: grab;
+	z-index: 3;
+}
+.selection-handle::after {
+	content: "";
+	position: absolute;
+	top: 8px;
+    left: 8px;
+	width: 64px;
+	height: 64px;
+	transform: translate(-50%, -50%);
+}
+
+.selection-label {
+	display: block;
+	position: absolute;
+	color: white;
+	padding: 8px;
+	text-shadow: 0px 0px 4px black;
+	pointer-events: none;
+	z-index: 2;
 }

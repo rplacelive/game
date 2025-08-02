@@ -6,6 +6,12 @@ export let enableWebglCanvas = localStorage.enableWebglCanvas === "true";
 export let enableNewOverlayMenu = localStorage.enableNewOverlayMenu === "true";
 export let enableMelodicPalette = localStorage.enableMelodicPalette === "true";
 
+const secretSettingsDialog = /**@type {HTMLDialogElement}*/($("#secretSettingsDialog"));
+const closeButton = /**@type {HTMLButtonElement}*/($("#secretSettingsCloseButton"));
+closeButton.addEventListener("click", function() {
+	secretSettingsDialog.close();
+})
+
 // Experimental settings
 const enableWebglCanvasCheckbox = /**@type {HTMLInputElement}*/($("#enableWebglCanvasCheckbox"));
 enableWebglCanvasCheckbox.checked = enableWebglCanvas;

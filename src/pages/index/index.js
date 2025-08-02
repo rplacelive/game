@@ -1,5 +1,5 @@
 import { DEFAULT_BOARD, DEFAULT_SERVER, ADS,  COMMANDS, CUSTOM_EMOJIS, DEFAULT_HEIGHT, DEFAULT_PALETTE_KEYS, DEFAULT_THEMES, DEFAULT_WIDTH, EMOJIS, LANG_INFOS, MAX_CHANNEL_MESSAGES, PUNISHMENT_STATE, PLACEMENT_MODE } from "../../defaults.js";
-import { lang, translate, translateAll, $, stringToHtml, blobToBase64, base64ToBlob, clamp }  from "../../shared.js";
+import { lang, translate, translateAll, $, stringToHtml, blobToBase64, base64ToBlob }  from "../../shared.js";
 import { showLoadingScreen, hideLoadingScreen } from "./loading-screen.js";
 import { clearCaptchaCanvas, updateImgCaptchaCanvas, updateImgCaptchaCanvasFallback } from "./captcha-canvas.js";
 import { boardRenderer, canvasCtx, zoomIn, moveTo, setPlaceChatPosition, setMinZoom, pos, x, y, z, minZoom, setX, setY, setZ } from "./viewport.js";
@@ -14,6 +14,15 @@ import FingerprintJS from "@fingerprintjs/fingerprintjs";
 import { theme } from "./game-themes.js";
 import { BOARD, canvasLocked, CHANGES, chatName, connectStatus, COOLDOWN, cooldownEndDate, HEIGHT, intId, intIdNames, intIdPositions, onCooldown, PALETTE, PALETTE_USABLE_REGION, placementMode, RAW_BOARD, setCooldown, SOCKET_PIXELS, WIDTH, wsCapsule } from "./game-state.js";
 import { generateIndicators, generatePalette, hideIndicators, showPalette } from "./palette.js";
+import "./popup.js";
+import DisableDevtool from "disable-devtool";
+
+if (import.meta.env.PROD) {
+	DisableDevtool({
+		md5: "60961bf94b2a5d69f98efa9c2ab2caf9",
+		disableMenu: false
+	})
+}
 
 const params = new URLSearchParams(window.location.search);
 const boardParam = params.get("board");
@@ -54,26 +63,28 @@ const viewport = /**@type {HTMLElement}*/($("#viewport"));
 const canvParent1 = /**@type {HTMLElement}*/($("#canvparent1"));
 const canvParent2 = /**@type {HTMLElement}*/($("#canvparent2"));
 const canvSelect = /**@type {HTMLElement}*/($("#canvselect"));
+const canvSelectImage = /**@type {HTMLImageElement}*/($("#canvSelectImage"));
 const canvas = /**@type {HTMLCanvasElement}*/($("#canvas"));
 const placeChatMessages = /**@type {HTMLElement}*/($("#placeChatMessages"));
 const colours = /**@type {HTMLElement}*/($("#colours"));
 const modal = /**@type {HTMLDialogElement}*/($("#modal"));
-const modalInstall = /**@type {HTMLButtonElement}*/($("#modalInstall"));
+const modalCloseButton = /**@type {HTMLButtonElement}*/($("#modalCloseButton")); 
+const modalInstallButton = /**@type {HTMLButtonElement}*/($("#modalInstallButton"));
+const modalCopyrightButton = /**@type {HTMLButtonElement}*/($("#modalCopyrightButton"));
 const templateImage = /**@type {HTMLImageElement}*/($("#templateImage"));
 const overlayMenuOld = /**@type {HTMLElement}*/($("#overlayMenuOld"));
-const positionIndicator = /**@type {import("./game-elements.js").PositionIndicator}*/($("#positionIndicator"));
-const idPosition = /**@type {HTMLElement}*/($("#idPosition"));
-const idPositionPlacer = /**@type {HTMLElement}*/($("#idPositionPlacer"));
+const overlayMenuOldCloseButton = /**@type {HTMLElement}*/($("#overlayMenuOldCloseButton"));
 const onlineCounter = /**@type {HTMLElement}*/($("#onlineCounter"));
 const canvasLock = /**@type {HTMLElement}*/($("#canvasLock"));
 const lockMessageLabel = /**@type {HTMLElement}*/($("#lockMessageLabel"));
 const namePanel = /**@type {HTMLElement}*/($("#namePanel"));
+const namePanelCloseButton = /**@type {HTMLButtonElement}*/($("#namePanelCloseButton"));
 const nameInput = /**@type {HTMLInputElement}*/(document.getElementById("nameInput"));
 const placeButton = /**@type {HTMLButtonElement}*/($("#place"));
 const placeOkButton = /**@type {HTMLButtonElement}*/($("#pok"));
 const placeCancelButton = /**@type {HTMLButtonElement}*/($("#pcancel"));
 const palette = /**@type {HTMLElement}*/($("#palette"));
-const channelDrop = /**@type {HTMLElement}*/($("#channelDrop"));
+const channelButton = /**@type {HTMLButtonElement}*/($("#channelButton"));
 const channelDropMenu = /**@type {HTMLElement}*/($("#channelDropMenu"));
 const channelDropParent = /**@type {HTMLElement}*/($("#channelDropParent"));
 const channelEn = /**@type {HTMLElement}*/($("#channelEn"));
@@ -88,7 +99,7 @@ const captchaOptions = /**@type {HTMLElement}*/($("#captchaOptions"));
 const turnstileMenu = /**@type {HTMLElement}*/($("#turnstileMenu"));
 const messageInput = /**@type {HTMLInputElement}*/($("#messageInput"));
 const messageTypePanel = /**@type {HTMLElement}*/($("#messageTypePanel"));
-const messageInputGifPanel = /**@type {HTMLElement}*/($("#messageInputGifPanel"));
+const messageInputGifPanel = /**@type {import("../../shared-elements.js").GifPanel}*/($("#messageInputGifPanel"));
 const messageReplyPanel = /**@type {HTMLElement}*/($("#messageReplyPanel"));
 const messageReplyLabel = /**@type {HTMLElement}*/($("#messageReplyLabel"));
 const messageCancelReplyButton = /**@type {HTMLButtonElement}*/($("#messageCancelReplyButton"));
@@ -111,6 +122,7 @@ const modReason = /**@type {HTMLInputElement}*/($("#modReason"));
 const modCloseButton = /**@type {HTMLButtonElement}*/$("#modCloseButton");
 const modCancelButton = /**@type {HTMLButtonElement}*/$("#modCancelButton");
 const captchaPopup = /**@type {HTMLDialogElement}*/($("#captchaPopup"));
+const modActionForm = /**@type {HTMLInputElement}*/($("#modActionForm"));
 const modActionDelete = /**@type {HTMLInputElement}*/($("#modActionDelete"));
 const modActionKick = /**@type {HTMLInputElement}*/($("#modActionKick"));
 const modActionMute = /**@type {HTMLInputElement}*/($("#modActionMute"));
@@ -119,16 +131,8 @@ const modActionCaptcha = /**@type {HTMLInputElement}*/($("#modActionCaptcha"));
 const chatPanel = /**@type {HTMLElement}*/($("#chatPanel"));
 const messageEmojisPanel = /**@type {HTMLElement}*/($("#messageEmojisPanel"));
 const messageInputEmojiPanel = /**@type {HTMLElement}*/($("#messageInputEmojiPanel"));
-const tlSelect = /**@type {HTMLElement}*/($("#tlSelect"));
-const tlImage = /**@type {HTMLImageElement}*/($("#tlImage"));
-const timelapsePanel = /**@type {HTMLElement}*/($("#timelapsePanel"));
-const tlConfirm = /**@type {HTMLButtonElement}*/($("#tlConfirm"));
-const tlStartSel = /**@type {HTMLSelectElement}*/($("#tlStartSel"));
-const tlEndSel = /**@type {HTMLSelectElement}*/($("#tlEndSel"));
-const tlTimer = /**@type {HTMLElement}*/($("#tlTimer"));
-const tlFps = /**@type {HTMLInputElement}*/($("#tlFps"));
-const tlPlayDir = /**@type {HTMLInputElement}*/($("#tlPlayDir"));
 const overlayInput = /**@type {HTMLInputElement}*/($("#overlayInput"));
+const overlaySliderValue = /**@type {HTMLElement}*/($("#overlaySliderValue"));
 const chatContext = /**@type {HTMLElement}*/($("#chatContext"));
 const userNote = /**@type {HTMLElement}*/($("#userNote"));
 const mentionUserButton = /**@type {HTMLButtonElement}*/($("#mentionUserButton"));
@@ -136,11 +140,17 @@ const replyUserButton = /**@type {HTMLButtonElement}*/($("#replyUserButton"));
 const blockUserButton = /**@type {HTMLButtonElement}*/($("#blockUserButton"));
 const changeMyNameButton = /**@type {HTMLElement}*/($("#changeMyNameButton"));
 const connProblems = /**@type {HTMLElement}*/($("#connproblems"));
+const connProblemsResetButton = /**@type {HTMLElement}*/($("#connProblemsResetButton"));
 const chatAd = /**@type {HTMLAnchorElement}*/($("#chatAd"));
+const chatAdCloseButton = /**@type {HTMLAnchorElement}*/($("#chatAdCloseButton"));
+const chatAdLabel = /**@type {HTMLAnchorElement}*/($("#adLabel"));
 const chatCloseButton = /**@type {HTMLButtonElement}*/($("#chatCloseButton"));
-const closeButton = /**@type {HTMLAnchorElement}*/($("#closebtn"));
-const chatButton = /**@type {HTMLAnchorElement}*/($("#chatbtn"));
-const messageOptionsButton = /**@type {HTMLAnchorElement}*/($("#messageOptionsButton"));
+const helpButton = /**@type {HTMLButtonElement}*/($("#helpbtn"));
+const closeButton = /**@type {HTMLButtonElement}*/($("#closebtn"));
+const chatButton = /**@type {HTMLButtonElement}*/($("#chatbtn"));
+const messageAddEmojiButton = /**@type {HTMLButtonElement}*/($("#messageAddEmojiButton"));
+const messageAddGifButton = /**@type {HTMLButtonElement}*/($("#messageAddGifButton"));
+const messageOptionsButton = /**@type {HTMLButtonElement}*/($("#messageOptionsButton"));
 const themeDrop = /**@type {HTMLElement}*/($("#themeDrop"));
 const themeDropName = /**@type {HTMLElement}*/($("#themeDropName"));
 const themeDropParent = /**@type {HTMLElement}*/($("#themeDropParent"));
@@ -149,6 +159,7 @@ const spectateMenu = /**@type {HTMLElement}*/($("#spectateMenu"));
 const spectateCloseButton = /**@type {HTMLElement}*/($("#spectateCloseButton"));
 const spectateUserIdInput = /**@type {HTMLInputElement}*/($("#spectateUserIdInput"));
 const spectateStatusLabel = /**@type {HTMLElement}*/($("#spectateStatusLabel"));
+const secretSettingsDialog = /**@type {HTMLDialogElement}*/($("#secretSettingsDialog"));
 
 // View state
 /**@type {TurnstileWidget|null}*/let currentTurnstileWidget = null;
@@ -551,6 +562,9 @@ function resizePostsFrame() {
 }
 postsFrame.addEventListener("load", resizePostsFrame);
 
+function scrollToPosts() {
+	postsFrame.scrollIntoView({ behavior: "smooth", block: "start", inline: "start" })
+}
 function openOverlayMenuOld() {
 	if (enableNewOverlayMenu === true) {
 		openOverlayMenu();
@@ -558,9 +572,6 @@ function openOverlayMenuOld() {
 	else {
 		overlayMenuOld.setAttribute("open", "true");
 	}
-}
-function scrollToPosts() {
-	postsFrame.scrollIntoView({ behavior: "smooth", block: "start", inline: "start" })
 }
 
 // Load more posts on scroll down
@@ -632,18 +643,25 @@ async function showPlacerInfo(x, y) {
 		id}`);
 }
 
+// Modal
 // Prompt user if they want to install site as PWA if they press the modal button
 /**@type {Event|null}*/
 let pwaPrompter = null
-modalInstall.disabled = true
+modalInstallButton.disabled = true
 window.addEventListener("beforeinstallprompt", function(e) {
 	e.preventDefault()
 	pwaPrompter = e
-	modalInstall.disabled = false
+	modalInstallButton.disabled = false
 })
-modalInstall.addEventListener("click", () => {
+modalInstallButton.addEventListener("click", () => {
 	// @ts-expect-error PWAPrompter.prompt is still an experimental javascript feature for some reason
 	pwaPrompter?.prompt();
+});
+modalCloseButton.addEventListener("click", function() {
+	modal.close();
+});
+modalCopyrightButton.addEventListener("click", function() {
+	secretSettingsDialog.showModal();
 });
 
 // Keybinds
@@ -909,6 +927,11 @@ document.addEventListener("visibilitychange", () => {
 		setFocused(false);
 	}
 });
+
+canvSelectImage.addEventListener("dragstart", (e) => {
+	e.preventDefault();
+	return false;
+})
 
 /**
  * @param {Event} e
@@ -1183,6 +1206,8 @@ function initChannelDrop() {
 }
 
 channelDropMenu.addEventListener("click", function(e) {
+	e.stopPropagation();
+
 	let target = e.target
 	while (target instanceof HTMLElement && target != channelDropMenu) {
 		if (target.nodeName != "LI") {
@@ -1204,11 +1229,16 @@ channelDropMenu.addEventListener("click", function(e) {
 	}
 });
 
-channelMineButton.addEventListener("click", function(e) {
+channelButton.addEventListener("click", function(e) {
+	e.stopPropagation();
+	channelDropParent.toggleAttribute("open");
+});
+
+channelMineButton.addEventListener("click", function() {
 	switchLanguageChannel(extraLanguage);
 });
 
-channelEnButton.addEventListener("click", function(e) {
+channelEnButton.addEventListener("click", function() {
 	switchLanguageChannel("en");
 });
 
@@ -1365,12 +1395,19 @@ function applyLiveChatMessageInteractivity(message, channel = "") {
 		chatReactionsPanel.style.right = "8px";
 		chatReactionsPanel.style.top = `${Math.max(8, topPosition)}px`; // Ensure it doesn't go off the top
 	
-		// @ts-expect-error
-		chatReactionsPanel.addEventListener("emojiselection", (/**@type {CustomEvent}*/e) => {
+		chatReactionsPanel.addEventListener("emojiselection", (/**@type {Event}*/e) => {
+			if (!(e instanceof CustomEvent)) {
+				throw new Error("Emoji selection event was not of type CustomEvent");
+			}
+
 			const { key } = e.detail;
 			if (chatReact) {
 				chatReact(messageId, key);
 			}
+			chatReactionsPanel.removeAttribute("open");
+		});
+
+		chatReactionsPanel.addEventListener("close", () => {
 			chatReactionsPanel.removeAttribute("open");
 		})
 	});
@@ -1401,7 +1438,10 @@ function applyLiveChatMessageInteractivity(message, channel = "") {
 	return message;
 }
 
-
+// Name panel
+namePanelCloseButton.addEventListener("click", () => {
+	namePanel.style.visibility = "hidden";
+});
 nameInput.addEventListener("keydown", function(e) {
 	if (e.key == "Enter") {
 		nameInput.blur();
@@ -1652,14 +1692,21 @@ messageTypePanel.children[1].addEventListener("click", function(/**@type {Event}
 	messageInput.value = "";
 });
 
-// @ts-expect-error
-messageInputGifPanel.addEventListener("gifselection", function(/**@type {CustomEvent}*/ e) {
+messageInputGifPanel.addEventListener("gifselection", function(/**@type {Event}*/e) {
+	if (!(e instanceof CustomEvent)) {
+		throw new Error("Gif selection event was not of type CustomEvent");
+	}
+
 	const gif = e.detail;
 	if (!gif) {
 		return;
 	}
 	messageInputGifPanel.removeAttribute("open")
 	sendLiveChatMsg(`[gif:${gif.id}:tenor]`); // TODO: Put gif URL in ()
+});
+
+messageInputGifPanel.addEventListener("close", function(e) {
+	messageInputGifPanel.removeAttribute("open");
 });
 
 /**
@@ -1898,6 +1945,20 @@ function closeChatModerate() {
 modCloseButton.addEventListener("click", closeChatModerate);
 modCancelButton.addEventListener("click", closeChatModerate);
 
+modActionForm.addEventListener("change", (e) => {
+	if (!(e.target instanceof HTMLInputElement)) {
+		return;
+	}
+
+	if (e.target.name === "modAction") {
+		moderationMenu.setAttribute("mode", e.target.value);
+	}
+});
+
+modReason.addEventListener("input", function() {
+	modOptionsButton.disabled = !modReason.value;
+});
+
 /**
  * @param {"delete"|"kick"|"mute"|"ban"|"captcha"} mode
  * @param {number|null} senderId
@@ -2074,8 +2135,11 @@ messageInput.oninput = (/** @type {{ isTrusted: any; }} */ e) => {
 	}
 }
 
-// @ts-expect-error
-messageInputEmojiPanel.addEventListener("emojiselection", (/**@type {CustomEvent}*/ e) => {
+messageInputEmojiPanel.addEventListener("emojiselection", (/**@type {Event}*/e) => {
+	if (!(e instanceof CustomEvent)) {
+		throw new Error("Emoji selection event was not of type CustomEvent");
+	}
+
 	messageInputEmojiPanel.removeAttribute("open")
 	if (CUSTOM_EMOJIS.has(e.detail.key)) {
 		chatInsertText(`:${e.detail.key}:`)
@@ -2083,6 +2147,10 @@ messageInputEmojiPanel.addEventListener("emojiselection", (/**@type {CustomEvent
 	else {
 		chatInsertText(e.detail.value)
 	}
+});
+
+messageInputEmojiPanel.addEventListener("close", (e) => {
+	messageInputEmojiPanel.removeAttribute("open");
 });
 
 // Spectation
@@ -2198,83 +2266,12 @@ themeDropList?.addEventListener("click", function(e) {
 		break;
 	}
 });
+themeDropParent.addEventListener("click", function(e) {
+	e.stopPropagation();
+	themeDropParent.toggleAttribute("open");
+})
 
-/**
- * @param {MouseEvent} e
- */
-function tlMouseMove(e) {
-	if (tlSelect.getAttribute("dragging") == "true") {
-		tlSelect.style.cursor = "default"
-		return
-	}
-	tlSelect.style.left = clamp(e.clientX - tlImage.getBoundingClientRect().left, 0, WIDTH - tlSelect.offsetWidth) + "px"
-	tlSelect.style.top = clamp(e.clientY - tlImage.getBoundingClientRect().top, 0, HEIGHT - tlSelect.offsetHeight) + "px"
-	tlSelect.style.cursor = "all-scroll"
-}
-
-function toggleTlPanel() {
-	timelapsePanel.style.display = timelapsePanel.style.display == "none" ? "block" : "none";
-	tlImage.src = canvas.toDataURL("image/png");
-	tlSelect.style.width = WIDTH + "px";
-	tlSelect.style.height = HEIGHT + "px";
-
-	let backups = []
-	fetch(localStorage.board + "/backups")
-		.then((response) => response.text())
-		.then((data) => {
-			for (let b of data.split("\n")) backups.push(b);
-		})
-}
-
-/**@type {number}*/let tlTimerStart = 0
-
-function confirmTlCreate() {
-	tlConfirm.value = "Timelapse loading. Hang tight! ⏳";
-	tlConfirm.style.pointerEvents = "none";
-	tlTimerStart = Date.now();
-	let tlTimerInterval = setInterval(updateTlTimer, 100);
-
-	fetch(`https://${localStorage.server || DEFAULT_SERVER}/timelapses/`, {
-			method: "POST",
-			body: JSON.stringify({
-				"backupStart": tlStartSel.value,
-				"backupEnd": tlEndSel.value,
-				"fps": Number(tlFps.value),
-				"startX": 0,
-				"startY": 0,
-				"endX": WIDTH,
-				"endY": HEIGHT,
-				"reverse": tlPlayDir.getAttribute("reverse") == "true"
-			}),
-			headers: { "Content-type": "application/json; charset=UTF-8" }
-		})
-		.then(resp => resp.blob())
-		.then(blob => {
-			const url = window.URL.createObjectURL(blob);
-			const a = document.createElement("a");
-			a.style.display = "none";
-			a.href = url;
-			a.download = "place_timelapse.gif";
-			document.body.appendChild(a);
-			a.click();
-			tlConfirm.value = "Create";
-			tlConfirm.style.pointerEvents = "auto";
-			clearInterval(tlTimerInterval);
-			tlTimer.innerText = "0.0s";
-		})
-		.catch((e) => {
-			console.error("Timelapse failed, " + e);
-			tlConfirm.value = "Create";
-			tlConfirm.style.pointerEvents = "auto";
-			clearInterval(tlTimerInterval);
-			tlTimer.innerText = "0.0s";
-		})
-}
-function updateTlTimer() {
-	const elapsedTime = Date.now() - tlTimerStart
-	tlTimer.innerText = ((elapsedTime / 1000).toFixed(3)) + "s"
-}
-
+// Old overlay menu
 /**
  * @typedef {Object} OverlayInfo
  * @property {number} x - The x-coordinate of the overlay.
@@ -2335,19 +2332,30 @@ overlayCopyButton.addEventListener("click", async function(e) {
 	}
 });
 const overlayXInput = /**@type {HTMLInputElement}*/($("#overlayXInput"));
-overlayXInput.addEventListener("change", function() {
+overlayXInput.addEventListener("change", () => {
 	overlayInfo.x = Number(overlayXInput.value);
 	templateImage.style.transform = `translate(${overlayInfo.x}px, ${overlayInfo.y}px)`;
 });
 const overlayYInput = /**@type {HTMLInputElement}*/($("#overlayYInput"));
-overlayYInput.addEventListener("change", function() {
+overlayYInput.addEventListener("change", () => {
 	overlayInfo.y = Number(overlayYInput.value);
 	templateImage.style.transform = `translate(${overlayInfo.x}px, ${overlayInfo.y}px)`
 });
 const overlayOpacity = /**@type {HTMLInputElement}*/($("#overlayOpacity"));
-overlayOpacity.addEventListener("change", function() {
+overlayOpacity.addEventListener("change", () => {
 	overlayInfo.opacity = Number(overlayOpacity.value) / 100;
 	templateImage.style.opacity = String(overlayInfo.opacity);
+});
+overlayOpacity.addEventListener("input", function() {
+	overlaySliderValue.style.setProperty("--value", `${overlayOpacity.value}%`);
+	overlaySliderValue.dataset.value = overlayOpacity.value;
+})
+templateImage.addEventListener("dragstart", (e) => {
+	e.preventDefault();
+	return false;
+});
+overlayMenuOldCloseButton.addEventListener("click", function() {
+	overlayMenuOld.removeAttribute("open");
 });
 
 // Chat management
@@ -2357,6 +2365,33 @@ let blockedUsers = localStorage.blocked?.split(",") || [];
 /**@type {number|null}*/let currentReplyId = null;
 let openedChat = false;
 
+messageAddEmojiButton.addEventListener("click", function() {
+	if (!messageInputEmojiPanel.getAttribute("open")) {
+		messageInputEmojiPanel.toggleAttribute("open");
+		messageInputGifPanel.removeAttribute("open");
+	}
+	else {
+		messageInputEmojiPanel.removeAttribute("open");
+	}
+});
+
+messageAddGifButton.addEventListener("click", function() {
+	if (!messageInputGifPanel.getAttribute("open")) {
+		messageInputGifPanel.setAttribute("open", "true");
+		messageInputEmojiPanel.removeAttribute("open")
+		messageInputGifPanel.fetchGifs();
+	}
+	else {
+		messageInputGifPanel.removeAttribute("open");
+	}
+});
+
+messageOptionsButton.addEventListener("click", function() {
+	updateMessageInputHeight();
+	messageTypePanel.toggleAttribute("closed");
+})
+
+// Chat panel
 function openChatPanel() {
 	chatPanel.setAttribute("open", "true")
 	if (!openedChat) {
@@ -2366,14 +2401,6 @@ function openChatPanel() {
 }
 chatButton.addEventListener("click", openChatPanel);
 
-messageOptionsButton.addEventListener("click", function(e) {
-	updateMessageInputHeight();
-	messageTypePanel.toggleAttribute("closed");
-})
-
-// Chat panel
-chatCloseButton.addEventListener("click", closeChatPanel);
-
 function closeChatPanel() {
 	messageInput.blur();
 	messageInputEmojiPanel.removeAttribute("open");
@@ -2381,13 +2408,30 @@ function closeChatPanel() {
 	chatPanel.removeAttribute("open");
 	chatPanel.inert = true;
 }
-closeChatPanel()
+chatCloseButton.addEventListener("click", closeChatPanel);
+closeChatPanel();
+
+function closeChatContexts() {
+	chatContext.style.display = "none";
+	channelDropParent.removeAttribute("open");
+}
+chatPanel.addEventListener("touchstart", closeChatContexts);
+chatPanel.addEventListener("click", closeChatContexts);
 
 // Close button / space filler transition to posts view
 const mainContentObserver = new ResizeObserver((entries) => {
 	onMainContentResize();
 });
 mainContentObserver.observe(mainContent);
+
+helpButton.addEventListener("click", () => {
+	if (modal.open) {
+		modal.close();
+	}
+	else {
+		modal.showModal();
+	}
+});
 
 function closeGame() {
 	// Lazy load posts frame
@@ -2571,8 +2615,28 @@ setTimeout(() => {
 		connProblems.style.opacity = "1";
 	}
 }, 5000)
+connProblemsResetButton.addEventListener("click", function() {
+	localStorage.clear();
+	history.pushState(null, "", location.origin);
+})
 
 // Ads
+chatAdCloseButton.addEventListener("click", (e) => {
+	e.stopPropagation();
+
+	chatAd.style.display = "none";
+	localStorage.noad = Date.now();
+	chatAdLabel.style.display = "block";
+	chatAdLabel.animate([
+		{ opacity: 1 },
+		{ scale: 1.1 }
+	], { duration: 1000, iterations: 1, });
+
+	setTimeout(() => {
+		chatAdLabel.style.display = "none"
+	}, 1000);
+});
+
 if (localStorage.noad && Date.now() - localStorage.noad < 1.21e9) { // 14 days
 	chatAd.style.display = "none"
 }
