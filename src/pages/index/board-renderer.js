@@ -1,5 +1,5 @@
 "use strict";
-import { mat4, vec4 } from "gl-matrix";
+import { mat4, vec2, vec4 } from "gl-matrix";
 
 /**
  * @typedef {Object} UniformSchema
@@ -808,6 +808,39 @@ export class BoardRenderer {
 			x: gamePoint[0],
 			y: gamePoint[1]
 		};
+	}
+
+	/**
+	 * @param {number} x
+	 * @param {number} y
+	 * @returns {{ x: number, y: number }}
+	 */
+	boardToCanvasElementCoords(x, y) {
+		// Ensure matrices are up to date
+		this._updateMatrices();
+
+		// Board coordinates -> UV coordinates (+ centre offset)
+		const uvX = x / this._boardWidth;
+		const uvY = 1 - (y / this._boardHeight);
+
+		// Uv -> Model coords
+		const modelX = uvX * 2 - 1;
+		const modelY = uvY * 2 - 1;
+
+		const clipPoint = vec4.create();
+		const modelPoint = vec4.fromValues(modelX, modelY, 0.0, 1.0);
+		vec4.transformMat4(clipPoint, modelPoint, this._mvpMatrix);
+
+		const ndcX = clipPoint[0] / clipPoint[3];
+		const ndcY = clipPoint[1] / clipPoint[3];
+
+		const screenX = (ndcX + 1) / 2 * (this.canvas.width) * this._devicePixelRatio;
+		const screenY = (1 - ndcY) / 2 * (this.canvas.height) * this._devicePixelRatio;
+
+		return {
+			x: screenX,
+			y: screenY
+		}
 	}
 
 	/**

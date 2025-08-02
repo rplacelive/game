@@ -476,6 +476,7 @@ r-live-chat-message .emoji-reactors-count {
 .channel-button {
 	background: transparent;
 	box-shadow: none;
+	border: none !important;
 }
 
 #captchaPopup {

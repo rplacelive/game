@@ -471,6 +471,15 @@ export function pos(newX=x, newY=y, newZ=z) {
 			idPositionPlacer.textContent = intIdNames.get(id) || ("#" + id);
 		}, 1000);
 	}
+
+	const posEvent = new CustomEvent("pos", {
+		detail: {
+			x: newX,
+			y:newY,
+			z:newZ
+		}
+	});
+	window.dispatchEvent(posEvent);
 }
 
 export function zoomIn() {

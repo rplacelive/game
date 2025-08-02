@@ -2,7 +2,9 @@
 import { BoardRenderer } from "./board-renderer.js";
 import { boardRenderer } from "./viewport.js";
 import { $ } from "../../shared.js";
+import { HEIGHT, WIDTH } from "./game-state.js";
 
+const viewport = /**@type {HTMLElement}*/($("#viewport"));
 const advancedViewMenu = /**@type {HTMLElement}*/($("#advancedViewMenu"));
 const createSelectionButton = /**@type {HTMLButtonElement}*/($("#avmCreateSelectionButton"));
 const viewCanvasLayer = /**@type {HTMLInputElement}*/($("#viewCanvasLayer"));
@@ -65,6 +67,8 @@ const selectionFragmentSource = `#version 300 es
  * @property {number} height
  * @property {Uint8Array} mask
  * @property {import("./board-renderer.js").RenderLayer} layer
+ * @property {{ tl:HTMLElement, tr:HTMLElement, bl:HTMLElement, br:HTMLElement }} [handles]
+ * @property {HTMLElement} [label]
  */
 /**@type {Array<BoardSelection>}*/let selections = [];
 
@@ -128,6 +132,198 @@ createSelectionButton.addEventListener("click", function(e) {
 });
 
 /**
+ * @param {BoardSelection} selection
+ */
+function createSelectionLabel(selection) {
+	if (!boardRenderer) {
+		throw new Error("Board renderer was null");
+	}
+
+	const labelEl = document.createElement("span");
+	labelEl.dataset.x = String(selection.x);
+	labelEl.dataset.y = String(selection.y);
+	labelEl.classList.add("selection-label");
+	viewport.appendChild(labelEl);
+
+	return labelEl;
+}
+
+/**
+ * @param {BoardSelection} selection
+ * @param {"tl"|"tr"|"bl"|"br"} type 
+ */
+function createSelectionHandle(selection, type) {
+	if (!boardRenderer) {
+		throw new Error("Board renderer was null");
+	}
+
+	const handleEl = document.createElement("div");
+	handleEl.dataset.type = type;
+	handleEl.classList.add("selection-handle");
+	viewport.appendChild(handleEl);
+
+	/**@type {{ x: number, y:number }|null}*/let dragPos = null;
+	/**
+	 * @param {number} clientX 
+	 * @param {number} clientY 
+	 */
+	function beginDrag(clientX, clientY) {
+		if (!boardRenderer) {
+			return;
+		}
+
+		const boardPos = boardRenderer.hitTest(clientX, clientY);
+		if (!boardPos) {
+			return;
+		}
+
+		dragPos = { x: Math.floor(boardPos.x), y: Math.floor(boardPos.y) };
+		handleEl.style.cursor = "grabbing";
+	}
+	/**
+	 * @param {number} clientX 
+	 * @param {number} clientY 
+	 */
+	function dragMove(clientX, clientY) {
+		if (!dragPos || !boardRenderer) {
+			return;
+		}
+
+		const boardPos = boardRenderer.hitTest(clientX, clientY); 
+		if (!boardPos) {
+			return;
+		}
+		let dx = Math.floor(boardPos.x - dragPos.x);
+		let dy = Math.floor(boardPos.y - dragPos.y);
+
+		if ((type[0] === "t" && selection.height <= 8 && dy > 0)
+			|| (type[0] === "b" && selection.height <= 8 && dy < 0)) {
+			dy = 0;
+		}
+		if ((type[1] === "l" && selection.width <= 8 && dx > 0)
+			|| type[1] === "r" && selection.width <= 8 && dx < 0) {
+			dx = 0;
+		}
+
+		if (type === "tl") {
+			selection.x += dx;
+			selection.y += dy;
+			selection.width -= dx;
+			selection.height -= dy;
+		}
+		else if (type === "tr") {
+			selection.y += dy;
+			selection.width += dx;
+			selection.height -= dy;
+		}
+		else if (type == "bl") {
+			selection.x += dx;
+			selection.width -= dx;
+			selection.height += dy;
+		}
+		else if (type == "br") {
+			selection.width += dx;
+			selection.height += dy;
+		}
+
+		dragPos = { x: Math.floor(boardPos.x), y: Math.floor(boardPos.y) };
+		updateSelection(selection);
+	}
+	function endDrag() {
+		dragPos = null;
+		handleEl.style.cursor = "grab";
+	}
+	handleEl.addEventListener("mousedown", (e) => {
+		e.preventDefault();
+		e.stopPropagation();
+		beginDrag(e.clientX, e.clientY)
+	});
+	viewport.addEventListener("mousemove", (e) => dragMove(e.clientX, e.clientY));
+	viewport.addEventListener("mouseup", () => endDrag());
+
+	return handleEl;
+}
+
+/**
+ * @param {BoardSelection} selection
+ */
+function updateSelectionHandles(selection) {
+	if (!boardRenderer) {
+		throw new Error("Board renderer was null");
+	}
+	if (!selection.handles) {
+		return;
+	}
+
+	const { tl, tr, bl, br } = selection.handles;
+	for (const handleEl of [ tl, tr, bl, br]) {
+		let x = selection.x;
+		let y = selection.y;
+		switch (handleEl.dataset.type) {
+			case "tr": {
+				x = selection.x + selection.width;
+				break;
+			}
+			case "bl": {
+				y = selection.y + selection.height;
+				break;
+			}
+			case "br": {
+				x = selection.x + selection.width;
+				y = selection.y + selection.height;
+				break;
+			}
+		}
+		handleEl.dataset.x = String(x);
+		handleEl.dataset.y = String(y);
+
+		const screenCoords = boardRenderer.boardToCanvasElementCoords(x, y);
+		handleEl.style.left = `${screenCoords.x}px`;
+		handleEl.style.top = `${screenCoords.y}px`;
+	}
+}
+
+/**
+ * @param {BoardSelection} selection
+ */
+function updateSelectionLabel(selection) {
+	if (!boardRenderer) {
+		throw new Error("Board renderer was null");
+	}
+
+	const labelEl = selection.label;
+	if (!labelEl) {
+		return;
+	}
+
+	labelEl.dataset.x = String(selection.x);
+	labelEl.dataset.y = String(selection.y);
+	const screenCoords = boardRenderer.boardToCanvasElementCoords(selection.x, selection.y);
+	labelEl.style.left = `${screenCoords.x}px`;
+	labelEl.style.top = `${screenCoords.y}px`;
+	labelEl.textContent = `${selection.x},${selection.y}  (${selection.width}x${selection.height})`;
+}
+
+window.addEventListener("pos", (/**@type {Event}*/e) => {
+	if (!(e instanceof CustomEvent)) {
+		throw new Error("Pos event was not of type CustomEvent");
+	}
+
+	// Update selection handle positions
+	requestAnimationFrame(() => {
+		for (const selection of selections) {
+			if (!selection.handles) {
+				continue;
+			}
+
+			updateSelectionHandles(selection);
+			updateSelectionLabel(selection);
+		}
+	})
+});
+
+
+/**
  * @param {number} x
  * @param {number} y
  * @param {number} width
@@ -157,10 +353,48 @@ function addSelection(x, y, width, height, mask = null) {
 		}
 	}
 
-	/**@type {BoardSelection}*/const selection = { x, y, width, height, mask: selectionMask, layer };
+	/**@type {BoardSelection}*/const selection = {
+		x,
+		y,
+		width,
+		height,
+		mask: selectionMask,
+		layer,
+	};
+	selection.handles =  {
+		tl: createSelectionHandle(selection, "tl"),
+		tr: createSelectionHandle(selection, "tr"),
+		bl: createSelectionHandle(selection, "bl"),
+		br: createSelectionHandle(selection, "br")
+	};
+	selection.label = createSelectionLabel(selection);
+	updateSelectionHandles(selection);
+	updateSelectionLabel(selection);
 	selections.push(selection);
-	
+
 	uploadSelectionTexture(selection);
+	boardRenderer.queueRedraw();
+}
+
+/**
+ * @param {BoardSelection} selection
+ */
+function updateSelection(selection) {
+	if (!boardRenderer) {
+		return;
+	}
+
+	// DOM side
+	updateSelectionHandles(selection);
+	updateSelectionLabel(selection);
+
+	// Renderer side
+	// TODO: If the size of the selection has changed and is now bigger, we need
+	// TODO: to create a new selection texture with the new size
+	selection.layer.uniforms = {
+		"u_selectionPos": [ selection.x, selection.y ],
+		"u_selectionSize": [ selection.width, selection.height ]
+	};
 	boardRenderer.queueRedraw();
 }
 
