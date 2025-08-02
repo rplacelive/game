@@ -1,5 +1,5 @@
 import { DEFAULT_BOARD, DEFAULT_SERVER, ADS,  COMMANDS, CUSTOM_EMOJIS, DEFAULT_HEIGHT, DEFAULT_PALETTE_KEYS, DEFAULT_THEMES, DEFAULT_WIDTH, EMOJIS, LANG_INFOS, MAX_CHANNEL_MESSAGES, PUNISHMENT_STATE, PLACEMENT_MODE } from "../../defaults.js";
-import { lang, translate, translateAll, $, stringToHtml, blobToBase64, base64ToBlob, clamp }  from "../../shared.js";
+import { lang, translate, translateAll, $, stringToHtml, blobToBase64, base64ToBlob }  from "../../shared.js";
 import { showLoadingScreen, hideLoadingScreen } from "./loading-screen.js";
 import { clearCaptchaCanvas, updateImgCaptchaCanvas, updateImgCaptchaCanvasFallback } from "./captcha-canvas.js";
 import { boardRenderer, canvasCtx, zoomIn, moveTo, setPlaceChatPosition, setMinZoom, pos, x, y, z, minZoom, setX, setY, setZ } from "./viewport.js";
@@ -14,6 +14,7 @@ import FingerprintJS from "@fingerprintjs/fingerprintjs";
 import { theme } from "./game-themes.js";
 import { BOARD, canvasLocked, CHANGES, chatName, connectStatus, COOLDOWN, cooldownEndDate, HEIGHT, intId, intIdNames, intIdPositions, onCooldown, PALETTE, PALETTE_USABLE_REGION, placementMode, RAW_BOARD, setCooldown, SOCKET_PIXELS, WIDTH, wsCapsule } from "./game-state.js";
 import { generateIndicators, generatePalette, hideIndicators, showPalette } from "./palette.js";
+import "./popup.js";
 import DisableDevtool from "disable-devtool";
 
 if (import.meta.env.PROD) {
@@ -67,7 +68,9 @@ const canvas = /**@type {HTMLCanvasElement}*/($("#canvas"));
 const placeChatMessages = /**@type {HTMLElement}*/($("#placeChatMessages"));
 const colours = /**@type {HTMLElement}*/($("#colours"));
 const modal = /**@type {HTMLDialogElement}*/($("#modal"));
-const modalInstall = /**@type {HTMLButtonElement}*/($("#modalInstall"));
+const modalCloseButton = /**@type {HTMLButtonElement}*/($("#modalCloseButton")); 
+const modalInstallButton = /**@type {HTMLButtonElement}*/($("#modalInstallButton"));
+const modalCopyrightButton = /**@type {HTMLButtonElement}*/($("#modalCopyrightButton"));
 const templateImage = /**@type {HTMLImageElement}*/($("#templateImage"));
 const overlayMenuOld = /**@type {HTMLElement}*/($("#overlayMenuOld"));
 const overlayMenuOldCloseButton = /**@type {HTMLElement}*/($("#overlayMenuOldCloseButton"));
@@ -81,6 +84,7 @@ const placeButton = /**@type {HTMLButtonElement}*/($("#place"));
 const placeOkButton = /**@type {HTMLButtonElement}*/($("#pok"));
 const placeCancelButton = /**@type {HTMLButtonElement}*/($("#pcancel"));
 const palette = /**@type {HTMLElement}*/($("#palette"));
+const channelButton = /**@type {HTMLButtonElement}*/($("#channelButton"));
 const channelDropMenu = /**@type {HTMLElement}*/($("#channelDropMenu"));
 const channelDropParent = /**@type {HTMLElement}*/($("#channelDropParent"));
 const channelEn = /**@type {HTMLElement}*/($("#channelEn"));
@@ -118,6 +122,7 @@ const modReason = /**@type {HTMLInputElement}*/($("#modReason"));
 const modCloseButton = /**@type {HTMLButtonElement}*/$("#modCloseButton");
 const modCancelButton = /**@type {HTMLButtonElement}*/$("#modCancelButton");
 const captchaPopup = /**@type {HTMLDialogElement}*/($("#captchaPopup"));
+const modActionForm = /**@type {HTMLInputElement}*/($("#modActionForm"));
 const modActionDelete = /**@type {HTMLInputElement}*/($("#modActionDelete"));
 const modActionKick = /**@type {HTMLInputElement}*/($("#modActionKick"));
 const modActionMute = /**@type {HTMLInputElement}*/($("#modActionMute"));
@@ -154,6 +159,7 @@ const spectateMenu = /**@type {HTMLElement}*/($("#spectateMenu"));
 const spectateCloseButton = /**@type {HTMLElement}*/($("#spectateCloseButton"));
 const spectateUserIdInput = /**@type {HTMLInputElement}*/($("#spectateUserIdInput"));
 const spectateStatusLabel = /**@type {HTMLElement}*/($("#spectateStatusLabel"));
+const secretSettingsDialog = /**@type {HTMLDialogElement}*/($("#secretSettingsDialog"));
 
 // View state
 /**@type {TurnstileWidget|null}*/let currentTurnstileWidget = null;
@@ -637,18 +643,25 @@ async function showPlacerInfo(x, y) {
 		id}`);
 }
 
+// Modal
 // Prompt user if they want to install site as PWA if they press the modal button
 /**@type {Event|null}*/
 let pwaPrompter = null
-modalInstall.disabled = true
+modalInstallButton.disabled = true
 window.addEventListener("beforeinstallprompt", function(e) {
 	e.preventDefault()
 	pwaPrompter = e
-	modalInstall.disabled = false
+	modalInstallButton.disabled = false
 })
-modalInstall.addEventListener("click", () => {
+modalInstallButton.addEventListener("click", () => {
 	// @ts-expect-error PWAPrompter.prompt is still an experimental javascript feature for some reason
 	pwaPrompter?.prompt();
+});
+modalCloseButton.addEventListener("click", function() {
+	modal.close();
+});
+modalCopyrightButton.addEventListener("click", function() {
+	secretSettingsDialog.showModal();
 });
 
 // Keybinds
@@ -1193,6 +1206,8 @@ function initChannelDrop() {
 }
 
 channelDropMenu.addEventListener("click", function(e) {
+	e.stopPropagation();
+
 	let target = e.target
 	while (target instanceof HTMLElement && target != channelDropMenu) {
 		if (target.nodeName != "LI") {
@@ -1214,11 +1229,16 @@ channelDropMenu.addEventListener("click", function(e) {
 	}
 });
 
-channelMineButton.addEventListener("click", function(e) {
+channelButton.addEventListener("click", function(e) {
+	e.stopPropagation();
+	channelDropParent.toggleAttribute("open");
+});
+
+channelMineButton.addEventListener("click", function() {
 	switchLanguageChannel(extraLanguage);
 });
 
-channelEnButton.addEventListener("click", function(e) {
+channelEnButton.addEventListener("click", function() {
 	switchLanguageChannel("en");
 });
 
@@ -1685,6 +1705,10 @@ messageInputGifPanel.addEventListener("gifselection", function(/**@type {Event}*
 	sendLiveChatMsg(`[gif:${gif.id}:tenor]`); // TODO: Put gif URL in ()
 });
 
+messageInputGifPanel.addEventListener("close", function(e) {
+	messageInputGifPanel.removeAttribute("open");
+});
+
 /**
  * 
  * @param {string} message 
@@ -1921,6 +1945,20 @@ function closeChatModerate() {
 modCloseButton.addEventListener("click", closeChatModerate);
 modCancelButton.addEventListener("click", closeChatModerate);
 
+modActionForm.addEventListener("change", (e) => {
+	if (!(e.target instanceof HTMLInputElement)) {
+		return;
+	}
+
+	if (e.target.name === "modAction") {
+		moderationMenu.setAttribute("mode", e.target.value);
+	}
+});
+
+modReason.addEventListener("input", function() {
+	modOptionsButton.disabled = !modReason.value;
+});
+
 /**
  * @param {"delete"|"kick"|"mute"|"ban"|"captcha"} mode
  * @param {number|null} senderId
@@ -2111,6 +2149,10 @@ messageInputEmojiPanel.addEventListener("emojiselection", (/**@type {Event}*/e) 
 	}
 });
 
+messageInputEmojiPanel.addEventListener("close", (e) => {
+	messageInputEmojiPanel.removeAttribute("open");
+});
+
 // Spectation
 spectateCloseButton.addEventListener("click", function(e) {
 	spectateMenu.removeAttribute("open");
@@ -2224,6 +2266,10 @@ themeDropList?.addEventListener("click", function(e) {
 		break;
 	}
 });
+themeDropParent.addEventListener("click", function(e) {
+	e.stopPropagation();
+	themeDropParent.toggleAttribute("open");
+})
 
 // Old overlay menu
 /**

@@ -1264,7 +1264,7 @@ body[eventphase="3"] .coverer-title {
 	flex-direction: column;
 }
 
-.mod-form div {
+.mod-form > label {
 	display: flex;
 	column-gap: 4px;
 }

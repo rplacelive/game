@@ -8,7 +8,7 @@
 	<meta name="apple-mobile-web-app-title" content="place">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta http-equiv="Content-Security-Policy" content="
-		script-src 'self' https://rplace.live https://server.rplace.live https://challenges.cloudflare.com https://cdn.jsdelivr.net https://www.youtube-nocookie.com https://www.youtube.com blob:;
+		script-src 'self' https://rplace.live https://server.rplace.live https://challenges.cloudflare.com https://cdn.jsdelivr.net 'sha256-Cs5f2fW81V3D4N76FfAiPquSS3ojIC24ZjMqZRNmI5Q=' https://www.youtube-nocookie.com https://www.youtube.com blob:;
 		style-src 'self' 'unsafe-inline' https://server.rplace.live https://fonts.googleapis.com;
 		connect-src 'self' https://rplace.live http://localhost:8082 http://raw.githubusercontent.com ws://localhost:8082 wss://server.rplace.live;">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -42,9 +42,10 @@
 	<script type="module" src="/src/pages/index/advanced-view-menu.js"></script>
 	<script type="module" src="/src/pages/index/board-renderer.js"></script>
 	<script type="module" src="/src/pages/index/palette.js"></script>
+	<script type="module" src="/src/pages/index/popup.js"></script>
 	<!--Entrypoint-->
 	<script type="module" src="/src/pages/index/index.js"></script>
-	<script src="/src/pages/index/globals-manager.cjs"></script>
+	<script>window.addEventListener("undefineglobals",(()=>{delete WebSocket,delete Worker,Object.defineProperty(window,"eval",{value:function(){throw new Error},writable:!1,configurable:!1})}));</script>
 </head>
 	<body>
 		<div id="loadingScreen">
@@ -129,12 +130,12 @@
 					<h2 style="white-space:nowrap" translate="liveChat" class="live-chat-header1">Live Chat:</h2>
 					<div class="channels-options">
 						<span id="channelDropParent" style="opacity: 1;">
-							<button type="button" title="Change channel" class="channel-button" onclick="event.stopPropagation(); channelDropParent.toggleAttribute('open')">
+							<button type="button" id="channelButton" title="Change channel" class="channel-button">
 								<svg class="icon-image" style="vertical-align: bottom;" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24">
 									<path d="M480-345 240-585l43-43 197 198 197-197 43 43-240 239Z"/>
 								</svg>	
 							</button>
-							<div id="channelDrop" class="context-menu" ontouchstart="event.stopPropagation()">
+							<div id="channelDrop" class="context-menu">
 								<menu id="channelDropMenu"><!--Language channel options--></menu>
 							</div>
 						</span>
@@ -195,8 +196,8 @@
 				</div>
 				<div class="chat-bottom">
 					<div class="message-input-container">
-						<r-emoji-panel id="messageInputEmojiPanel" class="chat-bottom-panel" onclose="this.removeAttribute('open')"></r-emoji-panel>
-						<r-gif-panel id="messageInputGifPanel" class="chat-bottom-panel" onclose="this.removeAttribute('open')"></r-gif-panel>
+						<r-emoji-panel id="messageInputEmojiPanel" class="chat-bottom-panel"></r-emoji-panel>
+						<r-gif-panel id="messageInputGifPanel" class="chat-bottom-panel"></r-gif-panel>
 						<textarea id="messageInput" type="text" placeholder="Enter message..." translate="enterMessage" enterkeyhint="send" maxlength="200"></textarea>
 						<div class="message-input-actions">
 							<button type="button" id="messageAddEmojiButton" title="Add emoji">
@@ -382,7 +383,7 @@
 					<h2>Manage:</h2>
 					<div id="modMessageIdForm" class="mod-form">
 						<label>
-							Message ID:
+							<span>Message ID:</span>
 							<input type="number" id="modMessageId" title="Message ID" placeholder="Enter Message ID">
 						</label>
 						<div id="modMessagePreview">Message not found</div>
@@ -392,28 +393,28 @@
 						<input type="number" id="modUserId" title="User ID" placeholder="Enter User ID">
 					</label>
 					<h2>Action:</h2>
-					<div id="modActionForm" class="mod-form">
-						<div onclick="moderationMenu.setAttribute('mode', 'delete')">
-							<input type="radio" id="modActionDelete" name="modaction" />
-							<label for="modActionDelete">Delete message</label>
-						</div>
-						<div onclick="moderationMenu.setAttribute('mode', 'kick')">
-							<input type="radio" id="modActionKick" name="modaction" />
-							<label for="modActionKick">Kick</label>
-						</div>
-						<div onclick="moderationMenu.setAttribute('mode', 'mute')">
-							<input type="radio" id="modActionMute" name="modaction" />
-							<label for="modActionMute">Mute</label>
-						</div>
-						<div onclick="moderationMenu.setAttribute('mode', 'ban')">
-							<input type="radio" id="modActionBan" name="modaction" />
-							<label for="modActionBan">Ban</label>
-						</div>
-						<div onclick="moderationMenu.setAttribute('mode', 'captcha')">
-							<input type="radio" id="modActionCaptcha" name="modaction" />
-							<label for="modActionCaptcha">Captcha</label>
-						</div>
-					</div>
+					<form id="modActionForm" class="mod-form">
+						<label>
+							<span>Delete message</span>
+							<input type="radio" id="modActionDelete" name="modAction" value="delete">
+						</label>
+						<label>
+							<span>Kick</span>
+							<input type="radio" id="modActionKick" name="modAction" value="kick">
+						</label>
+						<label>
+							<span>Mute</span>
+							<input type="radio" id="modActionMute" name="modAction" value="mute">
+						</label>
+						<label>
+							<span>Ban</span>
+							<input type="radio" id="modActionBan" name="modAction" value="ban">
+						</label>
+						<label>
+							<span>Captcha</span>
+							<input type="radio" id="modActionCaptcha" name="modAction" value="captcha">
+						</label>
+					</form>
 					<div id="modDuration">
 						<input id="modDurationH" type="number" style="display: inline;height: auto;width: 80px;" placeholder="Hours" min="0">
 						<span>:</span>
@@ -428,7 +429,7 @@
 						</div>
 					</div>
 					<em>All moderation actions are logged by the server and reports sent to all other staff. Follow the moderation rules. Do not abuse power.</em>
-					<input id="modReason" type="text" placeholder="Reason" oninput="modOptionsButton.disabled = !this.value">
+					<input id="modReason" type="text" placeholder="Reason">
 					<div style="display: flex; column-gap: 8px;">
 						<button type="button" style="flex-grow: 1;" id="modOptionsButton" disabled="true">Submit</button>
 						<button type="button" id="modCancelButton" style="flex-grow: 1;">Cancel</button>
@@ -449,7 +450,7 @@
 			</dialog>
 			<dialog id="popup">
 				<div>
-					<r-close-icon onclick="localStorage.nopopup = Date.now(); popup.close()"></r-close-icon>
+					<r-close-icon id="popupCloseButton"></r-close-icon>
 					<span noselect style="font-size: 1.2em; font-weight: bold;" translate="popupTitle"></span>
 					<!--<iframe id="popupEmbed" src="">< !-- Popup content -- ></iframe>-->
 				</div>
@@ -457,7 +458,7 @@
 			<dialog id="modal" class="modal about-modal">
 				<div class="modal-header">
 					<h2>Place</h2>
-					<r-close-icon id="modalCloseButton" onclick="modal.close()"></r-close-icon>
+					<r-close-icon id="modalCloseButton"></r-close-icon>
 				</div>
 				<div class="modal-content" translate="modalAboutContent">
 					There is an empty canvas.<br><br>
@@ -465,8 +466,8 @@
 					Individually you can create something.<br><br>
 					Together you can create something more.<br><br>
 				</div>
-				<div class="modal-install" id="modalInstall" noselect>Install rplace.live web app</div>
-				<button type="button" title="Open secret settings" class="modal-content copyright-label" onclick="secretSettingsDialog.showModal()">
+				<div class="modal-install" id="modalInstallButton" noselect>Install rplace.live web app</div>
+				<button id="modalCopyrightButton" type="button" title="Open secret settings" class="modal-content copyright-label">
 					© Zekiah-A, BlobKat
 				</button>
 				<div class="modal-footer">
@@ -474,13 +475,12 @@
 					<button type="button" id="muteButton" noselect class="modal-footer-button" title="Enable sounds">
 						<image id="muteButtonImage" class="icon-image" src="/svg/muted.svg"></image>
 					</button>
-					<div id="themeDropParent" noselect class="modal-footer-button" style="width: auto; align-items: center;justify-content: center;"
-						onclick="event.stopPropagation(); themeDropParent.toggleAttribute('open')">
+					<div id="themeDropParent" noselect class="modal-footer-button" style="width: auto; align-items: center;justify-content: center;">
 						<span style="white-space: nowrap;" id="themeDropName">🖌️ r/place 2022</span>
 						<svg class="icon-image" style="vertical-align: bottom;" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24">
 							<path d="M480-345 240-585l43-43 197 198 197-197 43 43-240 239Z"></path>
 						</svg>
-						<div id="themeDrop" style="top: 40px;" class="context-menu" ontouchstart="event.stopPropagation()">
+						<div id="themeDrop" style="top: 40px;" class="context-menu">
 							<menu>
 								<li theme="r/place 2022" variant="">
 									<button type="button">r/place 2022 (Classic)</button>
