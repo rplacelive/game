@@ -84,11 +84,7 @@ export let COOLDOWN = DEFAULT_COOLDOWN;
 const httpServerUrl = (localStorage.server || DEFAULT_SERVER)
 	.replace("wss://", "https://").replace("ws://", "http://");
 // TODO: Find a better cache invalidation strategy for game worker
-const res = await fetch(`${httpServerUrl}/public/game-worker.js?v=${Date.now()}`);
-const code = await res.text();
-const blob = new Blob([code], { type: "application/javascript" });
-const url = URL.createObjectURL(blob);
-export const wsCapsule = new Worker(url, {
+export const wsCapsule = new Worker(`${httpServerUrl}/public/game-worker.js?v=${Date.now()}`, {
 	type: "module"
 });
 wsCapsule.addEventListener("message", handleIpcMessage);
