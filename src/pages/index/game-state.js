@@ -97,19 +97,19 @@ window.addEventListener("beforeunload", (e) => {
 	sendIpcMessage(wsCapsule, "stop");
 });
 // Undefine global objects
-const injectedCjs = document.createElement("script");
-injectedCjs.innerHTML = `
-	delete WebSocket;
-	delete Worker;
-	Object.defineProperty(window, "eval", {
-		value: function() { throw new Error() },
-		writable: false,
-		configurable: false
-	});
-`;
-document.body.appendChild(injectedCjs);
+const undefineGlobals = new CustomEvent("undefineglobals");
+window.dispatchEvent(undefineGlobals);
+	
+const automated = !!(
+	window.navigator.webdriver ||
+	// @ts-ignore Browser specifics
+	window.chrome?.runtime?.onConnect ||
+	window.outerHeight === 0 ||
+	// @ts-ignore Browser specifics
+	navigator.plugins.length === 0 ||
+	/HeadlessChrome/.test(navigator.userAgent)
+);
 
-const automated = navigator.webdriver;
 function handleConnect() {
 	connectStatus = "connected";
 	if (automated) {

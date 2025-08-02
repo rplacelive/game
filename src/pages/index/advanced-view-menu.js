@@ -6,6 +6,7 @@ import { HEIGHT, WIDTH } from "./game-state.js";
 
 const viewport = /**@type {HTMLElement}*/($("#viewport"));
 const advancedViewMenu = /**@type {HTMLElement}*/($("#advancedViewMenu"));
+const closeButton = /**@type {HTMLButtonElement}*/($("#avmCloseButton"));
 const createSelectionButton = /**@type {HTMLButtonElement}*/($("#avmCreateSelectionButton"));
 const viewCanvasLayer = /**@type {HTMLInputElement}*/($("#viewCanvasLayer"));
 const viewChangesLayer = /**@type {HTMLInputElement}*/($("#viewChangesLayer"));
@@ -492,7 +493,6 @@ function uploadSelectionTexture(selection) {
 	);
 }
 
-
 // View layers
 viewCanvasLayer.addEventListener("change", function() {
 	boardRenderer?.setLayerEnabled(0, viewCanvasLayer.checked);
@@ -502,4 +502,9 @@ viewChangesLayer.addEventListener("change", function() {
 });
 viewSocketPixelsLayer.addEventListener("change", function() {
 	boardRenderer?.setLayerEnabled(2, viewSocketPixelsLayer.checked);
+});
+
+// Misc
+closeButton.addEventListener("click", function() {
+	advancedViewMenu.removeAttribute("open");
 });

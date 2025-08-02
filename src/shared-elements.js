@@ -238,7 +238,7 @@ customElements.define("r-emoji-panel", EmojiPanel)
 
 /** @typedef {{ next: string, results: GifData[] }} GifResponse */
 /** @typedef {{ id: string, source: string, preview: string, width: number, height: number, description: string, sourceFallback: string }} GifData */
-class GifPanel extends LitElement {
+export class GifPanel extends LitElement {
 	static properties = {
 		searchTerm: { type: String, attribute: false },
 		gifs: { type: Array, attribute: false },

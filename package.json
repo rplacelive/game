@@ -6,7 +6,7 @@
 		"glob": "^11.0.3",
 		"vite": "^6.3.5",
 		"vite-plugin-html": "^3.2.2",
-		"vite-plugin-pwa": "^1.0.1"
+		"vite-plugin-pwa": "^1.0.2"
 	},
 	"peerDependencies": {
 		"typescript": "^5.8.3"
@@ -19,8 +19,9 @@
 	"dependencies": {
 		"@cycjimmy/canvas-snow": "^3.0.3",
 		"@fingerprintjs/fingerprintjs": "^4.6.2",
-		"@thi.ng/geom-io-obj": "^0.3.183",
-		"@tsparticles/confetti": "^3.8.1",
+		"@thi.ng/geom-io-obj": "^0.3.185",
+		"@tsparticles/confetti": "^3.9.0",
+		"disable-devtool": "^0.3.9",
 		"dompurify": "^3.2.6",
 		"gl-matrix": "^3.4.3",
 		"lit": "^3.3.1",

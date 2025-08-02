@@ -169,6 +169,16 @@ btn{
 	transform: scale(1.2) rotate(-10deg);
 }
 
+#bgWrapper {
+	z-index: -1;
+	position: absolute; 
+	pointer-events: none;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+}
+
 /** Main game viewport elements*/
 #viewport {
 	position: absolute;
@@ -217,6 +227,7 @@ btn{
 	position: absolute;
 	transform-origin: top left;
 	image-rendering: pixelated;
+	user-select: none;
 	will-change: transform;
 	z-index: 2;
 }
@@ -228,7 +239,17 @@ btn{
 	position: absolute;
 	will-change: transform;
 	z-index: 3;
+	user-select: none;
 }
+
+#canvSelectImage {
+	position: absolute;
+	top: -10%;
+	left: -10%;
+	width: 120%;
+	height: 120%;
+}
+
 #edge{
 	pointer-events: none;
 	position: absolute;

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;700&display=swap");
 @keyframes slideaway {
 	from { display: block; transform: translateY(40px); opacity: 0; }
 	to { transform: translateY(0px); opacity: 1; }
@@ -381,7 +381,7 @@ button:hover {
 .header {
 	color: black;
 	padding: 16px;
-	background: url(https://www.redditstatic.com/accountmanager/bbb584033aa89e39bad69436c504c9bd.png);
+	background: url("https://www.redditstatic.com/accountmanager/bbb584033aa89e39bad69436c504c9bd.png");
 	background-size: auto;
 	background-size: cover;
 }
