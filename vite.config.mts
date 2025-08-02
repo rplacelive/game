@@ -72,7 +72,8 @@ export default defineConfig({
 			}
 		}),
 		sri({
-			publicPath: "/"
+			publicPath: "/",
+			active: true
 		})
 	]
 })
