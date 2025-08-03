@@ -554,3 +554,6 @@ r-selections-display li {
 	border: var(--pixel-border);
 	padding: 2px;
 }
+r-selections-display .selection-action {
+	border: none;	
+}
