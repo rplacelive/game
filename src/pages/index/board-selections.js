@@ -37,7 +37,7 @@ export class BoardSelections extends EventTarget {
 			// Check if we're within the selection bounds
 			if (screenCoord.x < u_selectionPos.x || screenCoord.x >= u_selectionPos.x + u_selectionSize.x ||
 				screenCoord.y < u_selectionPos.y || screenCoord.y >= u_selectionPos.y + u_selectionSize.y) {
-				fragColour= vec4(1.0, 1.0, 1.0, 0.0);
+				fragColour = vec4(1.0, 1.0, 1.0, 0.0);
 				return;
 			}
 			
@@ -60,7 +60,7 @@ export class BoardSelections extends EventTarget {
 			uint bitMask = 1u << uint(bitIndex);
 			bool isSelected = (byteValue & bitMask) != 0u;
 			
-			fragColour = vec4(0.0, 0.0, 1.0, isSelected ? 0.2 : 0.0);
+			fragColour = vec4(1.0, 1.0, 1.0, isSelected ? 0.2 : 0.0);
 		}`;
 
 	/**@type {BoardSelection[]}*/selections;
@@ -89,8 +89,8 @@ export class BoardSelections extends EventTarget {
 					continue;
 				}
 
-				this.updateSelectionHandles(selection);
-				this.updateSelectionLabel(selection);
+				this.#updateSelectionHandles(selection);
+				this.#updateSelectionLabel(selection);
 			}
 		})
 	}
@@ -103,16 +103,40 @@ export class BoardSelections extends EventTarget {
 	 * @returns {import("./board-renderer.js").RenderLayer}
 	 */
 	createSelectionLayer(x, y, width, height) {
+		const selectionTex = this.#createSelectionTexture(width, height);
+		const layerShader = this.boardRenderer.createLayerShader(BoardSelections.selectionFragmentSource, BoardRenderer.boardVertexSource, "u_selectionTex", {
+			"u_selectionPos": {
+				type: "2i"
+			},
+			"u_selectionSize": {
+				type: "2i"
+			}
+		});
+		const renderLayer = this.boardRenderer.addRenderLayer(selectionTex, layerShader, true, {
+			"u_selectionPos": [ x, y ],
+			"u_selectionSize": [ width, height ]
+		});
+		renderLayer.blendMode = "additive";
+
+		return renderLayer;
+	}
+
+	/**
+	 * @param {number} width 
+	 * @param {number} height 
+	 * @returns 
+	 */
+	#createSelectionTexture(width, height) {
 		const gl = this.boardRenderer.getContext();
 		const selectionTex = gl.createTexture();
 		gl.bindTexture(gl.TEXTURE_2D, selectionTex);
-		
+
 		// Calculate texture dimensions for bitfield
 		const totalPixels = width * height;
 		const bitfieldSize = Math.ceil(totalPixels / 8);
 		const bytesPerRow = Math.ceil(Math.sqrt(bitfieldSize));
 		const textureHeight = Math.ceil(bitfieldSize / bytesPerRow);
-		
+
 		gl.texImage2D(
 			gl.TEXTURE_2D,
 			0,
@@ -128,26 +152,49 @@ export class BoardSelections extends EventTarget {
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-		
-		const layerShader = this.boardRenderer.createLayerShader(BoardSelections.selectionFragmentSource, BoardRenderer.boardVertexSource, "u_selectionTex", {
-			"u_selectionPos": {
-				type: "2i"
-			},
-			"u_selectionSize": {
-				type: "2i"
-			}
-		});
-		return this.boardRenderer.addRenderLayer(selectionTex, layerShader, true, {
-			"u_selectionPos": [ x, y ],
-			"u_selectionSize": [ width, height ]
-		});
-	}
 
+		return selectionTex;
+	}
 
 	/**
 	 * @param {BoardSelection} selection
 	 */
-	createSelectionLabel(selection) {
+	#uploadSelectionTexture(selection) {
+		if (!this.boardRenderer || !selection.layer || !selection.mask) {
+			return;
+		}
+
+		const gl = this.boardRenderer.getContext();
+		const bitfieldSize = selection.mask.length;
+		const bytesPerRow = Math.ceil(Math.sqrt(bitfieldSize));
+		const textureHeight = Math.ceil(bitfieldSize / bytesPerRow);
+		
+		// Create padded data if needed
+		const paddedSize = bytesPerRow * textureHeight;
+		let uploadData = selection.mask;
+		if (paddedSize > bitfieldSize) {
+			uploadData = new Uint8Array(paddedSize);
+			uploadData.set(selection.mask);
+		}
+
+		gl.bindTexture(gl.TEXTURE_2D, selection.layer.texture);
+		gl.texSubImage2D(
+			gl.TEXTURE_2D,
+			0,
+			0,
+			0,
+			bytesPerRow,
+			textureHeight,
+			gl.RED_INTEGER,
+			gl.UNSIGNED_BYTE,
+			uploadData
+		);
+	}
+
+	/**
+	 * @param {BoardSelection} selection
+	 */
+	#createSelectionLabel(selection) {
 		const labelEl = document.createElement("span");
 		labelEl.dataset.x = String(selection.x);
 		labelEl.dataset.y = String(selection.y);
@@ -161,7 +208,7 @@ export class BoardSelections extends EventTarget {
 	 * @param {BoardSelection} selection
 	 * @param {"tl"|"tr"|"bl"|"br"} type 
 	 */
-	createSelectionHandle(selection, type) {
+	#createSelectionHandle(selection, type) {
 		const handleEl = document.createElement("div");
 		handleEl.dataset.type = type;
 		handleEl.classList.add("selection-handle");
@@ -249,7 +296,7 @@ export class BoardSelections extends EventTarget {
 	/**
 	 * @param {BoardSelection} selection
 	 */
-	updateSelectionHandles(selection) {
+	#updateSelectionHandles(selection) {
 		if (!selection.handles) {
 			return;
 		}
@@ -285,7 +332,7 @@ export class BoardSelections extends EventTarget {
 	/**
 	 * @param {BoardSelection} selection
 	 */
-	updateSelectionLabel(selection) {
+	#updateSelectionLabel(selection) {
 		const labelEl = selection.label;
 		if (!labelEl) {
 			return;
@@ -334,12 +381,12 @@ export class BoardSelections extends EventTarget {
 			layer,
 		};
 		selection.handles =  {
-			tl: this.createSelectionHandle(selection, "tl"),
-			tr: this.createSelectionHandle(selection, "tr"),
-			bl: this.createSelectionHandle(selection, "bl"),
-			br: this.createSelectionHandle(selection, "br")
+			tl: this.#createSelectionHandle(selection, "tl"),
+			tr: this.#createSelectionHandle(selection, "tr"),
+			bl: this.#createSelectionHandle(selection, "bl"),
+			br: this.#createSelectionHandle(selection, "br")
 		};
-		selection.label = this.createSelectionLabel(selection);
+		selection.label = this.#createSelectionLabel(selection);
 		this.selections.push(selection);
 		this.updateSelection(selection);
 
@@ -349,7 +396,7 @@ export class BoardSelections extends EventTarget {
 			composed: true
 		});
 		this.dispatchEvent(selectionUpdateEvent);
-		this._emitChangeEvent();
+		this.#emitChangeEvent();
 	}
 
 	/**
@@ -357,13 +404,13 @@ export class BoardSelections extends EventTarget {
 	 */
 	updateSelection(selection) {
 		// DOM side
-		this.updateSelectionHandles(selection);
-		this.updateSelectionLabel(selection);
+		this.#updateSelectionHandles(selection);
+		this.#updateSelectionLabel(selection);
 
 		// Renderer side
 		// TODO: If the size of the selection has changed and is now bigger, we need
 		// TODO: to create a new selection texture with the new size
-		this.uploadSelectionTexture(selection);
+		this.#uploadSelectionTexture(selection);
 		selection.layer.uniforms = {
 			"u_selectionPos": [ selection.x, selection.y ],
 			"u_selectionSize": [ selection.width, selection.height ]
@@ -376,7 +423,7 @@ export class BoardSelections extends EventTarget {
 			composed: true
 		});
 		this.dispatchEvent(selectionUpdateEvent);
-		this._emitChangeEvent();
+		this.#emitChangeEvent();
 	}
 
 	/**
@@ -433,7 +480,7 @@ export class BoardSelections extends EventTarget {
 			composed: true
 		});
 		this.dispatchEvent(removeEvent);
-		this._emitChangeEvent();
+		this.#emitChangeEvent();
 		return index;
 	}
 
@@ -473,10 +520,10 @@ export class BoardSelections extends EventTarget {
 		}
 
 		this.dispatchEvent(currentSelectionChangeEvent);
-		this._emitChangeEvent();
+		this.#emitChangeEvent();
 	}
 
-	_emitChangeEvent() {
+	#emitChangeEvent() {
 		const changeEvent = new CustomEvent("change", {
 			detail: { },
 			bubbles: true,
@@ -500,7 +547,7 @@ export class BoardSelections extends EventTarget {
 			composed: true
 		});
 		this.dispatchEvent(clearEvent);
-		this._emitChangeEvent();
+		this.#emitChangeEvent();
 	}
 
 	/**
@@ -525,45 +572,8 @@ export class BoardSelections extends EventTarget {
 			selection.mask[arrayIndex] &= ~(1 << bitIndex);
 		}
 
-		this.uploadSelectionTexture(selection);
+		this.#uploadSelectionTexture(selection);
 		this.boardRenderer.queueRedraw();
 	}
-
-
-	/**
-	 * @param {BoardSelection} selection
-	 */
-	uploadSelectionTexture(selection) {
-		if (!this.boardRenderer || !selection.layer || !selection.mask) {
-			return;
-		}
-
-		const gl = this.boardRenderer.getContext();
-		const bitfieldSize = selection.mask.length;
-		const bytesPerRow = Math.ceil(Math.sqrt(bitfieldSize));
-		const textureHeight = Math.ceil(bitfieldSize / bytesPerRow);
-		
-		// Create padded data if needed
-		const paddedSize = bytesPerRow * textureHeight;
-		let uploadData = selection.mask;
-		if (paddedSize > bitfieldSize) {
-			uploadData = new Uint8Array(paddedSize);
-			uploadData.set(selection.mask);
-		}
-
-		gl.bindTexture(gl.TEXTURE_2D, selection.layer.texture);
-		gl.texSubImage2D(
-			gl.TEXTURE_2D,
-			0,
-			0,
-			0,
-			bytesPerRow,
-			textureHeight,
-			gl.RED_INTEGER,
-			gl.UNSIGNED_BYTE,
-			uploadData
-		);
-	}
-
 }
 

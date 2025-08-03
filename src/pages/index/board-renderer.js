@@ -344,6 +344,7 @@ export class BoardRenderer extends EventTarget {
 	 * @param {LayerShader} shader
 	 * @param {boolean} enabled
 	 * @param {Object<string, any>} [uniforms] - Custom uniform values
+	 * @return {RenderLayer}
 	 */
 	addRenderLayer(texture, shader = this._boardLayerShader, enabled = true, uniforms = {}) {
 		const layer = { texture, shader, enabled, uniforms };

@@ -1918,6 +1918,7 @@ r-selections-display li {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
+	column-gap: 4px;
 }
 r-selections-display li > button {
 	aspect-ratio: 1/1;

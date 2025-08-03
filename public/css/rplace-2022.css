@@ -607,3 +607,6 @@ r-selections-display li {
     border-radius: 15px;
     padding: 4px;
 }
+r-selections-display .selection-action {
+	box-shadow: none;	
+}
