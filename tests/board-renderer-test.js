@@ -1,6 +1,8 @@
 "use strict";
+import { $ } from "../src/shared.js";
 import { BoardRenderer } from "../src/pages/index/board-renderer.js";
 import { BoardRenderer3D } from "../src/pages/index/board-renderer-3d.js";
+import { BoardSelections } from "../src/pages/index/board-selections.js";
 
 // Fetch test board
 const boardRes = await fetch("./test-place-1000x1000");
@@ -48,7 +50,7 @@ const palette = new Uint32Array([
 
 // Basic 2D
 {
-	const canvas = document.getElementById("basic2DCanvas");
+	const canvas = /**@type {HTMLCanvasElement}*/($("#basic2DCanvas"));
 	const renderer = new BoardRenderer(canvas);
 	renderer.setSources(board, changes, socketPixels, palette, boardWidth, boardHeight);
 	renderer.setPosition(50, 50, 0.01)
@@ -92,7 +94,8 @@ f 3/4 8/3 5/2 2/1`
 	let minZoom = 0;
 	let mouseDown = -1;
 
-	const canvas = document.getElementById("basic3DCanvas");
+	const canvas =  /**@type {HTMLCanvasElement}*/($("#basic3DCanvas"));
+
 	const renderer = new BoardRenderer3D(canvas, objSource);
 	renderer.setSources(board, changes, socketPixels, palette, boardWidth, boardHeight);
 	renderer.setPosition(x, y, z);
@@ -157,13 +160,19 @@ f 3/4 8/3 5/2 2/1`
 	let minZoom = 0;
 	let mouseDown = -1;
 
+	const canvas = /**@type {HTMLCanvasElement}*/($("#sphere3DCanvas"));
+	const container = /**@type {HTMLElement}*/($("#sphere3DCanvasViewport"));
+	const addSelectionButton = /**@type {HTMLButtonElement}*/($("#sphere3DAddSelectionButton"));
 
-	const canvas = document.getElementById("sphere3DCanvas");
 	const renderer = new BoardRenderer3D(canvas, sphereSource);
+	const selections = new BoardSelections(renderer, container);
 	renderer.setSources(board, changes, socketPixels, palette, boardWidth, boardHeight);
 	renderer.setPosition(x, y, z);
 	renderer.queueRedraw();
 
+	addSelectionButton.addEventListener("click", (e) => {
+		selections.addSelection(0, 0, 50, 50);
+	});
 	canvas.addEventListener("mousedown", (e) => {
 		mouseDown = e.button;
 	});

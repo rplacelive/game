@@ -74,7 +74,7 @@ export class BoardRenderer3D extends BoardRenderer {
 		const near = 0.01;
 		const far = 100;
 
-		const scale = 1 / (this._zoom * 50 * this._devicePixelRatio); 
+		const scale = 1 / (this._z * 50 * this._devicePixelRatio); 
 		const camZ = scale;
 
 		const ndcX = -(this._x - this._boardWidth / 2) / (this._boardWidth / 2);
@@ -97,18 +97,6 @@ export class BoardRenderer3D extends BoardRenderer {
 		// Combine matrices
 		mat4.multiply(mvp, projection, view);
 		mat4.multiply(mvp, mvp, model);
-	}
-
-	/**
-	 * @param {number} rotationX 
-	 * @param {number} rotationY
-	 * @param {number} rotationZ
-	 */
-	setRotation(rotationX, rotationY, rotationZ) {
-		this._rotationX = rotationX;
-		this._rotationY = rotationY;
-		this._rotationZ = rotationZ;
-		this.queueRedraw();
 	}
 
 	/**

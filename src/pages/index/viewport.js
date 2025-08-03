@@ -42,6 +42,9 @@ export let x = 0;
 export let y = 0;
 export let z = 0;
 export let minZoom = 0;
+export let rotationX = 0;
+export let rotationY = 0;
+export let rotationZ = 0;
 
 // Touch & mouse canvas event handling
 let moved = 3;
@@ -177,7 +180,7 @@ viewport.addEventListener("touchmove", function(/**@type {TouchEvent}*/ e) {
 
 // Mouse input handling
 let lastMouseMove = 0
-let mouseDown = 0
+let mouseDown = -1
 let mx = 0
 let my = 0
 
@@ -196,7 +199,7 @@ viewport.addEventListener("mousemove", function(/** @type {MouseEvent} */ e) {
 	if (dx != dx || dy != dy) {
 		return;
 	}
-	if (mouseDown) {
+	if (mouseDown !== -1) {
 		x -= dx / (z * 50);
 		y -= dy / (z * 50);
 		pos();
@@ -226,7 +229,7 @@ viewport.addEventListener("mousedown", function(/**@type {MouseEvent}*/ e) {
 	}
 
 	moved = 3;
-	mouseDown = e.button + 1;
+	mouseDown = e.button;
 
 	if (placeContext.style.display == "block") {
 		placeContext.style.display = "none";
@@ -239,7 +242,7 @@ viewport.addEventListener("mouseup", function(/**@type {MouseEvent}*/ e) {
 
 	if (!isCanvasDragRegion(e.target)) {
 		moved = 3;
-		mouseDown = 0;
+		mouseDown = -1;
 		return;
 	}
 
@@ -248,7 +251,7 @@ viewport.addEventListener("mouseup", function(/**@type {MouseEvent}*/ e) {
 	}
 
 	moved = 3;
-	mouseDown = 0;
+	mouseDown = -1;
 });
 
 // Extra event handlers

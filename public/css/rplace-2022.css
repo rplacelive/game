@@ -587,3 +587,23 @@ r-place-chat .arrow, .place-chat .arrow {
 	overflow: visible;
 	background: var(--ui-panel-bg);
 }
+
+.selection-handle {
+	background-color: var(--ui-panel-bg);
+	border: var(--ui-border);
+	box-shadow: var(--ui-shadow);
+	border-radius: 64px;
+}
+.selection-handle.active {
+	background-color: var(--reddit-orangered);
+	border: 1px solid var(--reddit-orange);
+}
+
+r-selections-display ul {
+	row-gap: 8px;
+}
+r-selections-display li {
+	box-shadow: var(--ui-shadow);
+    border-radius: 15px;
+    padding: 4px;
+}

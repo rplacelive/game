@@ -538,3 +538,19 @@ r-place-chat .arrow::after, .place-chat .arrow::after {
 	overflow: visible;
 	background: white;
 }
+
+.selection-handle {
+	border: var(--pixel-border);
+	background-color: white;
+}
+.selection-handle.active {
+	border: 3px solid var(--pixel-color-orange);
+}
+
+r-selections-display ul {
+	row-gap: 8px;
+}
+r-selections-display li {
+	border: var(--pixel-border);
+	padding: 2px;
+}
