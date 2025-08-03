@@ -27,7 +27,7 @@ import { mat4, vec2, vec4 } from "gl-matrix";
  * @property {Object<string, any>} [uniforms] - Values for custom uniforms
  */
 
-export class BoardRenderer {
+export class BoardRenderer extends EventTarget {
 	/**@type {HTMLCanvasElement}*/canvas;
 	/**@type {WebGL2RenderingContext}*/_gl;
 	/**@type {ResizeObserver}*/_resizeObserver;
@@ -40,10 +40,10 @@ export class BoardRenderer {
 	/**@type {number}*/_boardWidth = 0;
 	/**@type {number}*/_boardHeight = 0;
 	/**@type {number|null}*/_redrawHandle = null;
+	/**@type {number}*/_devicePixelRatio = 1;
 	/**@type {number}*/_x = 0;
 	/**@type {number}*/_y = 0;
-	/**@type {number}*/_zoom = 1;
-	/**@type {number}*/_devicePixelRatio = 1;
+	/**@type {number}*/_z = 1;
 
 	// Default textures and shader program
 	/**@type {WebGLProgram}*/_boardProgram;
@@ -173,6 +173,7 @@ export class BoardRenderer {
 	 * @param {number} vertexCount
 	 */
 	constructor(canvas, uv = BoardRenderer.uv, vertices = BoardRenderer.vertices, vertexCount = 6) {
+		super();
 		this.canvas = canvas;
 		this._uv = uv;
 		this._vertices = vertices;
@@ -548,7 +549,7 @@ export class BoardRenderer {
 		const mvp = this._mvpMatrix;
 
 		// Calculate canvas translation & scale
-		const scale = 1 / (this._zoom * 50 * this._devicePixelRatio); 
+		const scale = 1 / (this._z * 50 * this._devicePixelRatio); 
 		const ndcX = -(this._x - this._boardWidth / 2) / (this._boardWidth / 2);
 		const ndcY = (this._y - this._boardHeight / 2) / (this._boardHeight / 2);
 
@@ -559,7 +560,7 @@ export class BoardRenderer {
 
 		// Set up view matrix (panning)
 		mat4.translate(view, view, [ndcX, ndcY, 0]);
-	
+
 		// Set up projection matrix (zooming)
 		const aspect = this.canvas.width / this.canvas.height;
 		mat4.ortho(projection,
@@ -703,13 +704,20 @@ export class BoardRenderer {
 	/**
 	 * @param {number} x
 	 * @param {number} y
-	 * @param {number} zoom
+	 * @param {number} z
 	 */
-	setPosition(x, y, zoom) {
+	setPosition(x, y, z) {
 		this._x = x
 		this._y = y
-		this._zoom = zoom
+		this._z = z
 		this.queueRedraw();
+
+		const positionChangeEvent = new CustomEvent("positionchange", {
+			detail: { x, y, z },
+			bubbles: true,
+			composed: true
+		});
+		this.dispatchEvent(positionChangeEvent);
 	}
 
 	_updatePickFrameBufferSize() {

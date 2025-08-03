@@ -19,6 +19,9 @@
 			background-color: lightgrey;
 		}
 		#sphere3DCanvas {
+			background: transparent;
+		}
+		#sphere3DCanvasViewport {
 			background: black;
 			background-image: 
 				radial-gradient(1px 1px at 20px 30px, white, transparent),
@@ -66,7 +69,10 @@
 				<div></div>
 				<div>
 					<h2 style="margin: 0;">Board renderer 3D (Basic Sphere test)</h2>
-					<canvas id="sphere3DCanvas" width="1000" height="1000"></canvas>
+					<div id="sphere3DCanvasViewport">
+						<canvas id="sphere3DCanvas" width="1000" height="1000"></canvas>
+					</div>
+					<button type="button" id="sphere3DAddSelectionButton">Add selection</button>
 				</div>
 			</article>
 		</section>
