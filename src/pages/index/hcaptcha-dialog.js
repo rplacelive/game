@@ -30,11 +30,13 @@ hCaptchaSubmitButton.addEventListener("click", (e) => {
 
 addIpcMessageHandler("handleHCaptcha", async (/**@type {[number,string]}*/[captchaId, siteKey]) => {
 	//await hCaptchaLoad.promise;
-	
+	const siteVariant = document.documentElement.dataset.variant;
+	const captchaTheme = siteVariant === "dark" ? "dark" : "light";
+
 	const hcaptcha = /**@type {HCaptcha}*/(window.hcaptcha);
 	widgetId = hcaptcha.render("hCaptchaContainer", {
 		sitekey: siteKey,
-		size: "invisible",
+		theme: captchaTheme,
 		callback: (token) => {
 			sendServerMessage("sendHCaptchaResult", { captchaId, result: token });
 		},
