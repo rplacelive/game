@@ -1115,6 +1115,7 @@ body[eventphase="3"] .coverer-title {
 .name-input-container > button {
 	width: 40px;
 	height: 40px;
+	padding: 4px;
 }
 
 .toast-menu {
