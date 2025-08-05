@@ -23,17 +23,24 @@ hCaptchaSubmitButton.addEventListener("click", (e) => {
 	}
 });
 
+// TODO: Investigate this
 // @ ts-expect-error Not defined on window
-/*window.onloadHCaptcha = () => {
-	hCaptchaLoad.resolve(undefined);
-}*/
+//window.onloadHCaptcha = () => {
+//	hCaptchaLoad.resolve(undefined);
+//}
 
 addIpcMessageHandler("handleHCaptcha", async (/**@type {[number,string]}*/[captchaId, siteKey]) => {
 	//await hCaptchaLoad.promise;
 	const siteVariant = document.documentElement.dataset.variant;
 	const captchaTheme = siteVariant === "dark" ? "dark" : "light";
 
+	// Remove previous
 	const hcaptcha = /**@type {HCaptcha}*/(window.hcaptcha);
+	if (widgetId !== null && widgetId !== undefined) {
+		hcaptcha.remove(widgetId);
+	}
+	
+	// Create new hCaptcha widget
 	widgetId = hcaptcha.render("hCaptchaContainer", {
 		sitekey: siteKey,
 		theme: captchaTheme,
