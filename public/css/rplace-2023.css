@@ -14,6 +14,10 @@
 	font-family: var(--font-pixel);
 }
 
+dialog {
+	border: none;
+}
+
 input {
 	color: black;
 	border: var(--pixel-border);
