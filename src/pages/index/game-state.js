@@ -129,12 +129,11 @@ addIpcMessageHandler("handlePalette", (/**@type {[number[],number,number]}*/[pal
 	PALETTE_USABLE_REGION.end = end;
 
 	const paletteEvent = new CustomEvent("palette", {
-		detail: { palette, usableRegion: { start: start, end: end } },
+		detail: { palette, start, end },
 		bubbles: true,
 		composed: true
 	});
 	window.dispatchEvent(paletteEvent);
-
 });
 addIpcMessageHandler("handleCooldownInfo", /**@type {[Date, number]}*/([endDate, cooldown]) => {
 	setCooldown(endDate.getTime());
