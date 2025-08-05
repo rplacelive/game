@@ -6,7 +6,7 @@ import { sendServerMessage } from "./game-state.js";
 //let hCaptchaLoad = new PublicPromise();
 /**@type {string|null}*/let widgetId = null;
 
-const hCaptchaDialog = /**@type {HTMLDialogElement}*/($("#hCaptchaDialog"));
+const hCaptchaMenu = /**@type {HTMLDialogElement}*/($("#hCaptchaMenu"));
 const hCaptchaSubmitButton = /**@type {HTMLDialogElement}*/($("#hCaptchaSubmitButton"));
 
 hCaptchaSubmitButton.addEventListener("click", (e) => {
@@ -48,8 +48,8 @@ addIpcMessageHandler("handleHCaptcha", async (/**@type {[number,string]}*/[captc
 		}
 	});
 
-	hCaptchaDialog.showModal();
+	hCaptchaMenu.setAttribute("open", "true");
 });
 addIpcMessageHandler("handleHCaptchaSuccess", () => {
-	hCaptchaDialog.close()
+	hCaptchaMenu.removeAttribute("open");
 });
