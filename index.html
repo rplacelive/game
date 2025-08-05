@@ -45,11 +45,12 @@
 	<script type="module" src="/src/pages/index/board-renderer.js"></script>
 	<script type="module" src="/src/pages/index/palette.js"></script>
 	<script type="module" src="/src/pages/index/popup.js"></script>
-	<!--CommonJS & Misc-->
+	<!--CommonJS-->
 	<script>window.addEventListener("undefineglobals",(()=>{delete WebSocket,delete Worker,Object.defineProperty(window,"eval",{value:function(){throw new Error},writable:!1,configurable:!1})}));</script>
-	<script src="https://js.hcaptcha.com/1/api.js?onload=onloadHCaptcha&render=explicit" async defer></script>
 	<!--Entrypoint-->
 	<script type="module" src="/src/pages/index/index.js"></script>
+	<!--External-->
+	<script src="https://js.hcaptcha.com/1/api.js?onload=onloadHCaptcha&render=explicit" async defer></script>
 </head>
 	<body>
 		<div id="loadingScreen">

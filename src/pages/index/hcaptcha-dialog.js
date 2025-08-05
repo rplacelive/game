@@ -1,8 +1,9 @@
 ///<reference types="@hcaptcha/types"/>
-import { $ } from "../../shared.js"
+import { $, PublicPromise } from "../../shared.js"
 import { addIpcMessageHandler, handleIpcMessage } from "shared-ipc";
 import { sendServerMessage } from "./game-state.js";
 
+let hCaptchaLoad = new PublicPromise();
 /**@type {string|null}*/let widgetId = null;
 
 const hCaptchaDialog = /**@type {HTMLDialogElement}*/($("#hCaptchaDialog"));
@@ -22,7 +23,14 @@ hCaptchaSubmitButton.addEventListener("click", (e) => {
 	}
 });
 
-addIpcMessageHandler("handleHCaptcha", /**@type {[number,string]}*/([captchaId, siteKey]) => {
+// @ts-expect-error Not defined on window
+window.onloadHCaptcha = () => {
+	hCaptchaLoad.resolve(undefined);
+}
+
+addIpcMessageHandler("handleHCaptcha", async (/**@type {[number,string]}*/[captchaId, siteKey]) => {
+	await hCaptchaLoad.promise;
+
 	const hcaptcha = /**@type {HCaptcha}*/(window.hcaptcha);
 	widgetId = hcaptcha.render("hCaptchaContainer", {
 		sitekey: siteKey,
