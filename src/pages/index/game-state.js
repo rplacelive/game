@@ -63,7 +63,7 @@ export let COOLDOWN = DEFAULT_COOLDOWN;
 /**@type {any|null}*/export let account = null;
 /**@type {number|null}*/export let intId = null;
 /**@type {string|null}*/export let chatName = null;
-/**@type {"connecting"|"connected"|"disconnected"}*/export let connectStatus = "connecting";
+/**@type {"initial"|"connecting"|"connected"|"disconnected"}*/export let connectStatus = "initial";
 /**@type {boolean}*/export let canvasLocked = false;
 /**@type {PLACEMENT_MODE}*/export let placementMode = PLACEMENT_MODE.selectPixel;
 /**@type {Set<number>}*/export const spectators = new Set(); // Spectator int Id
@@ -423,7 +423,7 @@ addIpcMessageHandler("handleDisconnect", (/**@type {[number, string]}*/[code, re
  * @param {string} [vip] 
  */
 export function connect(device, server = DEFAULT_SERVER, vip = undefined) {
-	if (connectStatus !== "disconnected") {
+	if (connectStatus !== "initial" && connectStatus !== "disconnected") {
 		return;
 	}
 

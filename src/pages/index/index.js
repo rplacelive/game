@@ -1017,7 +1017,7 @@ placeCancelButton.addEventListener("click", handlePlaceCancelClicked);
  */
 async function updatePlaceButton() {
 	let innerHTML = "???";
-	if (connectStatus === "connecting") {
+	if (connectStatus === "initial" || connectStatus === "connecting") {
 		innerHTML = await translate("connecting");
 	}
 	else if (connectStatus === "disconnected") {
