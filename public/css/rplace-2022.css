@@ -358,11 +358,11 @@ r-live-chat-message .emoji-reactors-count {
 	border-radius: 15px;
 	line-height: 17px;
 }
-.toast-menu .toast-header {
+.menu-header {
 	background: var(--ui-panel-bg);
 	padding: 10px;
 }
-.toast-menu .toast-body {
+.menu-body {
 	padding: 10px;
 }
 

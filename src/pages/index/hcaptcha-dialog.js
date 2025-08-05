@@ -30,7 +30,7 @@ hCaptchaSubmitButton.addEventListener("click", (e) => {
 
 addIpcMessageHandler("handleHCaptcha", async (/**@type {[number,string]}*/[captchaId, siteKey]) => {
 	//await hCaptchaLoad.promise;
-
+	
 	const hcaptcha = /**@type {HCaptcha}*/(window.hcaptcha);
 	widgetId = hcaptcha.render("hCaptchaContainer", {
 		sitekey: siteKey,
@@ -39,13 +39,14 @@ addIpcMessageHandler("handleHCaptcha", async (/**@type {[number,string]}*/[captc
 			sendServerMessage("sendHCaptchaResult", { captchaId, result: token });
 		},
 		"error-callback": (err) => {
-      		console.error("hCaptcha error:", err);
+			console.error("hCaptcha error:", err);
 		},
 		"expired-callback": () => {
-      		console.warn("hCaptcha token expired");
+			console.warn("hCaptcha token expired");
 		}
 	});
-	hCaptchaDialog.showModal()
+
+	hCaptchaDialog.showModal();
 });
 addIpcMessageHandler("handleHCaptchaSuccess", () => {
 	hCaptchaDialog.close()

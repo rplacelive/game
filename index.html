@@ -219,11 +219,11 @@
 
 			<!-- Popups and dialogs -->
 			<div id="advancedViewMenu" class="toast-menu">
-				<div class="toast-header">
+				<div class="menu-header">
 					<h2>Advanced view options:</h2>
 					<r-close-icon id="avmCloseButton" class="active"></r-close-icon>
 				</div>
-				<div class="toast-body">
+				<div class="menu-body">
 					<h3>Selection mode:</h3>
 					<r-selections-display id="avmSelectionsDisplay"></r-selections-display>
 					<button type="button" id="avmCreateSelectionButton">+ Create a selection</button>
@@ -254,11 +254,11 @@
 				</div>
 			</div>
 			<div id="spectateMenu" class="toast-menu">
-				<div class="toast-header">
+				<div class="menu-header">
 					<h2>Spectate:</h2>
 					<r-close-icon id="spectateCloseButton" class="active"></r-close-icon>
 				</div>
-				<div class="toast-body">
+				<div class="menu-body">
 					<h4>Spectate user:</h4>
 					<label>
 						User ID:
@@ -268,11 +268,11 @@
 				</div>
 			</div>
 			<div id="overlayMenuOld" noselect class="toast-menu">
-				<div class="toast-header">
+				<div class="menu-header">
 					<h2 title="Make use of a canvas overlay image in order to help yourself better position your pixels" style="display: inline;flex-grow: 1;">Overlay:</h2>
 					<r-close-icon id="overlayMenuOldCloseButton" class="active"></r-close-icon>
 				</div>
-				<div class="toast-body">
+				<div class="menu-body">
 					<input id="overlayInput" type="file" style="width: 100%;">
 					<label>
 						Image X:
@@ -352,29 +352,29 @@
 				</div>
 			</dialog>
 			<div noselect="" class="toast-menu" id="turnstileMenu">
-				<div class="toast-header">
+				<div class="menu-header">
 					<h2>Verifying session...</h2>
 				</div>
-				<div class="toast-body">
+				<div class="menu-body">
 					<p>Don't worry, this process should be automatic!</p><br>
 					<div id="turnstileContainer"></div>
 				</div>
 			</div>
 			<dialog id="hCaptchaDialog" class="dialog-modal">
-				<div class="toast-header">
+				<div class="menu-header">
 					<h2>Complete captcha</h2>
 				</div>
-				<div class="toast-body">
+				<div class="menu-body">
 					<p>Please complete the below captcha to continue playing the game!</p><br>
 					<div id="hCaptchaContainer"></div>
 					<button type="button" id="hCaptchaSubmitButton">Continue</button>
 				</div>
 			</dialog>
 			<div id="punishmentMenu" class="toast-menu">
-				<div class="toast-header">
+				<div class="menu-header">
 					<h2>Punishment notice:</h2>
 				</div>
-				<div class="toast-body">
+				<div class="menu-body">
 					<p id="punishmentNote"></p>
 					<div class="punishment-notice">
 						<header class="punishment-header">
@@ -391,11 +391,11 @@
 				</div>
 			</div>
 			<div id="moderationMenu" noselect="" mode="delete" class="toast-menu">
-				<div class="toast-header">
+				<div class="menu-header">
 					<h2 style="display: inline;flex-grow: 1;">Moderation options:</h2>
 					<r-close-icon id="modCloseButton"></r-close-icon>
 				</div>
-				<div class="toast-body">
+				<div class="menu-body">
 					<h2>Manage:</h2>
 					<div id="modMessageIdForm" class="mod-form">
 						<label>
