@@ -5,8 +5,7 @@ import { BoardRenderer } from "./board-renderer.js";
 import { enableWebglCanvas } from "./secret-settings.js";
 import { runAudio } from "./game-audio.js";
 import { AUDIOS } from "./game-defaults.js";
-import { connectStatus, cooldownEndDate, HEIGHT, intIdNames, intIdPositions, WIDTH, wsCapsule } from "./game-state.js";
-import { sendIpcMessage } from "shared-ipc";
+import { connectStatus, cooldownEndDate, HEIGHT, intIdNames, intIdPositions, sendServerMessage, WIDTH } from "./game-state.js";
 import { showPalette } from "./palette.js";
 
 const viewport = /**@type {HTMLElement}*/($("#viewport"));
@@ -463,7 +462,7 @@ export function pos(newX=x, newY=y, newZ=z) {
 				const position = centreX + centreY * WIDTH;
 
 				if (connectStatus === "connected") {
-					sendIpcMessage(wsCapsule, "requestPixelPlacers", { position, width, height });
+					sendServerMessage("requestPixelPlacers", { position, width, height });
 				}
 				return;
 			}

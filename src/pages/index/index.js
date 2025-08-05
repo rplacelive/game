@@ -10,11 +10,12 @@ import { AUDIOS } from "./game-defaults.js";
 import { addIpcMessageHandler, handleIpcMessage, sendIpcMessage, makeIpcRequest } from "shared-ipc";
 import { openOverlayMenu } from "./overlay-menu.js";
 import { TurnstileWidget } from "../../services/turnstile-manager.js";
-import FingerprintJS from "@fingerprintjs/fingerprintjs";
 import { theme } from "./game-themes.js";
-import { BOARD, canvasLocked, CHANGES, chatName, connectStatus, COOLDOWN, cooldownEndDate, HEIGHT, intId, intIdNames, intIdPositions, onCooldown, PALETTE, PALETTE_USABLE_REGION, placementMode, RAW_BOARD, setCooldown, SOCKET_PIXELS, WIDTH, wsCapsule } from "./game-state.js";
+import { BOARD, canvasLocked, CHANGES, chatName, connectStatus, COOLDOWN, cooldownEndDate, HEIGHT, intId, intIdNames, intIdPositions, onCooldown, PALETTE, PALETTE_USABLE_REGION, placementMode, RAW_BOARD, setCooldown, SOCKET_PIXELS, WIDTH, sendServerMessage, makeServerRequest, connect } from "./game-state.js";
 import { generateIndicators, generatePalette, hideIndicators, showPalette } from "./palette.js";
 import "./popup.js";
+
+import FingerprintJS from "@fingerprintjs/fingerprintjs";
 import DisableDevtool from "disable-devtool";
 
 if (import.meta.env.PROD) {
@@ -376,10 +377,8 @@ window.addEventListener("livechatreaction", (/**@type {Event}*/e) => {
 		}
 	}
 });
-/**
- * @param {{ options: string[], imageData: Uint8Array }} param
- */
-function handleTextCaptcha({ options, imageData }) {
+
+addIpcMessageHandler("handleTextCaptcha", (/**@type {[number,string[],Uint8Array]}*/[ captchaId, options, imageData ]) => {
 	captchaOptions.innerHTML = ""
 
 	let captchaSubmitted = false
@@ -393,7 +392,7 @@ function handleTextCaptcha({ options, imageData }) {
 				return console.error("Could not send captcha response. No text?")
 			}
 			captchaSubmitted = true;
-			sendIpcMessage(wsCapsule, "sendCaptchaResult", text);
+			sendServerMessage("sendCaptchaResult", { captchaId, result: text });
 			captchaOptions.style.pointerEvents = "none";
 		})
 	}
@@ -407,12 +406,8 @@ function handleTextCaptcha({ options, imageData }) {
 	else {
 		updateImgCaptchaCanvasFallback(imageBlob)
 	}
-}
-addIpcMessageHandler("handleTextCaptcha", handleTextCaptcha);
-/**
- * @param {{ options: string[], imageData: Uint8Array }} param
- */
-function handleEmojiCaptcha({ options, imageData }) {
+});
+addIpcMessageHandler("handleEmojiCaptcha", (/**@type {[number,string[],Uint8Array]}*/[captchaId, options, imageData]) => {
 	captchaOptions.innerHTML = "";
 
 	let captchaSubmitted = false;
@@ -436,7 +431,7 @@ function handleEmojiCaptcha({ options, imageData }) {
 				return console.error("Could not send captcha response. No emoji?")
 			}
 			captchaSubmitted = true;
-			sendIpcMessage(wsCapsule, "sendCaptchaResult", emoji);
+			sendServerMessage("sendCaptchaResult", { captchaId, result: emoji });
 			captchaOptions.style.pointerEvents = "none";
 			clearCaptchaCanvas();
 		}
@@ -455,16 +450,11 @@ function handleEmojiCaptcha({ options, imageData }) {
 	else {
 		updateImgCaptchaCanvasFallback(imageBlob);
 	}
-}
-addIpcMessageHandler("handleEmojiCaptcha", handleEmojiCaptcha);
-function handleCaptchaSuccess() {
+});
+addIpcMessageHandler("handleCaptchaSuccess", () => {
 	captchaPopup.close();
-}
-addIpcMessageHandler("handleCaptchaSuccess", handleCaptchaSuccess);
-/**
- * @param {string} siteKey
- */
-function handleTurnstile(siteKey) {
+});
+addIpcMessageHandler("handleTurnstile", /**@type {[number,string]}*/([captchaId, siteKey]) => {
 	const siteVariant = document.documentElement.dataset.variant;
 	const turnstileTheme = siteVariant === "dark" ? "dark" : "light";
 	turnstileMenu.setAttribute("open", "true");
@@ -480,7 +470,7 @@ function handleTurnstile(siteKey) {
 		theme: turnstileTheme,
 		language: lang,
 		onVerify: (/**@type {string}*/token) => {
-			sendIpcMessage(wsCapsule, "sendTurnstileResult", token);
+			sendServerMessage("sendTurnstileResult", { captchaId, result: token });
 		},
 		onError: (/**@type {Error}*/error) => {
 			console.error("Turnstile error:", error);
@@ -489,12 +479,10 @@ function handleTurnstile(siteKey) {
 			console.log("Turnstile loaded successfully");
 		}
 	});
-}
-addIpcMessageHandler("handleTurnstile", handleTurnstile);
-function handleTurnstileSuccess() {
-	turnstileMenu.removeAttribute("open");
-}
-addIpcMessageHandler("handleTurnstileSuccess", handleTurnstileSuccess);
+});
+addIpcMessageHandler("handleTurnstileSuccess", () => {
+	turnstileMenu.removeAttribute("open")
+});
 window.addEventListener("punishment", (/**@type {Event}*/e) => {
 	if (!(e instanceof CustomEvent)) {
 		throw new Error("Window event was not of type CustomEvent");
@@ -948,7 +936,7 @@ function handlePixelPlace(e) {
 	}
 	// Send place to websocket
 	const position = Math.floor(x) + Math.floor(y) * WIDTH;
-	sendIpcMessage(wsCapsule, "putPixel", { position, colour: selectedColour });
+	sendServerMessage("putPixel", { position, colour: selectedColour }, e);
 
 	// We client-side predict our new cooldown and pixel place the pixel went through
 	// TODO: Note client-server latency will make real cooldown a little bigger
@@ -1291,7 +1279,7 @@ function switchLanguageChannel(selected) {
 
 	// If we don't have any cached messages for this channel, try pre-populate with a few
 	const oldestMessage = /**@type {import("./game-elements.js").LiveChatMessage|null}*/(chatMessages.children[0]);
-	sendIpcMessage(wsCapsule, "requestLoadChannelPrevious", {
+	sendServerMessage("requestLoadChannelPrevious", {
 		channel: currentChannel,
 		anchorMsgId: oldestMessage?.messageId || 0,
 		msgCount: 32
@@ -1445,7 +1433,7 @@ namePanelCloseButton.addEventListener("click", () => {
 nameInput.addEventListener("keydown", function(e) {
 	if (e.key == "Enter") {
 		nameInput.blur();
-		sendIpcMessage(wsCapsule, "setName", nameInput.value);
+		sendServerMessage("setName", nameInput.value);
 	}
 	else if (e.key == "Escape") {
 		namePanel.style.visibility = "hidden";
@@ -1460,7 +1448,7 @@ nameInput.addEventListener("input", function() {
 const nameButton = /**@type {HTMLButtonElement}*/($("#nameButton"));
 nameButton.addEventListener("click", function() {
 	nameInput.blur();
-	sendIpcMessage(wsCapsule, "setName", nameInput.value);
+	sendServerMessage("setName", nameInput.value);
 });
 
 /**
@@ -1605,7 +1593,7 @@ chatMessages.addEventListener("scroll", () => {
 	if (chatMessages.scrollTop < 64) {
 		if (chatPreviousAutoLoad === true && chatPreviousLoadDebounce === false) {
 			const oldestMessage = /**@type {import("./game-elements.js").LiveChatMessage|null}*/(chatMessages.children[0]);
-			sendIpcMessage(wsCapsule, "requestLoadChannelPrevious", {
+			sendServerMessage("requestLoadChannelPrevious", {
 				channel: currentChannel,
 				anchorMsgId: oldestMessage?.messageId || 0
 			});
@@ -1621,7 +1609,7 @@ chatMessages.addEventListener("scroll", () => {
 })
 chatPreviousButton.addEventListener("click", () => {
 	const oldestMessage = /**@type {import("./game-elements.js").LiveChatMessage|null}*/(chatMessages.children[0]);
-	sendIpcMessage(wsCapsule, "requestLoadChannelPrevious", {
+	sendServerMessage("requestLoadChannelPrevious", {
 		channel: currentChannel,
 		anchorMsgId: oldestMessage?.messageId || 0
 	});
@@ -1631,18 +1619,18 @@ chatPreviousButton.addEventListener("click", () => {
 })
 
 messageInput.addEventListener("keydown", function(/**@type {KeyboardEvent}*/ e) {
-	if (!e.isTrusted) {
-		return
+	if (!(e instanceof Event) || !e.isTrusted) {
+		return;
 	}
 
 	openChatPanel();
 	if (e.key == "Enter" && !e.shiftKey) {
 		// ctrl + enter send as place chat, enter send as normal live chat
 		if (e.ctrlKey) {
-			sendPlaceChatMsg(messageInput.value)
+			sendPlaceChatMsg(messageInput.value, e);
 		}
 		else {
-			sendLiveChatMsg(messageInput.value)
+			sendLiveChatMsg(messageInput.value, e);
 		}
 		e.preventDefault()
 		messageInput.value = ""
@@ -1710,22 +1698,22 @@ messageInputGifPanel.addEventListener("close", function(e) {
 });
 
 /**
- * 
  * @param {string} message 
+ * @param {Event} e
  */
-function sendPlaceChatMsg(message) {
+function sendPlaceChatMsg(message, e) {
 	const position = Math.floor(y) * WIDTH + Math.floor(x);
-	sendIpcMessage(wsCapsule, "sendPlaceChatMsg", { message, position });
+	sendServerMessage("sendPlaceChatMsg", { message, position }, e);
 }
 
 /**
- * 
  * @param {string} message 
+ * @param {Event} e
  * @param {string} channel 
  * @param {number|null} replyId 
  * @returns 
  */
-function sendLiveChatMsg(message, channel=currentChannel, replyId=currentReplyId) {
+function sendLiveChatMsg(message, e, channel=currentChannel, replyId=currentReplyId) {
 	// Execute live chat commands
 	for (const [command] of COMMANDS) {
 		if (message.startsWith(":" + command)) {
@@ -1740,7 +1728,7 @@ function sendLiveChatMsg(message, channel=currentChannel, replyId=currentReplyId
 		return;
 	}
 
-	sendIpcMessage(wsCapsule, "sendLiveChatMsg", { message, channel, replyId });
+	sendServerMessage("sendLiveChatMsg", { message, channel, replyId }, e);
 	chatCancelReplies();
 }
 
@@ -1777,7 +1765,7 @@ function chatReport(messageId, senderId) {
 	if (!reason || reason.length === 0) {
 		return;
 	}
-	sendIpcMessage(wsCapsule, "chatReport", { messageId, reason });
+	sendServerMessage("chatReport", { messageId, reason });
 	alert("Report sent!\nIn the meantime you can block this user by 'right clicking / press hold on the message' > 'block'");
 }
 
@@ -1786,7 +1774,7 @@ function chatReport(messageId, senderId) {
  * @param {string} reactKey 
  */
 function chatReact(messageId, reactKey) {
-	sendIpcMessage(wsCapsule, "chatReact", { messageId, reactKey });
+	sendServerMessage("chatReact", { messageId, reactKey });
 }
 
 function chatCancelReplies() {
@@ -1834,7 +1822,7 @@ modOptionsButton.addEventListener("click", async function(e) {
 	if (!options) {
 		return;
 	}
-	const statusMsg = await makeIpcRequest(wsCapsule, "sendModAction", options);
+	const statusMsg = await makeServerRequest("sendModAction", options);
 	alert(statusMsg);
 	clearChatModerate();
 });
@@ -2156,7 +2144,7 @@ messageInputEmojiPanel.addEventListener("close", (e) => {
 // Spectation
 spectateCloseButton.addEventListener("click", function(e) {
 	spectateMenu.removeAttribute("open");
-	sendIpcMessage(wsCapsule, "unspectateUser", undefined);
+	sendServerMessage("unspectateUser", undefined);
 });
 spectateUserIdInput.addEventListener("change", function(e) {
 	const spectateUserId = Number(spectateUserIdInput.value);
@@ -2164,7 +2152,7 @@ spectateUserIdInput.addEventListener("change", function(e) {
 		alert("Can't spectate user " + spectateUserId);
 		return;
 	}
-	sendIpcMessage(wsCapsule, "spectateUser", spectateUserId);
+	sendServerMessage("spectateUser", spectateUserId);
 });
 
 /**
@@ -2669,7 +2657,7 @@ async function initialise() {
 	renderAll();
 
 	// Hook up cross frame / parent window IPC request handlers
-	addIpcMessageHandler("fetchLinkKey", () => makeIpcRequest(wsCapsule, "fetchLinkKey"));
+	addIpcMessageHandler("fetchLinkKey", () => makeServerRequest("fetchLinkKey"));
 	addIpcMessageHandler("openChatPanel", openChatPanel);
 	addIpcMessageHandler("scrollToPosts", scrollToPosts);
 	addIpcMessageHandler("defaultServer", defaultServer);
@@ -2685,14 +2673,10 @@ async function initialise() {
 	const nextSafeConnectDate = lastDisconnect + 200;
 
 	setTimeout(async () => {
-		// Tell wsCapsule to start initialising websocket connection
+		// Start initialising websocket connection
 		const fingerprintJS = await FingerprintJS.load();
 		const result = await fingerprintJS.get();
-		sendIpcMessage(wsCapsule, "connect", {
-			device: result.visitorId,
-			server: localStorage.server || DEFAULT_SERVER,
-			vip: localStorage.vip
-		});
+		connect(result.visitorId, localStorage.server || DEFAULT_SERVER, localStorage.vip);
 	}, Math.max(0, nextSafeConnectDate - Date.now()));
 }
 if (document.readyState !== "loading") {

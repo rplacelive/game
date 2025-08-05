@@ -8,12 +8,12 @@
 	<meta name="apple-mobile-web-app-title" content="place">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta http-equiv="Content-Security-Policy" content="
-		script-src 'self' blob: https://server.rplace.live https://server.rplace.live https://challenges.cloudflare.com https://cdn.jsdelivr.net 'sha256-Cs5f2fW81V3D4N76FfAiPquSS3ojIC24ZjMqZRNmI5Q=' 'sha256-ITnBzx8eq4hpLnGaGqQI2YhvzuvraK+Aac9e/wNmcfo=';
-		frame-src 'self' https://challenges.cloudflare.com;
+		script-src 'self' blob: https://server.rplace.live https://server.rplace.live https://challenges.cloudflare.com https://cdn.jsdelivr.net https://hcaptcha.com, https://*.hcaptcha.com 'sha256-Cs5f2fW81V3D4N76FfAiPquSS3ojIC24ZjMqZRNmI5Q=' 'sha256-ITnBzx8eq4hpLnGaGqQI2YhvzuvraK+Aac9e/wNmcfo=';
+		frame-src 'self' https://challenges.cloudflare.com https://hcaptcha.com, https://*.hcaptcha.com;
 		object-src 'none';
 		worker-src 'self' blob: https://server.rplace.live http://localhost:8082;
-		style-src 'self' 'unsafe-inline' https://server.rplace.live https://fonts.googleapis.com;
-		connect-src 'self' https://server.rplace.live http://localhost:8082 http://raw.githubusercontent.com ws://localhost:8082 wss://server.rplace.live;">
+		style-src 'self' 'unsafe-inline' https://server.rplace.live https://fonts.googleapis.com https://hcaptcha.com, https://*.hcaptcha.com;
+		connect-src 'self' https://server.rplace.live http://localhost:8082 http://raw.githubusercontent.com https://hcaptcha.com, https://*.hcaptcha.com ws://localhost:8082 wss://server.rplace.live;">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 	<meta property="og:title" content="r/place 2"/>
 	<meta property="og:description" content="There is an empty canvas. You may place a tile upon it, but you must wait to place another. Individually you can create something. Together you can create something more." />
@@ -22,7 +22,6 @@
 	<title>rplace</title>
 	<link rel="stylesheet" href="/styles.css">
 	<link rel="stylesheet" href="/shared.css">
-
 	<!--Shared resources-->
 	<script type="module" src="/src/defaults.js"></script>
 	<script type="module" src="/src/shared.js"></script>
@@ -46,9 +45,11 @@
 	<script type="module" src="/src/pages/index/board-renderer.js"></script>
 	<script type="module" src="/src/pages/index/palette.js"></script>
 	<script type="module" src="/src/pages/index/popup.js"></script>
+	<!--CommonJS & Misc-->
+	<script>window.addEventListener("undefineglobals",(()=>{delete WebSocket,delete Worker,Object.defineProperty(window,"eval",{value:function(){throw new Error},writable:!1,configurable:!1})}));</script>
+	<script src="https://js.hcaptcha.com/1/api.js?onload=onloadHCaptcha&render=explicit" async defer></script>
 	<!--Entrypoint-->
 	<script type="module" src="/src/pages/index/index.js"></script>
-	<script>window.addEventListener("undefineglobals",(()=>{delete WebSocket,delete Worker,Object.defineProperty(window,"eval",{value:function(){throw new Error},writable:!1,configurable:!1})}));</script>
 </head>
 	<body>
 		<div id="loadingScreen">
@@ -358,6 +359,16 @@
 					<div id="turnstileContainer"></div>
 				</div>
 			</div>
+			<dialog id="hCaptchaDialog" class="dialog-modal">
+				<div class="toast-header">
+					<h2>Complete captcha</h2>
+				</div>
+				<div class="toast-body">
+					<p>Please complete the below captcha to continue playing the game!</p><br>
+					<div id="hCaptchaContainer"></div>
+					<button type="button" id="hCaptchaSubmitButton">Continue</button>
+				</div>
+			</dialog>
 			<div id="punishmentMenu" class="toast-menu">
 				<div class="toast-header">
 					<h2>Punishment notice:</h2>
