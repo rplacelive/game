@@ -8,12 +8,12 @@
 	<meta name="apple-mobile-web-app-title" content="place">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta http-equiv="Content-Security-Policy" content="
-		script-src 'self' blob: https://server.rplace.live https://server.rplace.live https://challenges.cloudflare.com https://cdn.jsdelivr.net 'sha256-Cs5f2fW81V3D4N76FfAiPquSS3ojIC24ZjMqZRNmI5Q=' 'sha256-ITnBzx8eq4hpLnGaGqQI2YhvzuvraK+Aac9e/wNmcfo=';
-		frame-src 'self' https://challenges.cloudflare.com;
+		script-src 'self' blob: https://rplace.live https://server.rplace.live https://challenges.cloudflare.com https://cdn.jsdelivr.net https://hcaptcha.com https://js.hcaptcha.com https://*.hcaptcha.com 'sha256-Cs5f2fW81V3D4N76FfAiPquSS3ojIC24ZjMqZRNmI5Q=' 'sha256-ITnBzx8eq4hpLnGaGqQI2YhvzuvraK+Aac9e/wNmcfo=';
+		frame-src 'self' https://rplace.live https://challenges.cloudflare.com https://hcaptcha.com https://*.hcaptcha.com;
 		object-src 'none';
-		worker-src 'self' blob: https://server.rplace.live http://localhost:8082;
-		style-src 'self' 'unsafe-inline' https://server.rplace.live https://fonts.googleapis.com;
-		connect-src 'self' https://server.rplace.live http://localhost:8082 http://raw.githubusercontent.com ws://localhost:8082 wss://server.rplace.live;">
+		worker-src 'self' blob: https://rplace.live https://server.rplace.live http://localhost:8082;
+		style-src 'self' 'unsafe-inline' https://rplace.live https://server.rplace.live https://fonts.googleapis.com https://hcaptcha.com https://*.hcaptcha.com;
+		connect-src 'self' https://rplace.live https://server.rplace.live http://localhost:8082 http://raw.githubusercontent.com https://hcaptcha.com https://*.hcaptcha.com ws://localhost:8082 wss://server.rplace.live;">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 	<meta property="og:title" content="r/place 2"/>
 	<meta property="og:description" content="There is an empty canvas. You may place a tile upon it, but you must wait to place another. Individually you can create something. Together you can create something more." />
@@ -22,7 +22,6 @@
 	<title>rplace</title>
 	<link rel="stylesheet" href="/styles.css">
 	<link rel="stylesheet" href="/shared.css">
-
 	<!--Shared resources-->
 	<script type="module" src="/src/defaults.js"></script>
 	<script type="module" src="/src/shared.js"></script>
@@ -46,9 +45,13 @@
 	<script type="module" src="/src/pages/index/board-renderer.js"></script>
 	<script type="module" src="/src/pages/index/palette.js"></script>
 	<script type="module" src="/src/pages/index/popup.js"></script>
+	<script type="module" src="/src/pages/index/hcaptcha-dialog.js"></script>
+	<!--CommonJS-->
+	<script>window.addEventListener("undefineglobals",(()=>{delete WebSocket,delete Worker,Object.defineProperty(window,"eval",{value:function(){throw new Error},writable:!1,configurable:!1})}));</script>
 	<!--Entrypoint-->
 	<script type="module" src="/src/pages/index/index.js"></script>
-	<script>window.addEventListener("undefineglobals",(()=>{delete WebSocket,delete Worker,Object.defineProperty(window,"eval",{value:function(){throw new Error},writable:!1,configurable:!1})}));</script>
+	<!--External-->
+	<script src="https://js.hcaptcha.com/1/api.js?render=explicit" async defer></script><!--onload=onloadHCaptcha-->
 </head>
 	<body>
 		<div id="loadingScreen">
@@ -217,11 +220,11 @@
 
 			<!-- Popups and dialogs -->
 			<div id="advancedViewMenu" class="toast-menu">
-				<div class="toast-header">
+				<div class="menu-header">
 					<h2>Advanced view options:</h2>
 					<r-close-icon id="avmCloseButton" class="active"></r-close-icon>
 				</div>
-				<div class="toast-body">
+				<div class="menu-body">
 					<h3>Selection mode:</h3>
 					<r-selections-display id="avmSelectionsDisplay"></r-selections-display>
 					<button type="button" id="avmCreateSelectionButton">+ Create a selection</button>
@@ -252,11 +255,11 @@
 				</div>
 			</div>
 			<div id="spectateMenu" class="toast-menu">
-				<div class="toast-header">
+				<div class="menu-header">
 					<h2>Spectate:</h2>
 					<r-close-icon id="spectateCloseButton" class="active"></r-close-icon>
 				</div>
-				<div class="toast-body">
+				<div class="menu-body">
 					<h4>Spectate user:</h4>
 					<label>
 						User ID:
@@ -266,11 +269,11 @@
 				</div>
 			</div>
 			<div id="overlayMenuOld" noselect class="toast-menu">
-				<div class="toast-header">
+				<div class="menu-header">
 					<h2 title="Make use of a canvas overlay image in order to help yourself better position your pixels" style="display: inline;flex-grow: 1;">Overlay:</h2>
 					<r-close-icon id="overlayMenuOldCloseButton" class="active"></r-close-icon>
 				</div>
-				<div class="toast-body">
+				<div class="menu-body">
 					<input id="overlayInput" type="file" style="width: 100%;">
 					<label>
 						Image X:
@@ -349,20 +352,30 @@
 					</div>
 				</div>
 			</dialog>
-			<div noselect="" class="toast-menu" id="turnstileMenu">
-				<div class="toast-header">
+			<div id="turnstileMenu" class="toast-menu noselect">
+				<div class="menu-header">
 					<h2>Verifying session...</h2>
 				</div>
-				<div class="toast-body">
+				<div class="menu-body">
 					<p>Don't worry, this process should be automatic!</p><br>
 					<div id="turnstileContainer"></div>
 				</div>
 			</div>
+			<div id="hCaptchaMenu" class="toast-menu noselect">
+				<div class="menu-header">
+					<h2>Complete captcha</h2>
+				</div>
+				<div class="menu-body">
+					<p>Please complete the below captcha to continue playing the game!</p><br>
+					<div id="hCaptchaContainer"></div>
+					<button type="button" id="hCaptchaSubmitButton">Continue</button>
+				</div>
+			</div>
 			<div id="punishmentMenu" class="toast-menu">
-				<div class="toast-header">
+				<div class="menu-header">
 					<h2>Punishment notice:</h2>
 				</div>
-				<div class="toast-body">
+				<div class="menu-body">
 					<p id="punishmentNote"></p>
 					<div class="punishment-notice">
 						<header class="punishment-header">
@@ -379,11 +392,11 @@
 				</div>
 			</div>
 			<div id="moderationMenu" noselect="" mode="delete" class="toast-menu">
-				<div class="toast-header">
+				<div class="menu-header">
 					<h2 style="display: inline;flex-grow: 1;">Moderation options:</h2>
 					<r-close-icon id="modCloseButton"></r-close-icon>
 				</div>
-				<div class="toast-body">
+				<div class="menu-body">
 					<h2>Manage:</h2>
 					<div id="modMessageIdForm" class="mod-form">
 						<label>

@@ -1115,6 +1115,7 @@ body[eventphase="3"] .coverer-title {
 .name-input-container > button {
 	width: 40px;
 	height: 40px;
+	padding: 4px;
 }
 
 .toast-menu {
@@ -1129,18 +1130,16 @@ body[eventphase="3"] .coverer-title {
 	max-height: calc(100% - 120px);
 }
 
-.toast-menu .toast-header {
+.menu-header {
 	position: sticky;
 	top: 0;
 	display: flex;
 	justify-content: space-between;
 }
-
-.toast-menu .toast-header r-close-icon {
+.menu-header r-close-icon {
 	margin-left: auto;
 }
-
-.toast-menu .toast-body {
+.menu-body {
 	display: flex;
 	flex-direction: column;
 	row-gap: 8px;

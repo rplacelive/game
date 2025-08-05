@@ -14,6 +14,10 @@
 	font-family: var(--font-pixel);
 }
 
+dialog {
+	border: none;
+}
+
 input {
 	color: black;
 	border: var(--pixel-border);
@@ -403,11 +407,11 @@ r-close-icon {
 	box-shadow: var(--pixel-box-shadow);
 	background-color: white;
 }
-.toast-menu .toast-header {
+.menu-header {
 	background-color: white;
 	padding: 3px;
 }
-.toast-menu .toast-body {
+.menu-body {
 	padding: 21px;
 }
 

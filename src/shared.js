@@ -210,6 +210,12 @@ export async function translateAll() {
 fetchTranslations(lang)
 
 export class PublicPromise {
+	promise;
+	// @ts-expect-error Not defined in constructor
+	/**@type {(value: any) => void}*/resolve;
+	// @ts-expect-error Not defined in constructor
+	/**@type {(reason: any) => void}*/reject;
+
 	constructor() {
 		this.promise = new Promise((resolve, reject) => {
 			this.resolve = resolve

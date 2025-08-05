@@ -6,11 +6,11 @@ const effectModules = import.meta.glob("./effects/*.js");
  * @param {string|null} forceVariant
  */
 export async function forceTheme(forceTheme, forceVariant = null) {
-	const currentThemeSet = document.documentElement.dataset.theme
-	const currentVariant = document.documentElement.dataset.variant
+	const currentThemeSet = document.documentElement.dataset.theme;
+	const currentVariant = document.documentElement.dataset.variant;
 	if (currentThemeSet != forceTheme || currentVariant != forceVariant) {
-		console.warn("Forcing site theme to", forceTheme, forceVariant)
-		await theme(/**@type {import("../../defaults.js").ThemeInfo}*/(DEFAULT_THEMES.get(forceTheme)), forceVariant)
+		console.warn("Forcing site theme to", forceTheme, forceVariant);
+		await theme(/**@type {import("../../defaults.js").ThemeInfo}*/(DEFAULT_THEMES.get(forceTheme)), forceVariant);
 	}
 }
 
