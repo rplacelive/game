@@ -3,7 +3,7 @@ import { $, PublicPromise } from "../../shared.js"
 import { addIpcMessageHandler, handleIpcMessage } from "shared-ipc";
 import { sendServerMessage } from "./game-state.js";
 
-let hCaptchaLoad = new PublicPromise();
+//let hCaptchaLoad = new PublicPromise();
 /**@type {string|null}*/let widgetId = null;
 
 const hCaptchaDialog = /**@type {HTMLDialogElement}*/($("#hCaptchaDialog"));
@@ -23,13 +23,13 @@ hCaptchaSubmitButton.addEventListener("click", (e) => {
 	}
 });
 
-// @ts-expect-error Not defined on window
-window.onloadHCaptcha = () => {
+// @ ts-expect-error Not defined on window
+/*window.onloadHCaptcha = () => {
 	hCaptchaLoad.resolve(undefined);
-}
+}*/
 
 addIpcMessageHandler("handleHCaptcha", async (/**@type {[number,string]}*/[captchaId, siteKey]) => {
-	await hCaptchaLoad.promise;
+	//await hCaptchaLoad.promise;
 
 	const hcaptcha = /**@type {HCaptcha}*/(window.hcaptcha);
 	widgetId = hcaptcha.render("hCaptchaContainer", {
