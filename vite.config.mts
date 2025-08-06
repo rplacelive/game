@@ -3,10 +3,15 @@ import { glob } from "glob";
 import { createHtmlPlugin } from "vite-plugin-html";
 import { VitePWA } from "vite-plugin-pwa";
 import { cloudflare } from "@cloudflare/vite-plugin";
-import sri from "rollup-plugin-sri";
+import { sri } from "vite-plugin-sri3";
+import crypto from "crypto";
 
 const devMode = process.env.NODE_ENV !== "production";
 const pages = await glob(devMode ? "**/*.html" : "*.html");
+
+function randomFileName() {
+	return crypto.randomBytes(8).toString("hex");
+}
 
 export default defineConfig({
 	base: "/",
@@ -28,7 +33,11 @@ export default defineConfig({
 					file.replace(/\.html$/, ""),
 					file
 				])
-			)
+			),
+			output: {
+				entryFileNames: () => `assets/${randomFileName()}.js`,
+				chunkFileNames: () => `assets/${randomFileName()}.js`
+			}
 		}
 	},
 	esbuild: {
@@ -73,8 +82,7 @@ export default defineConfig({
 			}
 		}),
 		sri({
-			publicPath: "/",
-			active: true
+			ignoreMissingAsset: true
 		}),
 		cloudflare({
 			configPath: "./wrangler.jsonc"
