@@ -1540,6 +1540,7 @@ kbd {
 r-place-chat, .place-chat {
 	position: absolute;
 	display: flex;
+	white-space: nowrap;
 	z-index: 3;
 	transform: translate(calc(-50% + 5px), calc(-50% - 37px));
 	user-select: none;
