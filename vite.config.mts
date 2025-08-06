@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import { glob } from "glob";
 import { createHtmlPlugin } from "vite-plugin-html";
 import { VitePWA } from "vite-plugin-pwa";
+import { cloudflare } from "@cloudflare/vite-plugin";
 import sri from "rollup-plugin-sri";
 
 const devMode = process.env.NODE_ENV !== "production";
@@ -74,6 +75,9 @@ export default defineConfig({
 		sri({
 			publicPath: "/",
 			active: true
+		}),
+		cloudflare({
+			configPath: "./wrangler.jsonc"
 		})
 	]
 })
