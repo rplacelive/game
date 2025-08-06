@@ -82,7 +82,9 @@ export default defineConfig({
 			}
 		}),
 		sri({
-			ignoreMissingAsset: true
+			ignoreMissingAssets: true,
+			crossorigin: "anonymous",
+      		excludeExternal: true
 		}),
 		cloudflare({
 			configPath: "./wrangler.jsonc"

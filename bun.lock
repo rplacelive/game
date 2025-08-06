@@ -25,13 +25,17 @@
         "vite": "^6.3.5",
         "vite-plugin-html": "^3.2.2",
         "vite-plugin-pwa": "^1.0.2",
-        "vite-plugin-sri3": "^1.0.6",
+        "vite-plugin-sri3": "github:Zekiah-A/vite-plugin-sri3#v1.0.0",
       },
       "peerDependencies": {
         "typescript": "^5.8.3",
       },
     },
   },
+  "trustedDependencies": [
+    "@tsparticles/engine",
+    "vite-plugin-sri3",
+  ],
   "packages": {
     "@ampproject/remapping": ["@ampproject/remapping@2.3.0", "", { "dependencies": { "@jridgewell/gen-mapping": "^0.3.5", "@jridgewell/trace-mapping": "^0.3.24" } }, "sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw=="],
 
@@ -1099,7 +1103,7 @@
 
     "vite-plugin-pwa": ["vite-plugin-pwa@1.0.2", "", { "dependencies": { "debug": "^4.3.6", "pretty-bytes": "^6.1.1", "tinyglobby": "^0.2.10", "workbox-build": "^7.3.0", "workbox-window": "^7.3.0" }, "peerDependencies": { "@vite-pwa/assets-generator": "^1.0.0", "vite": "^3.1.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0" }, "optionalPeers": ["@vite-pwa/assets-generator"] }, "sha512-O3UwjsCnoDclgJANoOgzzqW7SFgwXE/th2OmUP/ILxHKwzWxxKDBu+B/Xa9Cv4IgSVSnj2HgRVIJ7F15+vQFkA=="],
 
-    "vite-plugin-sri3": ["vite-plugin-sri3@1.0.6", "", { "peerDependencies": { "vite": "^2 || ^3 || ^4 || ^5 || ^6" } }, "sha512-jwFl03F63lPlC3exrzV8x+U2KwhOC9pyez5TFuTGZ0Y/pxcr9Di9oULSwA72myK+E7uTtvdjEYDqVjL37gFQGw=="],
+    "vite-plugin-sri3": ["vite-plugin-sri3@github:Zekiah-A/vite-plugin-sri3#c1b2855", { "peerDependencies": { "vite": "^2 || ^3 || ^4 || ^5 || ^6 || ^7" } }, "Zekiah-A-vite-plugin-sri3-c1b2855"],
 
     "webidl-conversions": ["webidl-conversions@4.0.2", "", {}, "sha512-YQ+BmxuTgd6UXZW3+ICGfyqRyHXVlD5GtQr5+qjiNW7bF0cqrzX500HVXPBOvgXb5YnzDd+h0zqyv61KUD7+Sg=="],
 
