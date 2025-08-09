@@ -189,7 +189,7 @@ r-canvas-user-card .user-card-detail-item .value {
 #profileBio {
 	margin: 0;
 	border-radius: 4px;
-	border: 1px solid grey;
+	border: 1px solid lightgrey;
 	min-height: 96px;
 	height: 96px;
 	width: 100%;
@@ -264,44 +264,54 @@ r-canvas-user-card .user-card-detail-item .value {
 	position: relative;
 	transition: .2s all;
 }
-.profile-editable {
+.profile-details {
 	border-radius: 4px;
 	transition: .2s border;
+	justify-content: space-between;
 }
-.profile-editable[open] {
-	border: 1px solid lightgray;
+.profile-details[open] {
+	box-shadow: 0px 2px 4px #0003;
+	overflow-y: auto;
 }
-.profile-editable > summary {
+.profile-details > summary {
 	display: flex;
+	align-items: center;
 	column-gap: 4px;
 	cursor: pointer;
 	user-select: none;
-	transition: .2s background-color;
 }
-.profile-editable > * {
+.profile-details > * {
 	transition: .2s padding;
 }
-.profile-editable[open] > * {
+.profile-details[open] > * {
 	padding: 4px;
 }
-.profile-editable[open] > summary {
-	background-color: lightgray;
-}
-.profile-editable > summary svg {
-	margin-left: auto;
-	opacity: 0.2;
-	transition: .2s opacity;
-}
-.profile-editable > summary .summary-arrow {
+.profile-details > summary .summary-arrow {
 	transition: .2s transform;
 }
-.profile-editable[open] > summary .summary-arrow {
+.profile-details[open] > summary .summary-arrow {
 	transform: rotate(180deg);
 }
-.profile-editable > summary:hover svg {
-	opacity: 0.6;
+.details-edit {
+	margin-left: auto;
+	align-self: stretch;
+	opacity: 0.8;
+	transition: .2s opacity;
+	padding: 4px;
+	min-width: 64px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	column-gap: 4px;
 }
-.profile-section > div.profile-editable:hover {
+.details-update-cancel {
+	display: flex;
+	column-gap: 4px;
+}
+.profile-details > summary:hover .details-edit {
+	opacity: 1.0;
+}
+.profile-section > .profile-details:hover {
 	overflow: visible;
 	background-color: white;
 	box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.243);
@@ -310,12 +320,46 @@ r-canvas-user-card .user-card-detail-item .value {
 	z-index: 2;
 	padding: 4px;
 }
+.profile-stats {
+	display: flex;
+	justify-content: space-evenly;
+	column-gap: 4px;
+    margin: 0;
+    padding: 0;
+}
+.profile-stats > li {
+	list-style-type: none;
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	row-gap: 4px;
+}
+.profile-stats .stat-value {
+	font-weight: bold;
+}
+.profile-form {
+	display: flex;
+	justify-content: space-between;
+}
 .form-error {
 	color: red;
 	font-weight: bold;
 	font-style: italic;
 	font-size: 14px;
 	margin: 0px;
+}
+.account-details-item {
+	user-select: none;
+	cursor: pointer;
+}
+.account-details-item > summary {
+	display: flex;
+	column-gap: 4px;
+	height: 32px;
+	align-items: center;
+}
+.account-details-item .summary-title {
+	font-weight: bold;
 }
 
 .reddit-card {

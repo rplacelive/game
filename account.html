@@ -22,7 +22,7 @@
 		<header class="header">
 			<h4 style="margin: 0px;">My account</h4>
 		</header>
-		<r-close-icon onclick="window.parent.postMessage({ call: 'closeAccountFrame' })" class="active"></r-close-icon>
+		<r-close-icon id="closeButton" class="active"></r-close-icon>
 		<div id="loadingPage" class="body" page="loading">
 			<div style="flex-grow: 1;display: flex;flex-direction: column;justify-content: center;align-items: center;">
 				<h4>Authenticating</h4>
@@ -89,7 +89,7 @@
 		<div class="body" page="profile">
 			<div class="body-header">
 				<h4 style="margin: 8px;">👤 Your rplace.live profile</h4>
-				<r-close-icon onclick="window.parent.postMessage({ call: 'closeAccountFrame' })"></r-close-icon>
+				<r-close-icon id="profileCloseButton"></r-close-icon>
 			</div>
 			<div class="section" style="flex-grow: 1;">
 				<div class="reddit-card">
@@ -99,24 +99,37 @@
 							<img id="profilePicture" alt="Avatar" src="images/default-avatar.png" width="256" height="256">
 								<button type="button" id="profilePictureButton" class="reddit-modal-button">
 									<img src="svg/edit.svg" alt="Edit">
-									Click to change
+									Change
 								</button>
 								<input type="file" id="profilePictureInput" accept="image/*" style="display: none;">
 						</div>
 						<div style="min-width: 164px; flex-grow: 1;">
-							<h4 id="profileName"></h4>
+							<h2 id="profileName"></h2>
 							<form id="profileBioForm">
 								<textarea id="profileBio"
 									placeholder="Start writing your biography (markdown supported)"></textarea>
-								<button type="submit" id="profileBioSubmit" class="reddit-modal-button">Update</button>
+								<button type="submit" id="profileBioSubmit" class="profile-form-submit reddit-modal-button">
+									Update
+								</button>
 							</form>
 							<div class="horizontal-labeled-separator">
 								<span>Stats</span>
 								<hr>
 							</div>
-							<div noselect><span>Pixels placed: </span><span id="profilePixels"></span></div>
-							<div noselect><span>Join date: </span><span id="profileJoin"></span></div>
-							<div noselect><span>Badges: </span><span id="profileBadges"></span></div>
+							<ul class="profile-stats">
+								<li>
+									<span>🎨 Pixels placed:</span>
+									<span id="profilePixels" class="stat-value"></span>
+								</li>
+								<li>
+									<span>📅 Joined:</span>
+									<span id="profileJoin" class="stat-value"></span>
+								</li>
+								<li>
+									<span>Badges:</span>
+									<span id="profileBadges" class="stat-value"></span>
+								</li>
+							</ul>
 						</div>
 					</div>
 
@@ -126,16 +139,15 @@
 						<hr>
 					</div>
 					<div style="display: flex; flex-direction: column; row-gap: 4px;">
-						<details class="profile-editable" noselect>
+						<details class="profile-details">
 							<summary>
 								<img width="16" height="16" src="images/rplace.png">
 								<span>Profiles:</span>
 								<ul id="profileCanvasUserList" class="profile-canvas-user-list"></ul>
-								<svg class="summary-arrow" xmlns="http://www.w3.org/2000/svg" width="14" height="14"
-									viewBox="0 -960 960 960">
-									<path d="M480-187.5 0-667.5l102-102 378 378 378-378 102 102z"
-										style="stroke-width:2" />
-								</svg>
+								<div class="details-edit reddit-modal-button">
+									Open
+									<img src="/svg/arrow-down.svg">
+								</div>
 							</summary>
 							<div>
 								<!--<h5 style="margin: 0;">Linked rplace canvas user profiles:</h5>-->
@@ -151,101 +163,44 @@
 								</div>
 							</div>
 						</details>
-						<details class="profile-editable" noselect>
-							<summary>
-								<img width="16" height="16" src="images/discord.png" id="profileDiscordIcon">
-								<span>Connect Discord</span><a id="profileDiscord" href="">Add discord</a>
-								<svg xmlns="http://www.w3.org/2000/svg" height="16" viewBox="0 96 960 960" width="16">
-									<path
-										d="M180 876h44l443-443-44-44-443 443v44Zm614-486L666 262l42-42q17-17 42-17t42 17l44 44q17 17 17 42t-17 42l-42 42Zm-42 42L248 936H120V808l504-504 128 128Zm-107-21-22-22 44 44-22-22Z" />
-								</svg>
-							</summary>
-							<div id="profileDiscordEdit" noselect>
-								<form>
-									<label>
-										Discord username:
-										<input type="text" class="reddit-modal-input" placeholder="Enter Discord username"
-											id="profileDiscordInput">
-									</label>
-									<button type="submit" class="reddit-modal-button" style="padding: 6px;"
-										id="profileDiscordSubmit">Update</button>
-								</form>
-							</div>
-						</details>
-						<details class="profile-editable" noselect>
-							<summary>
-								<img width="16" height="16" src="images/reddit.png" id="profileRedditIcon">
-								<span>Connect Reddit</span><a id="profileReddit" href=""></a>
-								<svg xmlns="http://www.w3.org/2000/svg" height="16" viewBox="0 96 960 960" width="16">
-									<path
-										d="M180 876h44l443-443-44-44-443 443v44Zm614-486L666 262l42-42q17-17 42-17t42 17l44 44q17 17 17 42t-17 42l-42 42Zm-42 42L248 936H120V808l504-504 128 128Zm-107-21-22-22 44 44-22-22Z" />
-								</svg>
-							</summary>
-							<div id="profileRedditEdit">
-								<form>
-									<label>
-										Reddit username:
-										<input type="text" class="reddit-modal-input" placeholder="Enter reddit username"
-											id="profileRedditInput">
-									</label>
-									<button type="submit" class="reddit-modal-button" style="padding: 6px;"
-										id="profileRedditSubmit">Update</button>
-								</form>
-							</div>
-						</details>
-						<details class="profile-editable" noselect>
-							<summary>
-								<img width="16" height="16" src="images/x.png">
-								<span>Connect X</span><a id="profileX" href=""></a>
-								<svg xmlns="http://www.w3.org/2000/svg" height="16" viewBox="0 96 960 960" width="16">
-									<path d="M180 876h44l443-443-44-44-443 443v44Zm614-486L666 262l42-42q17-17 42-17t42 17l44 44q17 17 17 42t-17 42l-42 42Zm-42 42L248 936H120V808l504-504 128 128Zm-107-21-22-22 44 44-22-22Z" />
-								</svg>
-							</summary>
-							<div id="profileXEdit">
-								<form>
-									<label>
-										X username:
-										<input type="text" class="reddit-modal-input" placeholder="Enter X username"
-											id="profileXInput">
-									</label>
-									<button type="submit" class="reddit-modal-button" style="padding: 6px;"
-										id="profileXSubmit">Update</button>
-								</form>
-							</div>
-						</details>
+						<r-profile-details
+							icon="images/discord.png"
+							summary="Connect Discord"
+							label="Discord username"
+							placeholder="Enter Discord username">
+						</r-profile-details>
+						<r-profile-details
+							icon="images/reddit.png"
+							summary="Connect Reddit"
+							label="Reddit username"
+							placeholder="Enter Reddit username">
+						</r-profile-details>
 					</div>
 				</div>
 				<h4 style="margin: 0;">Account Details</h4>
-				<div class="section">
-					<details>
+				<section class="section">
+					<detailsc class="account-details-item">
 						<summary>
-							<span>Account Tier: </span><span id="accountTier"></span>
+							<span class="summary-title">Account Tier: </span><span id="accountTier"></span>
+							<button class="reddit-modal-button details-edit" id="premiumButton" href="/premium">
+								Upgrade ✨
+							</button>
 						</summary>
-						<button type="button" class="reddit-modal-button" disabled>Upgrade</button>
 					</details>
-					<details>
+					<details class="account-details-item">
 						<summary>
-							<span>Email: </span><span id="accountEmail"></span>
-							<svg xmlns="http://www.w3.org/2000/svg" style="opacity: 0.2;cursor:pointer;" height="16"
-								viewBox="0 96 960 960" width="16">
-								<path
-									d="M180 876h44l443-443-44-44-443 443v44Zm614-486L666 262l42-42q17-17 42-17t42 17l44 44q17 17 17 42t-17 42l-42 42Zm-42 42L248 936H120V808l504-504 128 128Zm-107-21-22-22 44 44-22-22Z">
-								</path>
-							</svg>
+							<span class="summary-title">Email: </span><span id="accountEmail"></span>
 						</summary>
-						<form>
-							<input type="text" class="reddit-modal-input" placeholder="New email address"
-								id="accountEmailInput" disabled>
-							<button type="submit" class="reddit-modal-button" style="padding: 6px;"
-								id="accountEmailSubmit" disabled>Update</button>
-						</form>
 					</details>
-				</div>
+				</section>
 				<div style="flex-grow: 1;"><!-- Spacer --></div>
-				<a href="/instance" style="opacity: 0.6; pointer-events: none;">Instances: Go to instance manager</a>
-				<button id="logoutButton" type="button" class="reddit-modal-button">Logout</button>
-				<button id="deleteAccountButton" type="button" class="reddit-modal-button"
-					style="background-color: lightcoral;">Delete account</button>
+				<!--<a href="/instance" style="opacity: 0.6; pointer-events: none;">Instances: Go to instance manager</a>-->
+				<h4 style="margin: 0;">Danger zone</h4>
+				<div>
+					<button id="logoutButton" type="button" class="reddit-modal-button">Logout</button>
+					<button id="deleteAccountButton" type="button" class="reddit-modal-button"
+						style="background-color: lightcoral;">Delete account</button>
+				</div>
 			</div>
 		</div>
 		<div id="errorPage" class="body" page="error">
@@ -254,5 +209,4 @@
 		</div>
 	</div>
 </body>
-
 </html>

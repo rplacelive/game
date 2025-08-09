@@ -171,69 +171,6 @@ r-votes > svg:hover {
 r-votes > svg:hover, r-votes > svg.voted {
 	fill: #cc3700;
 }
-r-user-tooltip {
-	position: absolute;
-	background: white;
-	width: max-content;
-	height: max-content;
-	z-index: 1;
-	top: calc(100% + 4px);
-	left: 0;
-	border-radius: 4px;
-	box-shadow: 0px 2px 4px grey;
-	color: black;
-	padding: 8px;
-	display: flex;
-	flex-direction: column;
-	row-gap: 4px;
-}
-r-user-tooltip::before {
-	position: absolute;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 4px;
-	background: linear-gradient(to right, #7b71ef, #3d6dde);
-	content: "";
-	border-radius: 4px 4px 0px 0px;	
-}
-r-user-tooltip > hr {
-	opacity: 0.2;
-	margin: 0;
-}
-r-user-tooltip > span {
-	color: #aaa;
-	font-size: 12px;
-}
-.user-tooltip-header {
-	display: flex;
-	align-items: center;
-	column-gap: 4px;
-}
-.user-tooltip-titles > h2 {
-	margin: 0;
-}
-.user-tooltip-titles > span {
-	font-size: 10px;
-	text-align: left;
-}
-.user-tooltip-titles {
-	display: flex;
-	flex-direction: column;
-}
-.user-tooltip-grid {
-	display: grid;
-	grid-template-columns: 1fr 1fr;
-	grid-template-rows: auto min-content;
-	column-gap: 2px;
-	flex-grow: 1;
-}
-.user-tooltip-grid > h1 {
-	margin: 0;
-}
-.user-tooltip-grid > span {
-	color: #aaa;
-}
 r-clipboard-copy {
 	position: relative;
 	height: 30px;

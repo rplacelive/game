@@ -184,16 +184,16 @@ export class UserTooltip extends LitElement {
 			: playTimeUnit;
 
 		return html`
-			<div class="user-tooltip-header">
+			<div class="tooltip-header">
 				<img src="images/rplace.png" width="32">
-				<div class="user-tooltip-titles">
+				<div class="tooltip-titles">
 					<h2>${userIdentifier}</h2>
 					<span>@${instanceIdentifier}</span>
 				</div>
 			</div>
 			<span id="userDate">${userDate}</span>
 			<hr>
-			<div class="user-tooltip-grid">
+			<div class="tooltip-grid">
 				<h1>${fuzzyNumberFormat.format(this.pixelsPlaced)}</h1>
 				<h1>${secondInfoValue}</h1>
 				<span>Pixels placed</span>
@@ -229,3 +229,93 @@ export class UserTooltip extends LitElement {
 	}
 }
 customElements.define("r-user-tooltip", UserTooltip);
+
+
+/**
+ * @element r-profile-details
+ */
+export class ProfileDetails extends LitElement {
+	static properties = {
+		icon: { type: String },
+		summary: { type: String },
+		label: { type: String },
+		placeholder: { type: String },
+		open: { type: Boolean, state: true }
+	};
+
+	constructor() {
+		super();
+		/**@type {string}*/this.icon = "";
+		/**@type {string}*/this.label = "";
+		/**@type {string}*/this.summary = "";
+		/**@type {string}*/this.placeholder = "";
+		/**@type {boolean}*/this.open = false;
+	}
+
+	createRenderRoot() {
+		return this;
+	}
+
+	firstUpdated() {
+		const details = this.renderRoot.querySelector("details");
+		if (details) {
+			details.addEventListener("toggle", () => {
+				// Sync Lit state if user toggles manually
+				if (this.open !== details.open) {
+					this.open = details.open;
+				}
+			});
+		}
+	}
+
+	render() {
+		return html`
+			<details class="profile-details" .open=${this.open}>
+				<summary>
+					<img width="16" height="16" src="${this.icon}" alt="${this.summary} icon">
+					<span>${this.summary}</span>
+
+					${!this.open
+						? html`
+							<div class="details-edit reddit-modal-button">
+								Edit
+								<img src="/svg/edit.svg" alt="edit icon">
+							</div>
+						  `
+						: html``}
+				</summary>
+				<div>
+					<form id="profile-form" class="profile-form">
+						<label>
+							${this.label}:
+							<input
+								type="text"
+								class="reddit-modal-input"
+								placeholder="${this.placeholder}"
+								name="username"
+							>
+						</label>
+						<div class="details-update-cancel">
+							<button type="submit" form="profile-form" class="reddit-modal-button">Update</button>
+							<button type="button" class="reddit-modal-button" @click=${this.#handleCancelClick}>Cancel</button>
+						</div>
+					</form>
+				</div>
+			</details>
+		`;
+	}
+
+	/**
+	 * @param {MouseEvent} e
+	 */
+	#handleCancelClick(e) {
+		e.stopPropagation();
+		const form = /** @type {HTMLFormElement|null} */ (this.querySelector("form"));
+		if (form) {
+			form.reset();
+		}
+		this.open = false;
+	}
+}
+
+customElements.define("r-profile-details", ProfileDetails);

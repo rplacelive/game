@@ -28,7 +28,7 @@ postsSearchbar.addEventListener("change", function(/**@type {Event}*/e) {
 const postsExpandButton = /**@type {HTMLButtonElement}*/($("#postsExpandButton"));
 postsExpandButton.addEventListener("click", function(e) {
 	e.preventDefault();
-	sendIpcMessage(window.parent, "open", "./posts.html");
+	sendIpcMessage(window.parent, "open", "/posts");
 });
 const liveChatPost = /**@type {HTMLElement}*/($("#liveChatPost"));
 liveChatPost.addEventListener("click", function(e) {
