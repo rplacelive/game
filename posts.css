@@ -517,6 +517,18 @@ html[embedded="false"] .posts-extern-buttons {
 	align-items: center;
 	height: 100%;
 }
+.header-account {
+	width: 36px;
+	height: 36px;
+	padding: 0;
+	margin-right: 8px;
+	box-shadow: none;
+	padding: 0;
+	background: transparent;
+	border: none;
+	align-self: center;
+	cursor: pointer;
+}
 .header-title {
 	display: none;
 }

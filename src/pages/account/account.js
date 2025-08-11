@@ -28,7 +28,7 @@ handleFormSubmit(signinForm, `${localStorage.auth || DEFAULT_AUTH}/auth/signin`,
 		unauthedPage.dataset.page = "authcode"
 	},
 	onError: async (err) => {
-		if (typeof err === "object") {
+		if (err && typeof err === "object") {
 			signinMessage.textContent = `${await translate("couldntSignIn")}: ${await translate(err.key)}`
 			console.error("Couldn't sign in:", err.message, err.metadata)
 		}

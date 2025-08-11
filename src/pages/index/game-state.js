@@ -1,5 +1,5 @@
 "use strict";
-import { DEFAULT_BOARD, DEFAULT_COOLDOWN, DEFAULT_HEIGHT, DEFAULT_PALETTE, DEFAULT_PALETTE_USABLE_REGION, DEFAULT_SERVER, DEFAULT_WIDTH, PLACEMENT_MODE } from "../../defaults";
+import { DEFAULT_BOARD, DEFAULT_BOARD_FALLBACK, DEFAULT_COOLDOWN, DEFAULT_HEIGHT, DEFAULT_PALETTE, DEFAULT_PALETTE_USABLE_REGION, DEFAULT_SERVER, DEFAULT_WIDTH, PLACEMENT_MODE } from "../../defaults";
 import { addIpcMessageHandler, handleIpcMessage, makeIpcRequest, sendIpcMessage } from "shared-ipc";
 
 // Types
@@ -457,36 +457,52 @@ export async function makeServerRequest(call, args=undefined) {
 }
 
 export async function fetchBoard() {
-	// Override browser cache with ?v= param, may incur longer loading times
-	// TODO: investigate optimisations to only do a hard reload when necessary
-	const response = await fetch((localStorage.board || DEFAULT_BOARD) + "?v=" + Date.now())
-	if (!response.ok) {
-		const fetchBoardFailEvent = new CustomEvent("fetchboardfail", {
-			detail: { type: "badresponse" },
-			bubbles: true,
-			composed: true
-		});
-		window.dispatchEvent(fetchBoardFailEvent);
+	const now = Date.now();
+	const primary = localStorage.board || DEFAULT_BOARD;
+	const fallback = localStorage.boardFallback || DEFAULT_BOARD_FALLBACK;
 
-		fetchFailTimeout = setTimeout(fetchBoard, fetchCooldown *= 2);
-		if (fetchCooldown > 8000) {
-			clearTimeout(fetchFailTimeout);
-
-			const fetchBoardFailEvent = new CustomEvent("fetchboardfail", {
-				detail: { type: "timeout" },
-				bubbles: true,
-				composed: true
-			});
-			window.dispatchEvent(fetchBoardFailEvent);
+	const urlsToTry = [ primary, fallback ];
+	for (let i = 0; i < urlsToTry.length; i++) {
+		let url = urlsToTry[i];
+		try {
+			const response = await fetch(url + "?v=" + now);
+			if (response.ok) {
+				if (fetchFailTimeout) {
+					clearTimeout(fetchFailTimeout);
+				}
+				return await response.arrayBuffer();
+			}
+			else {
+				console.error(`Couldn't fetch board: Server responded with ${response.status} ${response.statusText} for: ${url}`);
+			}
 		}
-		return null;
+		catch (err) {
+			console.error(`Couldn't fetch board: Network error while fetching board from: ${url}`, err);
+		}
 	}
 
-	if (fetchFailTimeout) {
+	// Both primary and fallback failed
+	dispatchFetchBoardFail("badresponse");
+
+	// Exponential backoff retry
+	fetchFailTimeout = setTimeout(fetchBoard, fetchCooldown *= 2);
+	if (fetchCooldown > 8000) {
 		clearTimeout(fetchFailTimeout);
+		dispatchFetchBoardFail("timeout");
 	}
 
-	return await response.arrayBuffer();
+	return null;
+}
+
+/**
+ * @param {string} type 
+ */
+function dispatchFetchBoardFail(type) {
+	window.dispatchEvent(new CustomEvent("fetchboardfail", {
+		detail: { type },
+		bubbles: true,
+		composed: true
+	}));
 }
 
 /**

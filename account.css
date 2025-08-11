@@ -221,7 +221,7 @@ r-canvas-user-card .user-card-detail-item .value {
 	text-align: center;
 	display: flex;
 	align-items: center;
-	background: lightgrey;
+    border: 1px solid lightgrey;
 	padding: 4px;
 	border-radius: 16px;
 	position: relative;
@@ -360,6 +360,24 @@ r-canvas-user-card .user-card-detail-item .value {
 }
 .account-details-item .summary-title {
 	font-weight: bold;
+}
+
+.reddit-signin-button {
+	border: 1px solid #dbdbdb;
+	border-radius: 4px;
+	background-color: white;
+	width: fit-content;
+	display: flex;
+	height: 46px;
+	column-gap: 8px;
+	cursor: pointer;
+	padding-right: 8px;
+	box-shadow: none;
+}
+
+.reddit-signin-button > img {
+	height: 100%;
+	aspect-ratio: 1 / 1;
 }
 
 .reddit-card {

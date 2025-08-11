@@ -44,6 +44,7 @@
 	background-size: cover;
 	min-width: 144px;
 	width: 144px;
+	border-radius: 4px 4px 0px 0px;
 }
 .reddit-modal .body {
 	padding: 8px;
@@ -105,18 +106,6 @@
 .reddit-modal-input:focus {
 	border-color: #369;
 	box-shadow: 0 0 5px #ccc;
-}
-.reddit-signin-button {
-	border: 1px solid #dbdbdb;
-	border-radius: 4px;
-	background-color: white;
-	width: fit-content;
-	display: flex;
-	height: 46px;
-	column-gap: 8px;
-	cursor: pointer;
-	padding-right: 8px;
-	box-shadow: none;
 }
 .reddit-modal-button {
 	all: unset;

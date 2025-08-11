@@ -393,6 +393,11 @@ function resetCreatePost() {
 	createPostPost.classList.remove("focused");
 }
 
+const accountButton = /**@type {HTMLElement}*/($("#accountButton"));
+accountButton.addEventListener("click", function() {
+	openAccountFrame();
+});
+
 const resizeObserver = new ResizeObserver(entries => {
 	sendIpcMessage(window.parent, "resizePostsFrame");
 })
