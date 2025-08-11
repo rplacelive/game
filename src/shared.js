@@ -3,14 +3,29 @@ import { Marked } from "marked"
 import DOMPurify from "dompurify"
 
 // Contains shared resources across pages
-export const BADGE_ICONS = [ "badges/based.svg", "badges/trouble_maker.svg", "badges/veteran.svg", "badges/admin.svg", "badges/moderator.svg", "badges/noob.svg", "badges/script_kiddie.svg", "badges/ethical_botter.svg", "badges/gay.svg", "badges/discord_member.svg", "badges/100_pixels_placed", "badges/1000_pixels_placed", "badges/5000_pixels_placed", "badges/2000_pixels_placed", "badges/100000_pixels_placed", "badges/1000000_pixels_placed" ]
+export const BADGE_ICONS = [
+	"badges/based.svg",
+	"badges/trouble-maker.svg",
+	"badges/veteran.svg",
+	"badges/admin.svg",
+	"badges/moderator.svg",
+	"badges/noob.svg",
+	"badges/script-kiddie.svg",
+	"badges/ethical-botter.svg",
+	"badges/gay.svg",
+	"badges/discord-member.svg",
+	"badges/100-pixels-placed",
+	"badges/1000-pixels-placed",
+	"badges/5000-pixels-placed",
+	"badges/2000-pixels-placed",
+	"badges/100000-pixels-placed",
+	"badges/1000000-pixels-placed"
+]
 export const ACCOUNT_TIER_NAMES = {
 	0: "accountTierFree",
 	1: "accountTierBronze",
 	2: "accountTierSilver",
-	4: "accountTierGold",
-	8: "accountTierModerator",
-	16: "accountTierAdministrator"
+	4: "accountTierGold"
 }
 
 export const TRANSLATIONS = {

@@ -1,3 +1,4 @@
+import { sendIpcMessage } from "shared-ipc";
 import { DEFAULT_AUTH } from "../../defaults.js";
 import { handleFormSubmit, $, translate, makeRequest, BADGE_ICONS, ACCOUNT_TIER_NAMES } from "../../shared.js";
 
@@ -27,7 +28,7 @@ handleFormSubmit(signinForm, `${localStorage.auth || DEFAULT_AUTH}/auth/signin`,
 		unauthedPage.dataset.page = "authcode"
 	},
 	onError: async (err) => {
-		if (typeof err === "object") {
+		if (err && typeof err === "object") {
 			signinMessage.textContent = `${await translate("couldntSignIn")}: ${await translate(err.key)}`
 			console.error("Couldn't sign in:", err.message, err.metadata)
 		}
@@ -150,9 +151,8 @@ async function loadAccountProfile() {
 
 const profileName = /**@type {HTMLElement}*/($("#profileName"));
 const profileBio = /**@type {HTMLInputElement}*/($("#profileBio"));
-const profileDiscord = /**@type {HTMLElement}*/($("#profileDiscord"));
-const profileReddit = /**@type {HTMLElement}*/($("#profileReddit"));
-const profileX = /**@type {HTMLElement}*/($("#profileX"));
+//const profileDiscord = /**@type {HTMLElement}*/($("#profileDiscord"));
+//const profileReddit = /**@type {HTMLElement}*/($("#profileReddit"));
 const profilePixels = /**@type {HTMLElement}*/($("#profilePixels"));
 const profileJoin = /**@type {HTMLElement}*/($("#profileJoin"));
 const profileBadges = /**@type {HTMLElement}*/($("#profileBadges"));
@@ -165,15 +165,14 @@ async function updateAccountProfile(account) {
 	// Card left
 	profileName.textContent = account.username;
 	profileBio.value = account.biography;
-	profileDiscord.textContent = account.discordHandle;
-	profileReddit.textContent = account.redditHandle;
-	profileX.textContent = account.twitterHandle;
+	//profileDiscord.textContent = account.discordHandle;
+	//profileReddit.textContent = account.redditHandle;
 
 	// Card right
 	profilePixels.textContent = account.pixelsPlaced;
 	profileJoin.textContent = new Date(account.creationDate).toLocaleString();
 	if (account.badges.length === 0) {
-		profileBadges.textContent = "None";
+		profileBadges.textContent = "No badges yet - get started!";
 	}
 	else {
 		profileBadges.innerHTML = "";
@@ -322,3 +321,19 @@ if (result.status === "success") {
 else {
 	loginPanel.dataset.page = "unauthed";
 }
+
+const closeButton = /**@type {HTMLButtonElement}*/($("#closeButton"));
+closeButton.addEventListener("click", function() {
+	sendIpcMessage(window.parent, "closeAccountFrame");
+});
+
+const profileCloseButton = /**@type {HTMLButtonElement}*/($("#profileCloseButton"));
+profileCloseButton.addEventListener("click", function() {
+	sendIpcMessage(window.parent, "closeAccountFrame");
+});
+
+const premiumButton = /**@type {HTMLButtonElement}*/($("#premiumButton"));
+premiumButton.addEventListener("click", function(e) {
+	e.preventDefault();
+	sendIpcMessage(window.parent, "open", "/posts");
+})
