@@ -5,11 +5,11 @@ export const DEFAULT_SERVER = "wss://server.rplace.live"
 /**
  * @constant {string} DEFAULT_BOARD
  */
-export const DEFAULT_BOARD = "https://raw.githubusercontent.com/rplacelive/canvas1/main/place"
+export const DEFAULT_BOARD = "https://server.rplace.live/public/place" // "https://raw.githubusercontent.com/rplacelive/canvas1/main/place"
 /**
  * @constant {string} DEFAULT_BOARD_FALLBACK
  */
-export const DEFAULT_BOARD_FALLBACK = "https://server.rplace.live/public/place"
+export const DEFAULT_BOARD_FALLBACK = "https://raw.githubusercontent.com/rplacelive/canvas1/main/place" // "https://server.rplace.live/public/place"
 
 /**
  * @constant {string} DEFAULT_AUTH
