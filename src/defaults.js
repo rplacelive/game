@@ -265,6 +265,15 @@ export const VIEWPORT_MODE = Object.freeze({
 	placePixels: 0,
 	selectPixels: 1
 });
+/**
+ * @enum {number}
+ */
+export const RENDERER_TYPE = Object.freeze({
+	BoardRenderer: 0,
+	BoardRenderer3D: 1,
+	BoardRendererMesh: 2,
+	BoardRendererSphere: 3
+});
 
 /**
  * @constant {number} MAX_CHANNEL_MESSAGES

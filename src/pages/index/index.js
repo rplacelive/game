@@ -1,8 +1,8 @@
-import { DEFAULT_BOARD, DEFAULT_SERVER, ADS,  COMMANDS, CUSTOM_EMOJIS, DEFAULT_HEIGHT, DEFAULT_PALETTE_KEYS, DEFAULT_THEMES, DEFAULT_WIDTH, EMOJIS, LANG_INFOS, MAX_CHANNEL_MESSAGES, PUNISHMENT_STATE, PLACEMENT_MODE } from "../../defaults.js";
+import { DEFAULT_BOARD, DEFAULT_SERVER, ADS,  COMMANDS, CUSTOM_EMOJIS, DEFAULT_HEIGHT, DEFAULT_PALETTE_KEYS, DEFAULT_THEMES, DEFAULT_WIDTH, EMOJIS, LANG_INFOS, MAX_CHANNEL_MESSAGES, PUNISHMENT_STATE, PLACEMENT_MODE, RENDERER_TYPE } from "../../defaults.js";
 import { lang, translate, translateAll, $, stringToHtml, blobToBase64, base64ToBlob }  from "../../shared.js";
 import { showLoadingScreen, hideLoadingScreen } from "./loading-screen.js";
 import { clearCaptchaCanvas, updateImgCaptchaCanvas, updateImgCaptchaCanvasFallback } from "./captcha-canvas.js";
-import { boardRenderer, canvasCtx, zoomIn, moveTo, setPlaceChatPosition, setMinZoom, pos, x, y, z, minZoom, setX, setY, setZ } from "./viewport.js";
+import { boardRenderer, canvasCtx, zoomIn, moveTo, setPlaceChatPosition, setMinZoom, pos, x, y, z, minZoom, setX, setY, setZ, setViewportRenderer } from "./viewport.js";
 import { placeChat } from "./game-settings.js";
 import { runAudio, playSample, getNaturalNotes, selectColourSample } from "./game-audio.js";
 import { enableMelodicPalette, enableNewOverlayMenu } from "./secret-settings.js";
@@ -17,6 +17,7 @@ import "./popup.js";
 
 import FingerprintJS from "@fingerprintjs/fingerprintjs";
 import DisableDevtool from "disable-devtool";
+import { BoardRendererSphere } from "./board-renderer-sphere.js";
 
 if (import.meta.env.PROD) {
 	DisableDevtool({
@@ -61,6 +62,7 @@ const more = /**@type {HTMLElement}*/($("#more"));
 const spaceFiller = /**@type {HTMLElement}*/($("#spaceFiller"));
 const mainContent = /**@type {HTMLElement}*/($("#maincontent"));
 const viewport = /**@type {HTMLElement}*/($("#viewport"));
+const viewportCanvas = /**@type {HTMLCanvasElement}*/($("#viewportCanvas"));
 const canvParent1 = /**@type {HTMLElement}*/($("#canvparent1"));
 const canvParent2 = /**@type {HTMLElement}*/($("#canvparent2"));
 const canvSelect = /**@type {HTMLElement}*/($("#canvselect"));
@@ -1588,6 +1590,22 @@ function addLiveChatMessages({ channel, messages, before }) {
 	});
 }
 addIpcMessageHandler("addLiveChatMessages", addLiveChatMessages);
+addIpcMessageHandler("handleClientViewport", (/**@type {[number, number]}*/[ boardRenderer, movementMode ]) => {
+	if (boardRenderer === RENDERER_TYPE.BoardRenderer3D) {
+		throw new Error("Not implemented");
+	}
+	else if (boardRenderer === RENDERER_TYPE.BoardRendererMesh) {
+		throw new Error("Not implemented");
+	}
+	else if (boardRenderer === RENDERER_TYPE.BoardRendererSphere) {
+		const renderer = new BoardRendererSphere(viewportCanvas);
+		setViewportRenderer(renderer);
+	}
+	renderAll();
+});
+addIpcMessageHandler("handleClientTheme", (/**@type {[string,string,string]}*/[id, variant, effects]) => {
+	throw new Error("Not implemented");
+});
 
 chatMessages.addEventListener("scroll", () => {
 	if (chatMessages.scrollTop < 64) {

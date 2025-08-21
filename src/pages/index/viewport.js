@@ -7,10 +7,12 @@ import { runAudio } from "./game-audio.js";
 import { AUDIOS } from "./game-defaults.js";
 import { connectStatus, cooldownEndDate, HEIGHT, intIdNames, intIdPositions, sendServerMessage, WIDTH } from "./game-state.js";
 import { showPalette } from "./palette.js";
+import { BoardRendererSphere } from "./board-renderer-sphere.js";
 
 const viewport = /**@type {HTMLElement}*/($("#viewport"));
 const canvParent1 = /**@type {HTMLElement}*/($("#canvparent1"));
 const canvParent2 = /**@type {HTMLElement}*/($("#canvparent2"));
+const edge = /**@type {HTMLElement}*/($("#edge"));
 const canvas = /**@type {HTMLCanvasElement}*/($("#canvas"));
 const viewportCanvas = /**@type {HTMLCanvasElement}*/($("#viewportCanvas"));
 const placeContext = /**@type {HTMLElement}*/($("#placeContext"));
@@ -44,6 +46,7 @@ export let minZoom = 0;
 export let rotationX = 0;
 export let rotationY = 0;
 export let rotationZ = 0;
+export let wrapCoordinates = false;
 
 // Touch & mouse canvas event handling
 let moved = 3;
@@ -390,10 +393,20 @@ export function setPlaceChatPosition(element, posX, posY) {
  * @param {number} newY 
  * @param {number} newZ 
  */
-export function pos(newX=x, newY=y, newZ=z) {
-	newX = x = Math.max(Math.min(newX, WIDTH - 1), 0);
-	newY = y = Math.max(Math.min(newY, HEIGHT - 1), 0);
-	newZ = z = Math.min(Math.max(newZ, minZoom), 1);
+export function pos(newX = x, newY = y, newZ = z) {
+	if (wrapCoordinates) {
+		newX = ((newX % WIDTH) + WIDTH) % WIDTH; // ensures positive wrap
+		newY = ((newY % HEIGHT) + HEIGHT) % HEIGHT;
+	}
+	else {
+		newX = Math.max(Math.min(newX, WIDTH - 1), 0);
+		newY = Math.max(Math.min(newY, HEIGHT - 1), 0);
+	}
+	newZ = Math.min(Math.max(newZ, minZoom), 1);
+
+	x = newX;
+	y = newY;
+	z = newZ;
 
 	const right = newX - canvas.width + 0.01;
 	const left = newX;
@@ -418,9 +431,11 @@ export function pos(newX=x, newY=y, newZ=z) {
 	else if (down < 0) {
 		newY -= down;
 	}
+
 	localStorage.x = Math.floor(newX) + 0.5;
 	localStorage.y = Math.floor(newY) + 0.5;
 	localStorage.z = newZ;
+
 	transform();
 	boardRenderer?.setPosition(x, y, z);
 
@@ -453,7 +468,6 @@ export function pos(newX=x, newY=y, newZ=z) {
 			idPositionDebounce = false;
 			let id = intIdPositions.get(intX + intY * WIDTH);
 			if (id === undefined || id === null) {
-				// Request 15x15 region of pixel placers from server (fine tune if necessary)
 				const placersRadius = 15;
 				const centreX = Math.floor(Math.max(intX - placersRadius / 2, 0));
 				const centreY = Math.floor(Math.max(intY - placersRadius / 2, 0));
@@ -475,11 +489,7 @@ export function pos(newX=x, newY=y, newZ=z) {
 	}
 
 	const posEvent = new CustomEvent("pos", {
-		detail: {
-			x: newX,
-			y:newY,
-			z:newZ
-		}
+		detail: { x: newX, y: newY, z: newZ }
 	});
 	window.dispatchEvent(posEvent);
 }
@@ -563,4 +573,24 @@ export function setZ(value) {
  */
 export function setViewportMode(mode) {
 	viewportMode = mode;
+}
+
+/**
+ * @param {BoardRenderer} renderer
+ */
+export function setViewportRenderer(renderer) {
+	try {
+		boardRenderer = renderer;
+		if (renderer instanceof BoardRendererSphere) {
+			wrapCoordinates = true;
+		}
+		canvas.style.display = "none";
+		canvParent2.style.boxShadow = "none";
+		edge.style.display = "none";
+	}
+	catch (e) {
+		console.error(e);
+		boardRenderer = null;
+		canvas.style.opacity = "1";
+	}
 }

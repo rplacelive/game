@@ -1,8 +1,8 @@
 "use strict";
 import { $ } from "../src/shared.js";
 import { BoardRenderer } from "../src/pages/index/board-renderer.js";
-import { BoardRenderer3D } from "../src/pages/index/board-renderer-3d.js";
-import { BoardSelections } from "../src/pages/index/board-selections.js";
+import { BoardRendererMesh } from "../src/pages/index/board-renderer-mesh.js";
+import { BoardRendererSphere } from "../src/pages/index/board-renderer-sphere.js";
 
 // Fetch test board
 const boardRes = await fetch("./test-place-1000x1000");
@@ -96,7 +96,7 @@ f 3/4 8/3 5/2 2/1`
 
 	const canvas =  /**@type {HTMLCanvasElement}*/($("#basic3DCanvas"));
 
-	const renderer = new BoardRenderer3D(canvas, objSource);
+	const renderer = new BoardRendererMesh(canvas, objSource);
 	renderer.setSources(board, changes, socketPixels, palette, boardWidth, boardHeight);
 	renderer.setPosition(x, y, z);
 	renderer.queueRedraw();
@@ -151,28 +151,33 @@ f 3/4 8/3 5/2 2/1`
 	}
 	const sphereSource = await sphereRes.text();
 
-	let x = 50;
-	let y = 50;
+	let x = 0;
+	let y = 0;
 	let z = 0.01;
-	let rx = 0;
-	let ry = 0;
-	let rz = 0;
 	let minZoom = 0;
 	let mouseDown = -1;
 
 	const canvas = /**@type {HTMLCanvasElement}*/($("#sphere3DCanvas"));
 	const container = /**@type {HTMLElement}*/($("#sphere3DCanvasViewport"));
-	const addSelectionButton = /**@type {HTMLButtonElement}*/($("#sphere3DAddSelectionButton"));
 
-	const renderer = new BoardRenderer3D(canvas, sphereSource);
-	const selections = new BoardSelections(renderer, container);
+	const renderer = new BoardRendererMesh(canvas, sphereSource);
 	renderer.setSources(board, changes, socketPixels, palette, boardWidth, boardHeight);
 	renderer.setPosition(x, y, z);
 	renderer.queueRedraw();
 
-	addSelectionButton.addEventListener("click", (e) => {
-		selections.addSelection(0, 0, 50, 50);
-	});
+	function wrap(v, max) {
+		return Math.min(Math.max(0, v), 1000);
+		//return ((v % max) + max) % max; // handles negatives too
+	}
+
+	function setSpherePosition(x, y, z) {
+		renderer.setPosition(500, 500, z);
+		renderer.setRotation(-(y / 1000) * (Math.PI * 2), -(x / 1000) * (Math.PI * 2), 0);
+		sphere3DCoordinates.textContent = `(${x.toFixed(2)}, ${y.toFixed(2)}, ${z.toFixed(2)})`;
+	}
+
+	setSpherePosition(x, y, z);
+
 	canvas.addEventListener("mousedown", (e) => {
 		mouseDown = e.button;
 	});
@@ -180,22 +185,38 @@ f 3/4 8/3 5/2 2/1`
 		mouseDown = -1;
 	});
 	canvas.addEventListener("mousemove", (e) => {
-		if (mouseDown === -1) {
-			return;
-		}
-
-		if (mouseDown === 1) {
-			rx += e.movementY * 0.01;
-			ry += e.movementX * 0.01;
-			renderer.setRotation(rx, ry, rz);
-		}
-		else {
+		if (mouseDown === -1) return;
+		if (mouseDown !== 1) {
 			let dx = e.movementX;
 			let dy = e.movementY;
 			x -= dx / (z * 50);
 			y -= dy / (z * 50);
-			renderer.setPosition(x, y, z);
+
+			x = wrap(x, boardWidth);
+			y = wrap(y, boardHeight);
+
+			setSpherePosition(x, y, z);
 		}
+	});
+	canvas.addEventListener("keydown", (e) => {
+		e.preventDefault();
+		if (e.key === "ArrowUp") {
+			y -= 1;
+		}
+		else if (e.key === "ArrowDown") {
+			y += 1;
+		}
+		else if (e.key === "ArrowLeft") {
+			x -= 1;
+		}
+		else if (e.key === "ArrowRight") {
+			x += 1;
+		}
+
+		x = wrap(x, boardWidth);
+		y = wrap(y, boardHeight);
+
+		setSpherePosition(x, y, z);
 	});
 	canvas.addEventListener("wheel", (e) => {
 		e.preventDefault();
@@ -203,7 +224,91 @@ f 3/4 8/3 5/2 2/1`
 
 		const d = Math.max(minZoom / z, Math.min(3 ** Math.max(-0.5, Math.min(0.5, e.deltaY * -0.01)), 1 / z));
 		z *= d;
+
+		setSpherePosition(x, y, z);
+	});
+	canvas.addEventListener("scroll", (e) => {
+		e.preventDefault();
+		e.stopPropagation();
+	});
+	function updateMinZoom() {
+		minZoom = Math.min(window.innerWidth / canvas.width, window.innerHeight / canvas.height) / 100;
+	}
+	window.addEventListener("resize", updateMinZoom);
+	updateMinZoom();
+}
+
+
+{
+	const canvas = /**@type {HTMLCanvasElement}*/($("#sphere2DFragmentCanvas"));
+	const coordinates = /**@type {HTMLElement}*/($("#sphere2DFragmentCoordinates"));
+	const renderer = new BoardRendererSphere(canvas);
+	renderer.setSources(board, changes, socketPixels, palette, boardWidth, boardHeight);
+	renderer.setPosition(0, 0, 0.05)
+	renderer.queueRedraw();
+
+	let x = 0;
+	let y = 0;
+	let z = 0.01;
+	let minZoom = 0;
+	let mouseDown = -1;
+
+	function wrap(v, max) {
+		return ((v % max) + max) % max; // handles negatives too
+	}
+
+	function setPosition(x, y, z) {
 		renderer.setPosition(x, y, z);
+		coordinates.textContent = `(${x.toFixed(2)}, ${y.toFixed(2)}, ${z.toFixed(2)})`;
+	}
+
+	canvas.addEventListener("mousedown", (e) => {
+		mouseDown = e.button;
+	});
+	canvas.addEventListener("mouseup", (e) => {
+		mouseDown = -1;
+	});
+	canvas.addEventListener("mousemove", (e) => {
+		if (mouseDown === -1) return;
+		if (mouseDown !== 1) {
+			let dx = e.movementX;
+			let dy = e.movementY;
+			x -= dx / (z * 50);
+			y -= dy / (z * 50);
+
+			x = wrap(x, boardWidth);
+			y = wrap(y, boardHeight);
+
+			setPosition(x, y, z);
+		}
+	});
+	canvas.addEventListener("keydown", (e) => {
+		e.preventDefault();
+		if (e.key === "ArrowUp") {
+			y -= 1;
+		}
+		else if (e.key === "ArrowDown") {
+			y += 1;
+		}
+		else if (e.key === "ArrowLeft") {
+			x -= 1;
+		}
+		else if (e.key === "ArrowRight") {
+			x += 1;
+		}
+
+		x = wrap(x, boardWidth);
+		y = wrap(y, boardHeight);
+
+		setPosition(x, y, z);
+	});
+	canvas.addEventListener("wheel", (e) => {
+		e.preventDefault();
+		e.stopPropagation();
+
+		const d = Math.max(minZoom / z, Math.min(3 ** Math.max(-0.5, Math.min(0.5, e.deltaY * -0.01)), 1 / z));
+		z *= d;
+		setPosition(x, y, z);
 	});
 	canvas.addEventListener("scroll", (e) => {
 		e.preventDefault();
