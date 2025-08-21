@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>August21st | rplace</title>
+	<style>
+		* {
+			box-sizing: border-box;
+		}
+
+		:root {
+			--gold-1: #b18b00;
+			--gold-2: #ffd166;
+			--gold-3: #ffef9f;
+			--gold-4: #8a6d00;
+			--galaxy-1: #0b0f29;
+			--galaxy-2: #1c1f3a;
+			--galaxy-3: #362f5c;
+			--galaxy-4: #5a3d6d;
+			--galaxy-nebula: #a86ee2;
+		}
+
+		html, body {
+			height: 100%;
+		}
+
+		body {
+			font-family: Arial, sans-serif;
+			margin: 0;
+			padding: 0;
+			color: #f7f7f7;
+			background:
+				radial-gradient(ellipse at top, var(--galaxy-4) 0%, transparent 60%),
+				radial-gradient(ellipse at 40% 70%, var(--galaxy-nebula) 0%, transparent 60%),
+				linear-gradient(180deg, var(--galaxy-1), var(--galaxy-2) 40%, var(--galaxy-3) 100%);
+			background-attachment: fixed;
+			overflow-x: hidden;
+			position: relative;
+		}
+
+		/* Twinkling stars */
+		body::before {
+			content: "";
+			position: fixed;
+			inset: 0;
+			background:
+				radial-gradient(1px 1px at 20% 30%, white, transparent),
+				radial-gradient(1px 1px at 80% 20%, white, transparent),
+				radial-gradient(1px 1px at 50% 70%, white, transparent),
+				radial-gradient(1px 1px at 90% 60%, white, transparent),
+				radial-gradient(1px 1px at 10% 80%, white, transparent);
+			background-size: cover;
+			animation: twinkle 6s infinite alternate ease-in-out;
+			pointer-events: none;
+			z-index: 0;
+			opacity: 0.7;
+		}
+
+		/* Nebula swirl effect */
+		html::after {
+			content: "";
+			position: fixed;
+			inset: -20vmax;
+			background: radial-gradient(circle at 50% 50%, rgba(168,110,226,0.3) 0%, transparent 70%);
+			filter: blur(120px);
+			animation: drift 50s linear infinite alternate;
+			pointer-events: none;
+			z-index: 0;
+		}
+
+		/* Header cosmic panel */
+		header {
+			max-width: min(1100px, 92vw);
+			margin: 8vmin auto 2vmin;
+			padding: 3vmin 4vmin;
+			border-radius: 24px;
+			background: rgba(30, 30, 60, 0.6);
+			backdrop-filter: blur(10px);
+			position: relative;
+			border: 2px solid transparent;
+			background-clip: padding-box, border-box;
+			box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+			z-index: 1;
+		}
+
+		/* Gold cosmic border */
+		header::before {
+			content: "";
+			position: absolute;
+			inset: -2px;
+			border-radius: 26px;
+			background: conic-gradient(from 0turn, var(--gold-4), var(--gold-1), var(--gold-2), var(--gold-3), var(--gold-2), var(--gold-1), var(--gold-4));
+			mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+			-webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+			mask-composite: exclude;
+			-webkit-mask-composite: xor;
+			padding: 2px;
+			filter: saturate(1.1);
+			pointer-events: none;
+		}
+
+		/* Gold cosmic text */
+		h1 {
+			margin: 0 0 8px 0;
+			font-size: clamp(2.2rem, 5vw, 4rem);
+			line-height: 1.05;
+			letter-spacing: 1px;
+			background: linear-gradient(92deg, var(--gold-3), var(--gold-2), var(--gold-1), var(--gold-3));
+			background-size: 220% 100%;
+			-webkit-background-clip: text;
+			background-clip: text;
+			color: transparent;
+			text-shadow: 0 1px 0 rgba(0,0,0,0.05), 0 8px 24px rgba(255, 200, 80, 0.35);
+			animation: shimmer 6s ease-in-out infinite;
+		}
+
+		/* Gold buttons & hover */
+		.hidden-question {
+			display: inline-block;
+			margin-top: 6px;
+			cursor: pointer;
+			font-size: 10px;
+			opacity: 0.6;
+			text-decoration: none;
+			padding: 2px 6px;
+			border-radius: 999px;
+			color: white;
+			background: rgba(255, 215, 120, 0.1);
+			border: 1px solid rgba(255, 215, 120, 0.5);
+			transition: transform .2s ease, opacity .2s ease, box-shadow .2s ease;
+		}
+
+		.hidden-question:hover {
+			opacity: 1;
+			transform: translateY(-1px);
+			box-shadow: 0 4px 12px rgba(255, 200, 80, 0.35);
+		}
+
+		/* Content panels */
+		h2, p, iframe {
+			max-width: min(1100px, 92vw);
+			margin: 1.5vmin auto;
+			position: relative;
+			z-index: 1;
+		}
+
+		h2 {
+			font-size: clamp(1.4rem, 2.8vw, 2rem);
+			background: rgba(40, 40, 70, 0.6);
+			padding: 8px 12px;
+			border-radius: 12px;
+			box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+			border: 1px solid rgba(255, 215, 120, 0.2);
+		}
+
+		p {
+			font-size: clamp(1rem, 2.2vw, 1.125rem);
+			line-height: 1.6;
+			background: rgba(40, 40, 70, 0.5);
+			padding: 1rem 1.2rem;
+			border-radius: 16px;
+			border: 1px solid rgba(255, 215, 120, 0.1);
+			box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+		}
+
+		/* Gold outline for iframes */
+		iframe {
+			display: block;
+			width: min(1100px, 92vw);
+			aspect-ratio: 16/9;
+			border: 0;
+			border-radius: 18px;
+			box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+			position: relative;
+			outline: 2px solid rgba(255, 215, 120, 0.3);
+			outline-offset: -4px;
+		}
+
+		/* Animations */
+		@keyframes shimmer {
+			0% { background-position: 0% 50%; }
+			50% { background-position: 100% 50%; }
+			100% { background-position: 0% 50%; }
+		}
+
+		@keyframes twinkle {
+			0% { opacity: 0.2; }
+			50% { opacity: 0.8; }
+			100% { opacity: 0.2; }
+		}
+
+		@keyframes drift {
+			0% { transform: translateY(0); }
+			100% { transform: translateY(40px); }
+		}
+	</style>
+	<script>
+		window.addEventListener("DOMContentLoaded", function() {
+			const hiddenQuestionButton = document.getElementById("hiddenQuestionButton");
+			hiddenQuestionButton.addEventListener("click", function() {
+				alert("Doesn't matter, August 21st is forever...");
+			});
+		});
+	</script>
+</head>
+<body>
+	<header>
+		<h1>HAPPY AUGUST 21st 🪑‍🔥🪑‍🔥 Δ ΔΔ</h1>
+		<em>A day of chaos and destruction, randomness and all things <strong>Mad.</strong></em>
+		<button type="button" id="hiddenQuestionButton" class="hidden-question">It's not August 21st though?</button>
+	</header>
+	<br>
+	<h2>Community content:</h2>
+	<p>
+		Discover the lore, learn more, get involved, spread it everywhere. See what others have
+		made for August 21st...
+	</p>
+	<iframe src="https://www.youtube-nocookie.com/embed/opk9bwZczS8" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+	<iframe src="https://www.youtube-nocookie.com/embed/92cLXnRCIZw" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+	<br>
+	<h2>So what now?</h2>
+	<p>
+		You wait. You look. Turn your eye. Look to andromeda. Do you see it?
+	</p>
+</body>
+</html>

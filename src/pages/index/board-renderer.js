@@ -172,7 +172,7 @@ export class BoardRenderer extends EventTarget {
 	 * @param {Float32Array} vertices
 	 * @param {number} vertexCount
 	 */
-	constructor(canvas, uv = BoardRenderer.uv, vertices = BoardRenderer.vertices, vertexCount = 6) {
+	constructor(canvas, uv = BoardRenderer.uv, vertices = BoardRenderer.vertices, vertexCount = 6, fragmentSource = BoardRenderer.boardFragmentSource, vertexSource = BoardRenderer.boardVertexSource) {
 		super();
 		this.canvas = canvas;
 		this._uv = uv;
@@ -198,8 +198,7 @@ export class BoardRenderer extends EventTarget {
 		}
 
 		// Shader setup
-		const boardProgram = this._boardProgram = this._createShader(
-			BoardRenderer.boardFragmentSource, BoardRenderer.boardVertexSource);
+		const boardProgram = this._boardProgram = this._createShader(fragmentSource, vertexSource);
 
 		// Vertex array setup
 		const vao = this._vao = gl.createVertexArray();

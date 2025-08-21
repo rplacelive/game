@@ -1,59 +1,24 @@
 "use strict";
-import * as gio from "@thi.ng/geom-io-obj";
 import { BoardRenderer } from "./board-renderer.js";
 import { mat4 } from "gl-matrix";
 
 export class BoardRenderer3D extends BoardRenderer {
-	/**@type {import("@thi.ng/geom-io-obj").OBJModel}*/_object;
 	/**@type {number}*/_rotationX;
 	/**@type {number}*/_rotationY;
 	/**@type {number}*/_rotationZ;
 
 	/**
 	 * @param {HTMLCanvasElement} canvas
-	 * @param {string} objSource 
+	 * @param {Float32Array} uv
+	 * @param {Float32Array} vertices
+	 * @param {number} vertexCount
 	 */
-	constructor(canvas, objSource) {
-		const model = gio.parseOBJ(objSource, { tessellate: true });
-
-		const boardObject = model.objects.find(object => object.id === "Board");
-		if (!boardObject) {
-			throw new Error("Could not locate 'Board' object within mesh");
-		}
-		const boardFaces = boardObject.groups[0].faces;
-
-		const vertices = new Float32Array(boardFaces.length * 9); // 3 vertices per face, 3 coords per vertex
-		const uv = new Float32Array(boardFaces.length * 6); // 3 vertices per face, 2 UV coords per vertex
-		for (let i = 0; i < boardFaces.length; i++) {
-			const face = boardFaces[i];
-			for (let j = 0; j < 3; j++) {
-				const vertexIndex = face.v[j]; // vertex index from face.v array
-				const uvIndex = face.uv ? face.uv[j] : vertexIndex; // UV index from face.uv array
-				
-				const vi = (i * 9) + (j * 3);
-				const ui = (i * 6) + (j * 2);
-				
-				vertices[vi] = model.vertices[vertexIndex][0];
-				vertices[vi + 1] = model.vertices[vertexIndex][1];
-				vertices[vi + 2] = model.vertices[vertexIndex][2];
-				
-				if (model.uvs && uvIndex < model.uvs.length) {
-					uv[ui] = model.uvs[uvIndex][0];
-					uv[ui + 1] = model.uvs[uvIndex][1];
-				}
-				else {
-					// Default UV coords if none available
-					uv[ui] = 0;
-					uv[ui + 1] = 0;
-				}
-			}
-		}
-		super(canvas, uv, vertices, boardFaces.length * 3);
-		this._object = model;
+	constructor(canvas, uv, vertices, vertexCount) {
+		super(canvas, uv, vertices, vertexCount);
 		this._rotationX = 0;
 		this._rotationY = 0;
 		this._rotationZ = 0;
-		
+
 		// Enable depth testing and backface culling
 		const gl = this._gl;
 		gl.enable(gl.DEPTH_TEST);

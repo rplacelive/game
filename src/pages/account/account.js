@@ -9,16 +9,12 @@ const unauthedPage = /**@type {HTMLElement}*/($("#unauthedPage"));
 const signinMessage = /**@type {HTMLElement}*/($("#signinMessage"));
 
 const authToggleLink = /**@type {HTMLAnchorElement}*/($("#authToggleLink"));
-authToggleLink.addEventListener("touchend", function(e) {
-	e.preventDefault();
-})
-
 authToggleLink.addEventListener("click", async function(e) {
-	e.preventDefault()
-	const isSigninPage = unauthedPage.dataset.page === "signin"
-	unauthedPage.dataset.page = isSigninPage ? "signup" : "signin"
-	authToggleLink.textContent = await translate(isSigninPage ? "signInInstead" : "createNewAccount")
-})
+	const isSigninPage = unauthedPage.dataset.page === "signin";
+	authToggleLink.href = isSigninPage ? "#signin" : "#signup";
+	unauthedPage.dataset.page = isSigninPage ? "signup" : "signin";
+	authToggleLink.textContent = await translate(isSigninPage ? "signInInstead" : "createNewAccount");
+});
 
 const signinForm = /**@type {HTMLFormElement}*/($("#signinForm"));
 handleFormSubmit(signinForm, `${localStorage.auth || DEFAULT_AUTH}/auth/signin`, {
