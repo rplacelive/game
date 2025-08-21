@@ -28,7 +28,7 @@ function initPopup(url, title) {
 	}
 }
 
-const popupUrl = "misc/august21st-25-embed.html";
+const popupUrl = "/august21st-embed.html";
 const popupTitleText = "Special Event - August 21st";
 
 if (document.readyState === "loading") {
