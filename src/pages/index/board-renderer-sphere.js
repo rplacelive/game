@@ -48,7 +48,7 @@ export class BoardRendererSphere extends BoardRenderer {
 				bulgedUV = 0.5 + normalize(centerOffset) * newRadius * scaledRadius;
 			}
 			
-			vec2 targetUV = (vec2(u_xyz.xy) + 0.5) / vec2(u_boardSize);
+			vec2 targetUV = (vec2(u_xyz.xy)) / vec2(u_boardSize);
 			vec2 uv = (bulgedUV - 0.5) / (u_xyz.z) + 0.5;
 			uv += (0.5 - targetUV);
 
@@ -91,8 +91,8 @@ export class BoardRendererSphere extends BoardRenderer {
 
 	_updateUniforms() {
 		const boardUniforms = {
-			u_xyz: [-this._x, -this._y, this._z * this._devicePixelRatio * 50],
-			u_radius: 0.5 * this._devicePixelRatio
+			u_xyz: [-this._x, -this._y, this._z],
+			u_radius: 0.5
 		};
 		this._renderLayers[0].uniforms = boardUniforms;
 		this._renderLayers[1].uniforms = boardUniforms;
@@ -100,7 +100,28 @@ export class BoardRendererSphere extends BoardRenderer {
 	}
 
 	_updateMatrices() {
+		const model = this._modelMatrix;
+		const view = this._viewMatrix;
+		const projection = this._projectionMatrix;  
+		const mvp = this._mvpMatrix;
+
+		mat4.identity(model);
+		mat4.identity(view);
+		mat4.identity(projection);
+
+		const scale = 1 / (50 * this._devicePixelRatio) + 0.01;
+		const aspect = this.canvas.width / this.canvas.height;
+
+		if (aspect >= 1) {
+			mat4.ortho(projection, -scale * aspect, scale * aspect, -scale, scale, -1, 1);
+		}
+		else {
+			mat4.ortho(projection, -scale, scale, -scale / aspect, scale / aspect, -1, 1);
+		}
+
+		mat4.multiply(mvp, projection, view);
+		mat4.multiply(mvp, mvp, model);
+
 		this._updateUniforms();
-		return;
 	}
 }
