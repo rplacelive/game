@@ -111,13 +111,7 @@ export class BoardRendererSphere extends BoardRenderer {
 
 		const scale = 1 / (50 * this._devicePixelRatio) + 0.01;
 		const aspect = this.canvas.width / this.canvas.height;
-
-		if (aspect >= 1) {
-			mat4.ortho(projection, -scale * aspect, scale * aspect, -scale, scale, -1, 1);
-		}
-		else {
-			mat4.ortho(projection, -scale, scale, -scale / aspect, scale / aspect, -1, 1);
-		}
+		mat4.ortho(projection, -scale * aspect, scale * aspect, -scale, scale, -1, 1);
 
 		mat4.multiply(mvp, projection, view);
 		mat4.multiply(mvp, mvp, model);
