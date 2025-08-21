@@ -531,7 +531,7 @@ r-live-chat-message .emoji-reactors-count {
 
 #popup {
 	border: none;
-	background: white;
+	background: var(--ui-panel-bg);
 	border-radius: 20px;
 	box-shadow: 0 0 0 1000px #0004, 0 0 100px #000;
 }
