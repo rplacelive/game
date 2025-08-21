@@ -2225,6 +2225,12 @@ function defaultServer() {
 
 // Theme
 function initTheme() {
+	// TODO: REMOVE TEMPORARY - FORCE!
+	localStorage.theme = "r/place 2022";
+	localStorage.variant = "dark";
+	localStorage.effects = "darkplace";
+	// END
+
     let startupThemeSet = DEFAULT_THEMES.get(localStorage.theme || "r/place 2022");
     if (!startupThemeSet) {
         startupThemeSet = DEFAULT_THEMES.get("r/place 2022");
