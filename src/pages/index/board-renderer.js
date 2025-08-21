@@ -549,7 +549,7 @@ export class BoardRenderer extends EventTarget {
 		const mvp = this._mvpMatrix;
 
 		// Calculate canvas translation & scale
-		const scale = 1 / (this._z * 50 * this._devicePixelRatio); 
+		const scale = 1 / (this._z * 50 * this._devicePixelRatio) + 0.01;
 		const ndcX = -(this._x - this._boardWidth / 2) / (this._boardWidth / 2);
 		const ndcY = (this._y - this._boardHeight / 2) / (this._boardHeight / 2);
 
