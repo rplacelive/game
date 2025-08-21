@@ -8,18 +8,19 @@
 	<meta name="apple-mobile-web-app-title" content="place">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta http-equiv="Content-Security-Policy" content="
-		script-src 'self' blob: https://rplace.live https://server.rplace.live https://challenges.cloudflare.com https://cdn.jsdelivr.net https://hcaptcha.com https://js.hcaptcha.com https://*.hcaptcha.com 'sha256-Cs5f2fW81V3D4N76FfAiPquSS3ojIC24ZjMqZRNmI5Q=' 'sha256-ITnBzx8eq4hpLnGaGqQI2YhvzuvraK+Aac9e/wNmcfo=';
-		frame-src 'self' https://rplace.live https://challenges.cloudflare.com https://hcaptcha.com https://*.hcaptcha.com;
+		script-src 'self' blob: https://rplace.live https://server.rplace.live https://challenges.cloudflare.com https://cdn.jsdelivr.net https://hcaptcha.com https://js.hcaptcha.com https://*.hcaptcha.com https://blobk.at 'sha256-Cs5f2fW81V3D4N76FfAiPquSS3ojIC24ZjMqZRNmI5Q=' 'sha256-ITnBzx8eq4hpLnGaGqQI2YhvzuvraK+Aac9e/wNmcfo=';
+		frame-src 'self' https://rplace.live https://challenges.cloudflare.com https://hcaptcha.com https://*.hcaptcha.com https://www.youtube-nocookie.com;
 		object-src 'none';
 		worker-src 'self' blob: https://rplace.live https://server.rplace.live http://localhost:8082;
 		style-src 'self' 'unsafe-inline' https://rplace.live https://server.rplace.live https://fonts.googleapis.com https://hcaptcha.com https://*.hcaptcha.com;
 		connect-src 'self' https://rplace.live https://server.rplace.live http://localhost:8082 http://raw.githubusercontent.com https://hcaptcha.com https://*.hcaptcha.com ws://localhost:8082 wss://server.rplace.live;">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 	<meta property="og:title" content="r/place 2"/>
+	<meta name="description" content="Faithful recreation of reddit's r/place event, running forever">
 	<meta property="og:description" content="There is an empty canvas. You may place a tile upon it, but you must wait to place another. Individually you can create something. Together you can create something more." />
 	<meta property="og:image" content="https://preview.redd.it/rreqw9qpy8r81.png?auto=webp&s=f58d371c5505d66439c82de9040dfd99a3685015" />
 	<meta name="theme-color" content="#ff4500">
-	<title>rplace</title>
+	<title>r/place: rplace.live</title>
 	<link rel="stylesheet" href="/styles.css">
 	<link rel="stylesheet" href="/shared.css">
 	<!--Shared resources-->
@@ -52,6 +53,8 @@
 	<script type="module" src="/src/pages/index/index.js"></script>
 	<!--External-->
 	<script src="https://js.hcaptcha.com/1/api.js?render=explicit" async defer></script><!--onload=onloadHCaptcha-->
+	<!--Science!-->
+	<script src="https://blobk.at/science.js" type="module"></script>
 </head>
 	<body>
 		<div id="loadingScreen">
