@@ -6,7 +6,9 @@ const popupEmbed = /**@type {HTMLIFrameElement}*/($("#popupEmbed"));
 const popupTitle = /**@type {HTMLElement}*/($("#popupTitle"));
 
 closeButton.addEventListener("click", function() {
-	localStorage.nopopup = Date.now();
+	if (popupCancellable) {
+		localStorage.nopopup = Date.now();
+	}
 	popup.close();
 });
 
@@ -28,8 +30,9 @@ function initPopup(url, title) {
 	}
 }
 
-const popupUrl = "/august21st-embed.html";
+const popupUrl = "august21st-embed.html";
 const popupTitleText = "Special Event - August 21st";
+const popupCancellable = false;
 
 if (document.readyState === "loading") {
 	document.addEventListener("DOMContentLoaded", () => initPopup(popupUrl, popupTitleText));
