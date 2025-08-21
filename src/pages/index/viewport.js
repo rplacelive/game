@@ -584,7 +584,7 @@ export function setViewportRenderer(renderer) {
 		if (renderer instanceof BoardRendererSphere) {
 			wrapCoordinates = true;
 		}
-		canvas.style.display = "0";
+		canvas.style.display = "none";
 		canvParent2.style.boxShadow = "none";
 		edge.style.display = "none";
 	}
