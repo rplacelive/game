@@ -32,7 +32,7 @@ function initPopup(url, title) {
 
 const popupUrl = "august21st-embed.html";
 const popupTitleText = "Special Event - August 21st";
-const popupCancellable = false;
+const popupCancellable = true;
 
 if (document.readyState === "loading") {
 	document.addEventListener("DOMContentLoaded", () => initPopup(popupUrl, popupTitleText));
