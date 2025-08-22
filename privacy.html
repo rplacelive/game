@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Privacy policy</title>
+	<style>
+		@font-face {
+			font-family: reddit;
+			src: url(/fonts/RedditSans-Bold.woff2);
+		}
+		html, body{ background: repeating-linear-gradient(45deg, #bbb, #bbb 12px, #c7c7c7 12px, #c7c7c7 24px); height: 100%; }
+		body{
+			max-width: 800px; margin: 0 auto;
+			background: #fff; color: #111;
+			font-family: reddit;
+			padding: 1em;
+			box-sizing: border-box;
+			overscroll-behavior: none;
+			box-shadow: 0 0 50px #0008;
+			border: #111 solid;
+			border-width: 0 3px;
+		}
+		h1, h2, h3, h4, h5, h6{ margin: 0; padding: .5em 0; font-style: italic; }
+		a{
+			color: blue; text-decoration: underline;
+			cursor: pointer;
+		}
+		a:active{ color: red; }
+		#science{
+			width: 16px; height: 16px;
+			vertical-align: bottom;
+		}
+	</style>
+</head>
+<body>
+	<h1>Privacy policy</h1>
+	<br>
+	We do not sell or offer your personal information to any 3rd parties.
+	<br><br>
+	We do however, for the site's functionality, collect the following information:
+	<br><br>
+	<h2>IP addresses & Session identifiers</h2>
+	This is used to enforce cooldown and protect against bots, and is not stored beyond the length of your session
+	<br><br>
+	<h2>Usernames and account names you tell us</h2>
+	This should be self-explanatory. We store this data until you tell us not to by closing your account or changing said details.
+	<br><br>
+	<h2>Chat messages and pixel placements</h2>
+	By posting chat messages or drawing art, you accept that this type of content is permanent and cannot be removed, even if requested.
+	<br><br>
+	<h2>Science Telemetrics</h2>
+	We occasionally collect non-identifying information about your hardware or behavior in the game for research purposes, such as developing new features or technologies to improve the experience of everyone in the game
+	<br><br>
+	<input type="checkbox" id="science" /> Science telemetrics: <span id="indicator"></span>
+	<br><br>
+	<h2>Source code</h2>
+	The source code for the client can be found at <a href="https://github.com/rplacelive/game" target="_blank">https://github.com/rplacelive/game</a>
+</body>
+<script>
+	science.checked = localStorage.science != '0'
+	indicator.textContent = science.checked ? 'ENABLED' : 'DISABLED'
+	indicator.style.color = science.checked ? 'green' : 'red'
+	science.onchange = () => {
+		localStorage.science = science.checked ? '' : '0'
+		indicator.textContent = science.checked ? 'ENABLED' : 'DISABLED'
+		indicator.style.color = science.checked ? 'green' : 'red'
+	}
+</script>
+</html>
