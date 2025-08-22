@@ -57,14 +57,5 @@
 	<h2>Source code</h2>
 	The source code for the client can be found at <a href="https://github.com/rplacelive/game" target="_blank">https://github.com/rplacelive/game</a>
 </body>
-<script>
-	science.checked = localStorage.science != '0'
-	indicator.textContent = science.checked ? 'ENABLED' : 'DISABLED'
-	indicator.style.color = science.checked ? 'green' : 'red'
-	science.onchange = () => {
-		localStorage.science = science.checked ? '' : '0'
-		indicator.textContent = science.checked ? 'ENABLED' : 'DISABLED'
-		indicator.style.color = science.checked ? 'green' : 'red'
-	}
-</script>
+<script src="./priv.js"></script>
 </html>
