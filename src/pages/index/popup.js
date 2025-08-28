@@ -30,13 +30,16 @@ function initPopup(url, title) {
 	}
 }
 
+const popupEnabled = false;
 const popupUrl = "august21st-embed.html";
 const popupTitleText = "Special Event - August 21st";
 const popupCancellable = true;
 
-if (document.readyState === "loading") {
-	document.addEventListener("DOMContentLoaded", () => initPopup(popupUrl, popupTitleText));
-}
-else {
-	initPopup(popupUrl, popupTitleText);
+if (popupEnabled) {
+	if (document.readyState === "loading") {
+		document.addEventListener("DOMContentLoaded", () => initPopup(popupUrl, popupTitleText));
+	}
+	else {
+		initPopup(popupUrl, popupTitleText);
+	}
 }
