@@ -718,12 +718,15 @@ customElements.define("r-sidebar", Sidebar);
 class Header extends LitElement {
 	static properties = {
 		title: { type: String },
+		for: { type: String },
 		scrolled: { type: Boolean, state: true }
 	};
 
 	constructor() {
 		super();
-		this.title = "rplace.live";
+		/**@type {string}*/this.title = "rplace.live";
+		/**@type {string|null}*/this.for = "";
+		/**@type {Sidebar|null}*/this.sidebar = null;
 	}
 
 	createRenderRoot() {
@@ -744,12 +747,16 @@ class Header extends LitElement {
 	}
 
 	render() {
-		// @ts-ignore
-		const sidebarPresent = typeof window.sidebar !== "undefined";
+		const targetEl = this.for
+			? document.getElementById(this.for)
+			: document.querySelector("r-sidebar");
+		if (targetEl instanceof Sidebar) {
+			this.sidebar = targetEl;
+		}
 
 		return html`
-			${sidebarPresent ? html`
-				<button id="sidebarButton" type="button" class="header-menu" onclick="sidebar?.open()">
+			${this.sidebar ? html`
+				<button id="sidebarButton" type="button" class="header-menu" @click="${this.#handleSidebarButtonClick}">
 					<img src="/svg/menu.svg" alt="Menu" width="36" height="36">
 				</button>` : html``}
 			<img src="/images/rplace.png" alt="Rplace logo">
@@ -757,6 +764,10 @@ class Header extends LitElement {
 			<button type="button" id="accountButton" class="header-account" @click=${this.#handleAccountButtonClick}>
 				<img src="/svg/account.svg" alt="Menu" width="36" height="36">
 			</button>`;
+	}
+
+	#handleSidebarButtonClick() {
+		this.sidebar?.open();
 	}
 
 	#handleAccountButtonClick() {
