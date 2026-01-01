@@ -2,60 +2,88 @@
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
+	<title>Privacy | rplace</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Privacy policy</title>
-	<style>
-		@font-face {
-			font-family: reddit;
-			src: url(/fonts/RedditSans-Bold.woff2);
-		}
-		html, body{ background: repeating-linear-gradient(45deg, #bbb, #bbb 12px, #c7c7c7 12px, #c7c7c7 24px); height: 100%; }
-		body{
-			max-width: 800px; margin: 0 auto;
-			background: #fff; color: #111;
-			font-family: reddit;
-			padding: 1em;
-			box-sizing: border-box;
-			overscroll-behavior: none;
-			box-shadow: 0 0 50px #0008;
-			border: #111 solid;
-			border-width: 0 3px;
-		}
-		h1, h2, h3, h4, h5, h6{ margin: 0; padding: .5em 0; font-style: italic; }
-		a{
-			color: blue; text-decoration: underline;
-			cursor: pointer;
-		}
-		a:active{ color: red; }
-		#science{
-			width: 16px; height: 16px;
-			vertical-align: bottom;
-		}
-	</style>
+	<link rel="stylesheet" href="/misc-page.css">
+	<link rel="stylesheet" href="/shared.css">
+	<script type="module" src="/src/shared-elements.js"></script>
+	<script type="module" src="/src/services/account-manager.js"></script>
+	<script type="module" src="/src/pages/privacy/privacy.js"></script>
 </head>
 <body>
-	<h1>Privacy policy</h1>
-	<br>
-	We do not sell or offer your personal information to any 3rd parties.
-	<br><br>
-	We do however, for the site's functionality, collect the following information:
-	<br><br>
-	<h2>IP addresses & Session identifiers</h2>
-	This is used to enforce cooldown and protect against bots, and is not stored beyond the length of your session
-	<br><br>
-	<h2>Usernames and account names you tell us</h2>
-	This should be self-explanatory. We store this data until you tell us not to by closing your account or changing said details.
-	<br><br>
-	<h2>Chat messages and pixel placements</h2>
-	By posting chat messages or drawing art, you accept that this type of content is permanent and cannot be removed, even if requested.
-	<br><br>
-	<h2>Science Telemetrics</h2>
-	We occasionally collect non-identifying information about your hardware or behavior in the game for research purposes, such as developing new features or technologies to improve the experience of everyone in the game
-	<br><br>
-	<input type="checkbox" id="science" /> Science telemetrics: <span id="indicator"></span>
-	<br><br>
-	<h2>Source code</h2>
-	The source code for the client can be found at <a href="https://github.com/rplacelive/game" target="_blank">https://github.com/rplacelive/game</a>
+	<header is="r-header" title="Privacy"></header>
+	<r-sidebar id="sidebar" mode="overlay"></r-sidebar>
+	<section class="reddit-cards-container">
+		<article>
+			<div>
+				<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000"><path d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"></path></svg>
+			</div>
+			<div>
+				<h2>Privacy Terms:</h2>
+				<em>
+					We do not sell or offer your personal information to any third parties.
+					We do however, for the site's functionality, collect the following information:
+				</em>
+
+				<h3>IP addresses, session identifiers, and connection metadata</h3>
+				We log IP addresses, session IDs, connection times, and related metadata.
+				This data is used to enforce cooldowns, rate limits, anti-bot measures, and moderation actions.
+				IPs and session data may be retained across sessions and associated with your user ID to prevent ban evasion and abuse.
+
+				<h3>User IDs, usernames, and user info</h3>
+				When you connect to an rplace.live canvas, a persistent user ID may be assigned.
+				This ID is used to associate your username, sessions, IP addresses, activity, and moderation history.
+				Persistent user data is stored invisibly, and may only be removable upon request.
+
+				<h3>Browser, device, and fingerprinting data</h3>
+				We collect information such as user agent strings, browser characteristics, and other fingerprint-like signals.
+				This is primarily used to strengthen moderation and ban enforcement, especially to detect attempts to bypass restrictions.
+
+				<h3>Activity metadata</h3>
+				We log gameplay and site activity such as:
+				<ul>
+					<li>Session duration and play time</li>
+					<li>Pixels placed and interactions performed</li>
+					<li>Chat participation and related timestamps</li>
+				</ul>
+				This data is currently used mainly for moderation, abuse prevention, and internal analysis,
+				but may also be used in the future for analytics, feature development, or balancing decisions.
+
+				<h3>Chat messages and pixel placements</h3>
+				By submitting chat messages, placing pixels, or otherwise contributing content, you understand that this content is stored persistently.
+				Removal is not guaranteed and generally only occurs upon request or moderation action.
+
+				<h3>Moderation and enforcement</h3>
+				All collected data may be cross-referenced to a reasonable extent to detect abuse, enforce bans, and prevent circumvention.
+				If you are banned, attempts to evade that ban using alternate accounts, devices, or connections may be detected using this data.
+
+				<h3>Science Telemetrics</h3>
+				We occasionally collect non-identifying information about your hardware or behavior in the game for research purposes,
+				such as developing new features or technologies to improve the experience of everyone in the game.
+				<label>
+					Science telemetrics:
+					<input type="checkbox" id="science" /><span id="indicator"></span>
+				</labal>
+			</div>
+		</article>
+		<article>
+			<div>
+				<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000"><path d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"></path></svg>
+			</div>
+			<div>
+				<h2>Source code</h2>
+				The source code for the client can be found at <a href="https://github.com/rplacelive/game" rel="noopener" target="_blank">https://github.com/rplacelive/game</a>.
+			</div>
+		</article>
+		<article>
+			<div>
+				<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000"><path d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"></path></svg>
+			</div>
+			<div>
+				<h2>Contact</h2>
+				For more info, please contact us at <a href="mailto:admin@rplace.live">admin@rplace.live</a>.
+			</div>
+		</article>
+	</section>
 </body>
-<script src="./priv.js"></script>
 </html>

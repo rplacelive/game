@@ -679,8 +679,8 @@ export class Sidebar extends LitElement {
 					Premium
 				</a>
 				<nav class="sidebar-footer">
-					<a href="https://rplace.live">rplace.live</a> |
-					<a href="./disclaimer.html">disclaimer</a> |
+					<a href="/privacy">privacy</a> |
+					<a href="/disclaimer">disclaimer</a> |
 					<a href="https://github.com/rplacelive">github</a>
 				</nav>
 			</nav>
