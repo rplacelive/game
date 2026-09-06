@@ -1319,14 +1319,15 @@ canvSelectImage.addEventListener("dragstart", (e) => {
 	return false;
 })
 
+let placementPending = false;
 /**
  * @param {Event} e
  */
-function handlePixelPlace(e) {
+async function handlePixelPlace(e) {
 	if (!(e instanceof Event) || !e.isTrusted) {
 		return
 	}
-	if (!focused || connectStatus !== "connected" || (cooldownEndDate !== null && cooldownEndDate > Date.now())) {
+	if (placementPending || !focused || connectStatus !== "connected" || (cooldownEndDate !== null && cooldownEndDate > Date.now())) {
 		return;
 	}
 	if (!placeOkButton.classList.contains("enabled")) {
@@ -1337,14 +1338,26 @@ function handlePixelPlace(e) {
 	}
 	// Send place to websocket
 	const position = Math.floor(x) + Math.floor(y) * WIDTH;
-	placePixel(position, selectedColour, e);
+	const colour = selectedColour;
+	placementPending = true;
+	try {
+		// This acknowledges the worker send, not authoritative server acceptance.
+		if (!await placePixel(position, colour, e)) return;
+	}
+	catch (error) {
+		console.warn("Could not submit placement", error);
+		return;
+	}
+	finally {
+		placementPending = false;
+	}
 
-	// We client-side predict our new cooldown and pixel place the pixel went through
+	// Predict only after worker acceptance; server rejection still corrects it.
 	// TODO: Note client-server latency will make real cooldown a little bigger
 	const now = Date.now();
 	const clientServerLatency = 50; // TODO: Use ping to determine this better
 	setCooldown(now + COOLDOWN + clientServerLatency);
-	drawPixel(position, selectedColour);
+	drawPixel(position, colour);
 
 	// Apply on client-side
 	hideIndicators();

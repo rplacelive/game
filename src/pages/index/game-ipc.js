@@ -3,7 +3,7 @@ import { createStrictIpcEndpoint, makeIpcRequest, sendIpcMessage } from "shared-
 /** @typedef {[number, number, number, number, number]} ClientActivity */
 /** @typedef {[string, string, string|null]} ConnectArgs */
 /** @typedef {[number, string[], Uint8Array]} DefaultCaptchaChallenge */
-/** @typedef {{ chatReact: (messageId: number, reaction: string) => void, chatReport: (messageId: number, reason: string) => void, connect: (device: string, vip: string|null) => void, fetchLinkKey: () => Promise<{linkKey:string,instanceId:number}>, putPixel: (position: number, colour: number) => void, reportAutomatedActivity: (activity: ClientActivity) => void, reportCanvasPixel: (position: number, reason: string) => void, requestChatHistory: (channel: string, anchorMsgId?: number, msgCount?: number) => void, requestPixelPlacers: (position: number, width: number, height: number) => void, sendCaptchaResult: (captchaId: number, result: string) => void, sendChallengeResult: (result: bigint) => void, sendHCaptchaResult: (captchaId: number, result: string) => void, sendLiveChat: (message: string, channel: string, replyId: number|null) => void, sendModAction: (value: object) => Promise<string>, sendPlaceChat: (message: string, position: number) => void, sendTurnstileResult: (captchaId: number, result: string) => void, setName: (name: string) => void, spectateUser: (userId: number) => void, unspectateUser: () => void, stop: () => void, dispose: () => void }} GameIpc */
+/** @typedef {{ chatReact: (messageId: number, reaction: string) => void, chatReport: (messageId: number, reason: string) => void, connect: (device: string, vip: string|null) => void, fetchLinkKey: () => Promise<{linkKey:string,instanceId:number}>, putPixel: (position: number, colour: number) => Promise<boolean>, reportAutomatedActivity: (activity: ClientActivity) => void, reportCanvasPixel: (position: number, reason: string) => void, requestChatHistory: (channel: string, anchorMsgId?: number, msgCount?: number) => void, requestPixelPlacers: (position: number, width: number, height: number) => void, sendCaptchaResult: (captchaId: number, result: string) => void, sendChallengeResult: (result: bigint) => void, sendHCaptchaResult: (captchaId: number, result: string) => void, sendLiveChat: (message: string, channel: string, replyId: number|null) => void, sendModAction: (value: object) => Promise<string>, sendPlaceChat: (message: string, position: number) => void, sendTurnstileResult: (captchaId: number, result: string) => void, setName: (name: string) => void, spectateUser: (userId: number) => void, unspectateUser: () => void, stop: () => void, dispose: () => void }} GameIpc */
 const MAX_DATE_MS = 8_640_000_000_000_000;
 const textEncoder = new TextEncoder();
 
@@ -470,6 +470,7 @@ export async function createGameIpc(
 					position,
 					colour
 				});
+				return Promise.resolve(true);
 			},
 			/** @param {number} userId */
 			spectateUser(userId) {
@@ -576,6 +577,8 @@ export async function createGameIpc(
 	/** @type {Promise<void>} */
 	const readyPromise = new Promise(resolve => { markReady = resolve; });
 	/** @type {Map<number, import("shared-ipc").StrictIncomingCommand>} */
+	// Schema validation belongs to the transport. State rejection belongs in
+	// handlers so a delivered command cannot strand the IPC receive sequence.
 	const incoming = new Map([[0, {
 		kind: "message",
 		validate: value => value === undefined,
@@ -585,15 +588,17 @@ export async function createGameIpc(
 		}
 	}], [1, {
 		kind: "message",
-		validate: value => connectionState === 1 && value === undefined,
+		validate: value => value === undefined,
 		handler: () => {
+			if (connectionState !== 1) return;
 			connectionState = 2;
 			eventHandlers[0]();
 		}
 	}], [2, {
 		kind: "message",
-		validate: value => (connectionState === 1 || connectionState === 2) && isDisconnect(value),
+		validate: isDisconnect,
 		handler: value => {
+			if (!(connectionState === 1 || connectionState === 2)) return;
 			connectionState = 3;
 			disposed = true;
 			try {
@@ -605,146 +610,194 @@ export async function createGameIpc(
 		}
 	}], [3, {
 		kind: "message",
-		validate: value => connectionState === 2 && isDefaultCaptchaChallenge(value) &&
-			!outstandingCaptchas.has(value[0]) && pendingCaptcha !== value[0],
+		validate: isDefaultCaptchaChallenge,
 		handler: value => {
+			if (!(connectionState === 2 && !outstandingCaptchas.has(value[0]) && pendingCaptcha !== value[0])) return;
 			outstandingCaptchas.add(value[0]);
 			eventHandlers[2](value);
 		}
 	}], [4, {
 		kind: "message",
-		validate: value => connectionState === 2 && isDefaultCaptchaChallenge(value) &&
-			!outstandingCaptchas.has(value[0]) && pendingCaptcha !== value[0],
+		validate: isDefaultCaptchaChallenge,
 		handler: value => {
+			if (!(connectionState === 2 && !outstandingCaptchas.has(value[0]) && pendingCaptcha !== value[0])) return;
 			outstandingCaptchas.add(value[0]);
 			eventHandlers[3](value);
 		}
 	}], [5, {
 		kind: "message",
-		validate: value => connectionState === 2 && pendingCaptcha !== null && value === undefined,
+		validate: value => value === undefined,
 		handler: () => {
+			if (!(connectionState === 2 && pendingCaptcha !== null)) return;
 			pendingCaptcha = null;
 			eventHandlers[4]();
 		}
 	}], [6, {
 		kind: "message",
-		validate: value => connectionState === 2 && isCooldownInfo(value),
-		handler: value => { eventHandlers[5](value); }
+		validate: isCooldownInfo,
+		handler: value => {
+			if (connectionState !== 2) return;
+			eventHandlers[5](value);
+		}
 	}], [7, {
 		kind: "message",
-		validate: value => connectionState === 2 && isCooldown(value),
-		handler: value => { eventHandlers[6](value); }
+		validate: isCooldown,
+		handler: value => {
+			if (connectionState !== 2) return;
+			eventHandlers[6](value);
+		}
 	}], [8, {
 		kind: "message",
-		validate: value => connectionState === 2 && isRejectedPixel(value),
-		handler: value => { eventHandlers[7](value); }
+		validate: isRejectedPixel,
+		handler: value => {
+			if (connectionState !== 2) return;
+			eventHandlers[7](value);
+		}
 	}], [9, {
 		kind: "message",
-		validate: value => connectionState === 2 && isPalette(value),
-		handler: value => { eventHandlers[8](value); }
+		validate: isPalette,
+		handler: value => {
+			if (connectionState !== 2) return;
+			eventHandlers[8](value);
+		}
 	}], [10, {
 		kind: "message",
-		validate: value => connectionState === 2 && isChanges(value),
-		handler: value => eventHandlers[9](value)
+		validate: isChanges,
+		handler: value => {
+			if (connectionState !== 2) return;
+			return eventHandlers[9](value);
+		}
 	}], [11, {
 		kind: "message",
-		validate: value => connectionState === 2 && isCanvasRestriction(value),
-		handler: value => { eventHandlers[10](value); }
+		validate: isCanvasRestriction,
+		handler: value => {
+			if (connectionState !== 2) return;
+			eventHandlers[10](value);
+		}
 	}], [12, {
 		kind: "message",
-		validate: value => connectionState === 2 && passkeyState === 0 && value === undefined,
+		validate: value => value === undefined,
 		handler: () => {
+			if (!(connectionState === 2 && passkeyState === 0)) return;
 			passkeyState = 1;
 			eventHandlers[11]();
 		}
 	}], [13, {
 		kind: "message",
-		validate: value => connectionState === 2 && passkeyState !== 2 && value === undefined,
+		validate: value => value === undefined,
 		handler: () => {
+			if (!(connectionState === 2 && passkeyState !== 2)) return;
 			passkeyState = 2;
 			eventHandlers[12]();
 		}
 	}], [14, {
 		kind: "message",
-		validate: value => connectionState === 2 && isUint32(value),
+		validate: isUint32,
 		handler: value => {
+			if (connectionState !== 2) return;
 			spectatingId = value;
 			eventHandlers[13](value);
 		}
 	}], [15, {
 		kind: "message",
-		validate: value => connectionState === 2 && isUnspectating(value) &&
-			spectatingId === value[0],
+		validate: isUnspectating,
 		handler: value => {
+			if (!(connectionState === 2 && spectatingId === value[0])) return;
 			spectatingId = null;
 			eventHandlers[14](value);
 		}
 	}], [16, {
 		kind: "message",
-		validate: value => connectionState === 2 && isPixels(value),
-		handler: value => { eventHandlers[15](value); }
+		validate: isPixels,
+		handler: value => {
+			if (connectionState !== 2) return;
+			eventHandlers[15](value);
+		}
 	}], [17, {
 		kind: "message",
-		validate: value => connectionState === 2 &&
-			Number.isInteger(value) && value >= 0 && value <= 65_535,
-		handler: value => { eventHandlers[16](value); }
+		validate: value => Number.isInteger(value) && value >= 0 && value <= 65_535,
+		handler: value => {
+			if (connectionState !== 2) return;
+			eventHandlers[16](value);
+		}
 	}], [18, {
 		kind: "message",
-		validate: value => connectionState === 2 && userId === null && isUint32(value),
+		validate: isUint32,
 		handler: value => {
+			if (!(connectionState === 2 && userId === null)) return;
 			userId = value;
 			eventHandlers[17](value);
 		}
 	}], [19, {
 		kind: "message",
-		validate: value => connectionState === 2 && isNameEntries(value),
-		handler: value => { eventHandlers[18](value); }
+		validate: isNameEntries,
+		handler: value => {
+			if (connectionState !== 2) return;
+			eventHandlers[18](value);
+		}
 	}], [20, {
 		kind: "message",
-		validate: value => connectionState === 2 &&
-			typeof value === "string" && value.length <= 255,
-		handler: value => { eventHandlers[19](value); }
+		validate: value => typeof value === "string" && value.length <= 255,
+		handler: value => {
+			if (connectionState !== 2) return;
+			eventHandlers[19](value);
+		}
 	}], [21, {
 		kind: "message",
-		validate: value => connectionState === 2 && isUint32(value) &&
-			!spectators.has(value),
+		validate: isUint32,
 		handler: value => {
+			if (!(connectionState === 2 && !spectators.has(value))) return;
 			spectators.add(value);
 			eventHandlers[20](value);
 		}
 	}], [22, {
 		kind: "message",
-		validate: value => connectionState === 2 && isUint32(value) &&
-			spectators.has(value),
+		validate: isUint32,
 		handler: value => {
+			if (!(connectionState === 2 && spectators.has(value))) return;
 			spectators.delete(value);
 			eventHandlers[21](value);
 		}
 	}], [23, {
 		kind: "message",
-		validate: value => connectionState === 2 && isUint32(value),
-		handler: value => { eventHandlers[22](value); }
+		validate: isUint32,
+		handler: value => {
+			if (connectionState !== 2) return;
+			eventHandlers[22](value);
+		}
 	}], [24, {
 		kind: "message",
-		validate: value => connectionState === 2 && isChatReaction(value),
-		handler: value => { eventHandlers[23](value); }
+		validate: isChatReaction,
+		handler: value => {
+			if (connectionState !== 2) return;
+			eventHandlers[23](value);
+		}
 	}], [25, {
 		kind: "message",
-		validate: value => connectionState === 2 && isLiveChatDelivery(value),
-		handler: value => { eventHandlers[24](value); }
+		validate: isLiveChatDelivery,
+		handler: value => {
+			if (connectionState !== 2) return;
+			eventHandlers[24](value);
+		}
 	}], [26, {
 		kind: "message",
-		validate: value => connectionState === 2 && isPlaceChatDelivery(value),
-		handler: value => { eventHandlers[25](value); }
+		validate: isPlaceChatDelivery,
+		handler: value => {
+			if (connectionState !== 2) return;
+			eventHandlers[25](value);
+		}
 	}], [27, {
 		kind: "message",
-		validate: value => connectionState === 2 && isPunishment(value),
-		handler: value => { eventHandlers[26](value); }
+		validate: isPunishment,
+		handler: value => {
+			if (connectionState !== 2) return;
+			eventHandlers[26](value);
+		}
 	}], [28, {
 		kind: "message",
-		validate: value => connectionState === 2 && isChatHistory(value) &&
-			(pendingChatHistories.get(value[3]) || 0) > 0,
+		validate: isChatHistory,
 		handler: value => {
+			if (!(connectionState === 2 && (pendingChatHistories.get(value[3]) || 0) > 0)) return;
 			const pending = pendingChatHistories.get(value[3]);
 			if (pending === 1) pendingChatHistories.delete(value[3]);
 			else pendingChatHistories.set(value[3], pending - 1);
@@ -752,65 +805,64 @@ export async function createGameIpc(
 		}
 	}], [29, {
 		kind: "message",
-		validate: value => connectionState === 2 && !challengePending &&
-			isChallenge(value),
+		validate: isChallenge,
 		handler: value => {
+			if (!(connectionState === 2 && !challengePending)) return;
 			challengePending = true;
 			eventHandlers[28](value);
 		}
 	}], [30, {
 		kind: "message",
-		validate: value => connectionState === 2 && turnstile === null &&
-			isExternalCaptchaChallenge(value),
+		validate: isExternalCaptchaChallenge,
 		handler: value => {
+			if (!(connectionState === 2 && turnstile === null)) return;
 			turnstile = { id: value[0], submitted: false };
 			eventHandlers[29](value);
 		}
 	}], [31, {
 		kind: "message",
-		validate: value => connectionState === 2 && value === undefined &&
-			turnstile !== null && turnstile.submitted,
+		validate: value => value === undefined,
 		handler: () => {
+			if (!(connectionState === 2 && turnstile !== null && turnstile.submitted)) return;
 			turnstile = null;
 			eventHandlers[30]();
 		}
 	}], [32, {
 		kind: "message",
-		validate: value => connectionState === 2 && hcaptcha === null &&
-			isExternalCaptchaChallenge(value),
+		validate: isExternalCaptchaChallenge,
 		handler: value => {
+			if (!(connectionState === 2 && hcaptcha === null)) return;
 			hcaptcha = { id: value[0], submitted: false };
 			eventHandlers[31](value);
 		}
 	}], [33, {
 		kind: "message",
-		validate: value => connectionState === 2 && value === undefined &&
-			hcaptcha !== null && hcaptcha.submitted,
+		validate: value => value === undefined,
 		handler: () => {
+			if (!(connectionState === 2 && hcaptcha !== null && hcaptcha.submitted)) return;
 			hcaptcha = null;
 			eventHandlers[32]();
 		}
 	}], [34, {
 		kind: "message",
-		validate: value => {
-			if (connectionState !== 2 || !isPlacerRegion(value)) return false;
-			return placerRequests.some(request =>
-				request[0] === value[0] &&
-				value[1] <= request[1] && value[2] <= request[2]
-			);
-		},
+		validate: isPlacerRegion,
 		handler: value => {
+			if (connectionState !== 2) return;
 			const requestIndex = placerRequests.findIndex(request =>
 				request[0] === value[0] &&
 				value[1] <= request[1] && value[2] <= request[2]
 			);
+			if (requestIndex === -1) return;
 			placerRequests.splice(requestIndex, 1);
 			eventHandlers[33](value);
 		}
 	}], [35, {
 		kind: "message",
-		validate: value => connectionState === 2 && isClientViewport(value),
-		handler: value => { eventHandlers[34](value); }
+		validate: isClientViewport,
+		handler: value => {
+			if (connectionState !== 2) return;
+			eventHandlers[34](value);
+		}
 	}]]);
 	/** @type {Map<number, import("shared-ipc").StrictOutgoingCommand>} */
 	const outgoing = new Map([[0, {
@@ -825,9 +877,6 @@ export async function createGameIpc(
 	}], [3, {
 		kind: "message",
 		validate: isDefaultCaptchaResult
-	}], [4, {
-		kind: "message",
-		validate: isPixelPlacement
 	}], [5, {
 		kind: "message",
 		validate: isUint32
@@ -875,6 +924,10 @@ export async function createGameIpc(
 	}], [19, {
 		kind: "message",
 		validate: isCanvasPixelReport
+	}], [20, {
+		kind: "request",
+		validate: isPixelPlacement,
+		validateResult: value => typeof value === "boolean"
 	}]]);
 	let timeout;
 	const timeoutPromise = new Promise((_, reject) => {
@@ -995,7 +1048,18 @@ export async function createGameIpc(
 			if (connectionState !== 2 || !isPixelPlacement(value)) {
 				throw new Error("Pixel placement is not valid");
 			}
-			endpoint.send(4, value);
+			return endpoint.request(20, value).catch(error => {
+				// A timed-out reply cannot safely be retried on this IPC stream:
+				// a late result would no longer have a matching pending request.
+				if (!disposed) {
+					disposed = true;
+					connectionState = 3;
+					endpoint.dispose("Placement acknowledgement failed");
+					worker.terminate();
+					eventHandlers[1]([1002, "Placement acknowledgement failed"]);
+				}
+				throw error;
+			});
 		},
 		/** @param {number} userId */
 		spectateUser(userId) {

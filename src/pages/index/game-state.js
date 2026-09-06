@@ -677,7 +677,7 @@ export function placePixel(position, colour, event) {
 	if (!(event instanceof Event) || !event.isTrusted) {
 		throw new Error("Trusted pixel placement event was invalid");
 	}
-	gameIpc.putPixel(position, colour);
+	return gameIpc.putPixel(position, colour);
 }
 
 export function setDefaultCaptchaHandlers(handleText, handleEmoji, handleSuccess) {
